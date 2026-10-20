@@ -49,11 +49,11 @@ deps = { std = "MoveStdlib", sui = "Sui" }
 [pinned.mainnet.release_cover_art]
 source = { root = true }
 use_environment = "mainnet"
-manifest_digest = "C62ACC8D6BA2ADEFCC0AE113CC9C3419EEAA392AD858F92F9FD7BBEE61282713"
+manifest_digest = "CC79C963F21B02D4D88D09DFF1235E115A00D35BC10D5C3175959A7078517E67"
 deps = { cover_art = "cover_art", musicos = "musicos", ori = "ori", release_track_data = "release_track_data", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.release_track_data]
-source = { git = "https://github.com/misofm/release-track-data.git", subdir = ".", rev = "85fe925683257969e2862739d97edefcc2eee0a2" }
+source = { git = "https://github.com/misofm/release-track-data.git", subdir = ".", rev = "b03ea603afd1d6857abee8ca1f31103bbb872ff3" }
 use_environment = "mainnet"
 manifest_digest = "B0C194701BF55619DC17CBF5D1113F277BDCBDF5251A06F4CB30051C06B64C95"
 deps = { musicos = "musicos", std = "MoveStdlib", sui = "Sui" }
@@ -109,11 +109,11 @@ deps = { std = "MoveStdlib", sui = "Sui" }
 [pinned.testnet.release_cover_art]
 source = { root = true }
 use_environment = "testnet"
-manifest_digest = "19CE16EBDAD5FB1AD74EF8B10E7C14D0206F276F578B8BEA1008283DE553555B"
+manifest_digest = "A0424B3E57EA70EA213DA5852700B79C14712168987C67A4BE3CC3AB903518DF"
 deps = { cover_art = "cover_art", musicos = "musicos", ori = "ori", release_track_data = "release_track_data", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.release_track_data]
-source = { git = "https://github.com/misofm/release-track-data.git", subdir = ".", rev = "85fe925683257969e2862739d97edefcc2eee0a2" }
+source = { git = "https://github.com/misofm/release-track-data.git", subdir = ".", rev = "b03ea603afd1d6857abee8ca1f31103bbb872ff3" }
 use_environment = "testnet"
 manifest_digest = "B568CA31E8ACEB008239C277848F572AE7A589AAFFFE99FE457EF7175708D335"
 deps = { musicos = "musicos", std = "MoveStdlib", sui = "Sui" }

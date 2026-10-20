@@ -69,7 +69,7 @@ state transition.
   `948213d99f4e0a56064181d9318936beba95e138` — the `CoverArt` value type,
   which rejects encrypted blobs.
 - [`release_track_data`](https://github.com/misofm/release-track-data) at
-  `85fe925683257969e2862739d97edefcc2eee0a2` — the `ReleaseTrackData<Data>`
+  `b03ea603afd1d6857abee8ca1f31103bbb872ff3` — the `ReleaseTrackData<Data>`
   array behind the overrides, pinned to the same musicos.
 - [`ori`](https://github.com/unconfirmedlabs/ori) at
   `367ed5fe92a8b62da02c1116537cf08d111e0789`, test mode only — blob fixtures.
