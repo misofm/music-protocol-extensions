@@ -1,0 +1,90 @@
+# `release_cover_art`
+
+Cover art for a `musicos::release::Release`: an album-level cover plus
+optional per-track overrides, stored as one `ReleaseCoverArt` record under a
+dynamic field on the release and written through its cap-gated `uid_mut`.
+Cover art is presentation, not objective recording data, so it lives on the
+release rather than the recording. The `CoverArt` value type comes from the
+independently versioned [`misofm/cover-art`](https://github.com/misofm/cover-art)
+package.
+
+## What it stores
+
+- Key: `ExtensionKey()` — a unit struct local to this package.
+- Value: one `ReleaseCoverArt { cover: Option<CoverArt>, track_covers:
+  PerTrack<Option<CoverArt>> }`. The overrides are one slot per track,
+  aligned to the tracklist by construction and sized when the record is first
+  attached; the tracklist is fixed at release creation, so they stay aligned.
+  A track's effective cover resolves to its override if set, otherwise the
+  album cover. The record is attached by the first set and is never removed;
+  a clear empties the slot.
+
+## API
+
+Writes require the release's `&ReleaseAdminCap` and go through
+`release::uid_mut(cap)`, which aborts `release::EUnauthorized` on a
+mismatched cap before any stored-state check. Index validation precedes the
+cap check. Views are permissionless.
+
+| Function | Description | Aborts |
+|---|---|---|
+| `set_cover(rel, cap, art)` | Sets or replaces the album cover, attaching the record on first use; setting the value already held neither writes nor emits | none |
+| `clear_cover(rel, cap)` | Removes the album cover; overrides are untouched; silent when absent | none |
+| `set_track_cover(rel, cap, i, art)` | Sets or replaces track `i`'s override, attaching the record on first use; equal set is silent | `ETrackIndexOutOfBounds` (2) |
+| `clear_track_cover(rel, cap, i)` | Removes track `i`'s override so it falls back to the album cover; silent when absent | `ETrackIndexOutOfBounds` (2) |
+| `has_cover_art(rel)` | Whether the record is attached | none |
+| `cover(rel)` | The album cover, `&Option<CoverArt>` | `ENoCoverArt` (1) |
+| `track_cover(rel, i)` | Track `i`'s effective cover | `ETrackIndexOutOfBounds` (2), `ENoCoverArt` (1) |
+
+## Events
+
+Events are monomorphic and carry what an event-only indexer would otherwise
+have to look up: the release, the track index on per-track writes, and the
+blob IDs of the new value on a set.
+
+| Event | Fields | BCS bytes |
+|---|---|---|
+| `ReleaseCoverArtSetEvent` | `release_id: ID`, `still_blob_id: u256`, `animated_blob_id: Option<u256>` | 65 (no animation) or 97 |
+| `ReleaseCoverArtClearedEvent` | `release_id: ID` | 32 |
+| `ReleaseTrackCoverArtSetEvent` | `release_id: ID`, `track_index: u64`, `still_blob_id: u256`, `animated_blob_id: Option<u256>` | 73 (no animation) or 105 |
+| `ReleaseTrackCoverArtClearedEvent` | `release_id: ID`, `track_index: u64` | 40 |
+
+Cover art is always unencrypted: `cover_art::new` rejects encrypted blobs.
+An equal set and an absent clear emit nothing, so every event is a real
+state transition.
+
+## Errors
+
+| Code | Constant | Condition |
+|---|---|---|
+| 1 | `ENoCoverArt` | `cover` or `track_cover` with no record attached |
+| 2 | `ETrackIndexOutOfBounds` | A track index at or past the tracklist length |
+
+## Dependencies
+
+- [`musicos`](https://github.com/misofm/musicos) at
+  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Release`, `ReleaseAdminCap`,
+  and `uid_mut`.
+- [`cover_art`](https://github.com/misofm/cover-art) at
+  `948213d99f4e0a56064181d9318936beba95e138` — the `CoverArt` value type,
+  which rejects encrypted blobs.
+- [`per_track`](https://github.com/misofm/per-track) at
+  `b165b5466e294381740ee84ec0b96302345542ff` — the `PerTrack<Data>` array
+  behind the overrides, pinned to the same musicos.
+- [`ori`](https://github.com/unconfirmedlabs/ori) at
+  `367ed5fe92a8b62da02c1116537cf08d111e0789`, test mode only — blob fixtures.
+
+## Publishing
+
+Every change is published as a fresh, immutable package identity; nothing is
+upgraded in place. `Published.toml` records the prior generation.
+
+## Build and test
+
+```sh
+sui move build --lint --warnings-are-errors
+sui move build --lint --warnings-are-errors --build-env mainnet
+sui move test --coverage --lint --warnings-are-errors
+sui move coverage summary
+sui move test --build-env mainnet
+```

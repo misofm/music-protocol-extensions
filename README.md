@@ -1,0 +1,109 @@
+# MusicOS Extensions
+
+Data-model extensions for
+[`misofm/musicos`](https://github.com/misofm/musicos) on Sui.
+
+Miso keeps `Composition`, `Recording`, and `Release` focused on constitutive
+protocol state. An extension adds optional typed data as a dynamic field on one
+of those objects. Writes require the object's matching admin capability through
+its cap-gated `uid_mut`; reads are permissionless.
+
+Extensions do not custody capabilities, automate administrative authority, or
+route economic value. Actions compose those workflows around a caller-supplied
+raw capability, while optional platform adapters bridge Vault custody to an Action:
+
+| Repository | Responsibility |
+|------------|----------------|
+| [`misofm/musicos`](https://github.com/misofm/musicos) | Core music objects and the canonical `ReleaseRegistry` namespace. |
+| [`misofm/musicos-actions`](https://github.com/misofm/musicos-actions) | Custody-agnostic, return-oriented Composition, Recording, and Release workflows. |
+| [`misofm/partyos-actions`](https://github.com/misofm/partyos-actions) | Custody-agnostic, return-oriented Party workflows. |
+| [`misofm/vault`](https://github.com/misofm/vault) | Generic capability custody and temporary exact-return leases. |
+| [`misofm/vault-plugins`](https://github.com/misofm/vault-plugins) | Thin installed adapters that borrow a custodied admin capability, call a matching Action, and return the capability. |
+| [`misofm/recording-license`](https://github.com/misofm/recording-license) | A composition's standing license to record it; formerly `recording_license` in this repository. |
+
+Each directory in this repository is an independently versioned and published
+Move package. Applications should depend only on the extensions they use.
+
+## Packages
+
+### Metadata extensions
+
+First-party, platform-neutral metadata extensions.
+
+| Package | Target | Purpose |
+|---------|--------|---------|
+| [`composition_credits`](./composition_credits) | Composition | Songwriting and publishing attribution keyed by Party ID. |
+| [`composition_lyrics`](./composition_lyrics) | Composition | Zstd-compressed lyrics keyed by ISO 639-1 language code. |
+| [`composition_title`](./composition_title) | Composition | The composition's preferred title. |
+| [`recording_advisory`](./recording_advisory) | Recording | Explicit, not-explicit, or cleaned advisory classification. |
+| [`recording_credits`](./recording_credits) | Recording | Performance and production credits with primary and featured artist designations. |
+| [`recording_genre`](./recording_genre) | Recording | Ordered genre classification of the master, primary first. |
+| [`recording_language`](./recording_language) | Recording | Ordered ISO 639-1 language metadata; an empty list explicitly denotes instrumental content. |
+| [`recording_version`](./recording_version) | Recording | Name of this particular take, such as Live or Radio Edit. |
+| [`release_cover_art`](./release_cover_art) | Release | Release-level cover art with optional per-track overrides. |
+| [`release_credits`](./release_credits) | Release | Primary and featured top-line artist billing keyed by Party ID. |
+| [`release_description`](./release_description) | Release | Bounded free-text editorial description. |
+| [`release_genre`](./release_genre) | Release | Ordered release-level genre classification, primary first. |
+| [`release_kind`](./release_kind) | Release | Bounded free-text release classification such as Album, EP, or Mixtape. |
+| [`release_title`](./release_title) | Release | The release's preferred title. |
+
+Each package covers one concern and stores one value under a single
+`ExtensionKey()`, so changing one attribute's schema never forces a data
+migration of another. Titles live here because musicos core stores none.
+
+## Usage
+
+Reference an extension by repository subdirectory and exact commit:
+
+```toml
+[dependencies]
+release_genre = { git = "https://github.com/misofm/musicos-extensions.git", subdir = "release_genre", rev = "<40-character-commit>" }
+```
+
+Each package's `Move.toml` pins its own protocol and supporting dependencies.
+The current sources target musicos commit
+`654ea7d08ef2ae4f7f6b088ed665d147566db768`: Composition and Recording are
+generic over their share coin type, and their admin capabilities authorize by
+that type. Metadata operations are generic over the share type but never touch
+shares. Composition and Recording extension events carry no share type
+arguments; consumers identify the subject through the event's object ID.
+
+Existing `Published.toml` files are retained as records of the currently
+deployed, prior package generation, including the protocol extension packages'
+deployment records from before they moved from
+`misonetwork/protocol-extensions`. Some historical Mainnet records include an
+`upgrade-capability`; that is provenance, not authorization to upgrade. Every
+package in this repository is released by publishing a fresh package identity
+and immediately making it immutable. After a successful publication, the admin
+CLI replaces only that network's `Published.toml` block with the new immutable
+generation. Clients migrate explicitly to the new package identity; these
+packages are never upgraded in place.
+
+When an admin capability is held in a Vault, applications should use the
+matching custody-agnostic Action. A thin Vault plugin may borrow the capability,
+call that Action, and return the capability within one programmable transaction
+block.
+
+## Development
+
+Run build and test commands from an individual package directory:
+
+```sh
+cd release_genre
+sui move build
+sui move test --coverage
+```
+
+The test suites include production-shaped `sui::test_scenario` flows for shared
+protocol objects and focused invariant and authorization tests.
+
+## License
+
+[Functional Source License 1.1, ALv2 Future License](./LICENSE.md)
+(FSL-1.1-ALv2). Any use except a Competing Use is permitted, and each version
+becomes Apache-2.0 two years after its release.
+
+## Event payload policy
+
+See [EVENT_PAYLOADS.md](EVENT_PAYLOADS.md) for the complete event inventory,
+content omission policy and consumer integration notes.

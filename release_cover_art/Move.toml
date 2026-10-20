@@ -1,0 +1,11 @@
+[package]
+name = "release_cover_art"
+edition = "2024"
+license = "FSL-1.1-ALv2"
+authors = ["Miso Labs, Inc. (build@miso.fm)"]
+
+[dependencies]
+cover_art = { git = "https://github.com/misofm/cover-art.git", rev = "948213d99f4e0a56064181d9318936beba95e138" }
+musicos = { git = "https://github.com/misofm/musicos.git", rev = "654ea7d08ef2ae4f7f6b088ed665d147566db768" }
+per_track = { git = "https://github.com/misofm/per-track.git", rev = "b165b5466e294381740ee84ec0b96302345542ff" }
+ori = { git = "https://github.com/unconfirmedlabs/ori.git", rev = "367ed5fe92a8b62da02c1116537cf08d111e0789", subdir = "move", modes = ["test"] }
