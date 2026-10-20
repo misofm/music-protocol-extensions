@@ -9,13 +9,15 @@ of those objects. Writes require the object's matching admin capability through
 its cap-gated `uid_mut`; reads are permissionless.
 
 Extensions do not custody capabilities, automate administrative authority, or
-route economic value. Actions compose those workflows around a caller-supplied
-raw capability, while optional platform adapters bridge Vault custody to an Action:
+route economic value. Royalty packages route value to each work's pools,
+Actions compose workflows around a caller-supplied raw capability, and optional
+platform adapters bridge Vault custody to an Action:
 
 | Repository | Responsibility |
 |------------|----------------|
 | [`misofm/musicos`](https://github.com/misofm/musicos) | Core music objects and the canonical `ReleaseRegistry` namespace. |
-| [`misofm/musicos-actions`](https://github.com/misofm/musicos-actions) | Custody-agnostic, return-oriented Composition, Recording, and Release workflows. |
+| [`misofm/royalty-pool`](https://github.com/misofm/royalty-pool) | Each work's canonical royalty pools. |
+| [`misofm/release-revenue-forwarder`](https://github.com/misofm/release-revenue-forwarder) | Forwards release revenue to the tracks' pools. |
 | [`misofm/partyos-actions`](https://github.com/misofm/partyos-actions) | Custody-agnostic, return-oriented Party workflows. |
 | [`misofm/vault`](https://github.com/misofm/vault) | Generic capability custody and temporary exact-return leases. |
 | [`misofm/vault-plugins`](https://github.com/misofm/vault-plugins) | Thin installed adapters that borrow a custodied admin capability, call a matching Action, and return the capability. |

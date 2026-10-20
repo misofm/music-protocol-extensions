@@ -12,7 +12,6 @@ module release_kind::release_kind_e2e_tests;
 
 use musicos::release::{Self, Release, ReleaseAdminCap};
 use musicos::test_helpers;
-use musicos::track;
 use release_kind::release_kind as rk;
 use std::unit_test::{assert_eq, destroy};
 use sui::event;
@@ -27,7 +26,7 @@ fun publish_and_share(ts: &mut Scenario): (ReleaseAdminCap, ID) {
     let ctx = ts.ctx();
     let rec_id = test_helpers::fake_id(ctx);
     let target_id = test_helpers::fake_id(ctx);
-    let tracks = vector[track::consent_for_testing(rec_id, target_id)];
+    let tracks = vector[release::consent_for_testing(rec_id, target_id)];
     let (rel, cap) = release::new_for_testing(tracks, ctx);
     let rel_id = object::id(&rel);
     rel.publish(&cap);

@@ -12,8 +12,7 @@
 module release_cover_art::cover_art_e2e_tests;
 
 use cover_art::cover_art as cover;
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::track::{Self, TrackConsent};
+use musicos::release::{Self, Release, ReleaseAdminCap, ReleaseConsent};
 use release_cover_art::cover_art_fixtures as fixtures;
 use release_cover_art::release_cover_art::{
     Self,
@@ -38,12 +37,12 @@ const STRANGER: address = @0x51;
 // A 3-track tracklist. `release::new_for_testing` retargets every track at
 // the release it constructs, so the placeholder id never needs to predict
 // anything.
-fun mk_tracks(): vector<TrackConsent> {
+fun mk_tracks(): vector<ReleaseConsent> {
     let placeholder = object::id_from_address(@0xB0B);
     vector[
-        track::consent_for_testing(object::id_from_address(@0xA0), placeholder),
-        track::consent_for_testing(object::id_from_address(@0xA1), placeholder),
-        track::consent_for_testing(object::id_from_address(@0xA2), placeholder),
+        release::consent_for_testing(object::id_from_address(@0xA0), placeholder),
+        release::consent_for_testing(object::id_from_address(@0xA1), placeholder),
+        release::consent_for_testing(object::id_from_address(@0xA2), placeholder),
     ]
 }
 

@@ -6,6 +6,6 @@ authors = ["Miso Labs, Inc. (build@miso.fm)"]
 
 [dependencies]
 cover_art = { git = "https://github.com/misofm/cover-art.git", rev = "948213d99f4e0a56064181d9318936beba95e138" }
-musicos = { git = "https://github.com/misofm/musicos.git", rev = "654ea7d08ef2ae4f7f6b088ed665d147566db768" }
-per_track = { git = "https://github.com/misofm/per-track.git", rev = "b165b5466e294381740ee84ec0b96302345542ff" }
+musicos = { git = "https://github.com/misofm/musicos.git", rev = "f68189873e712ee931460cc00404db4f01391a24" }
+per_track = { git = "https://github.com/misofm/per-track.git", rev = "77e0bdf613535ef0778a17df9e4971a4e5bf7a89" }
 ori = { git = "https://github.com/unconfirmedlabs/ori.git", rev = "367ed5fe92a8b62da02c1116537cf08d111e0789", subdir = "move", modes = ["test"] }

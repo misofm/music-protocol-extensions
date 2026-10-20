@@ -11,7 +11,6 @@ module release_genre::release_genre_tests;
 use genre::genre::{Self as g, GenreRegistry, Genre};
 use musicos::release::{Self, Release, ReleaseAdminCap};
 use musicos::test_helpers;
-use musicos::track;
 use release_genre::release_genre as rg;
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs;
@@ -46,8 +45,8 @@ fun create_genres(scenario: &mut Scenario, names: vector<vector<u8>>): vector<ID
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let target_id = test_helpers::fake_id(ctx);
     let tracks = vector[
-        track::consent_for_testing(test_helpers::fake_id(ctx), target_id),
-        track::consent_for_testing(test_helpers::fake_id(ctx), target_id),
+        release::consent_for_testing(test_helpers::fake_id(ctx), target_id),
+        release::consent_for_testing(test_helpers::fake_id(ctx), target_id),
     ];
     release::new_for_testing(tracks, ctx)
 }

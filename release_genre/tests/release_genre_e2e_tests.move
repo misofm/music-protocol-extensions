@@ -12,7 +12,6 @@ module release_genre::release_genre_e2e_tests;
 use genre::genre::{Self as g, GenreRegistry, Genre};
 use musicos::release::{Self, Release, ReleaseAdminCap};
 use musicos::test_helpers;
-use musicos::track;
 use release_genre::release_genre as rg;
 use std::unit_test::{assert_eq, destroy};
 use sui::event;
@@ -39,8 +38,8 @@ fun publish_and_share_release(scenario: &mut Scenario): (ReleaseAdminCap, ID) {
     let ctx = scenario.ctx();
     let target_id = test_helpers::fake_id(ctx);
     let tracks = vector[
-        track::consent_for_testing(test_helpers::fake_id(ctx), target_id),
-        track::consent_for_testing(test_helpers::fake_id(ctx), target_id),
+        release::consent_for_testing(test_helpers::fake_id(ctx), target_id),
+        release::consent_for_testing(test_helpers::fake_id(ctx), target_id),
     ];
     let (rel, cap) = release::new_for_testing(tracks, ctx);
     let release_id = object::id(&rel);

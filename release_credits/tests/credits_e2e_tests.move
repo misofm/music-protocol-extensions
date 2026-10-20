@@ -11,7 +11,6 @@ module release_credits::credits_e2e_tests;
 
 use credit::credit;
 use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::track;
 use partyos::party::{Self, Party};
 use release_credits::release_credits as credits;
 use release_credits::release_party_role as rpr;
@@ -30,7 +29,7 @@ const STRANGER: address = @0x51;
 fun new_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let recording_id = object::id_from_address(@0xB0B);
     let placeholder_id = object::id_from_address(@0xC0C);
-    let consent = track::consent_for_testing(recording_id, placeholder_id);
+    let consent = release::consent_for_testing(recording_id, placeholder_id);
     release::new_for_testing(vector[consent], ctx)
 }
 

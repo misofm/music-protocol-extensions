@@ -19,11 +19,11 @@ deps = { MoveStdlib = "MoveStdlib" }
 [pinned.mainnet.composition_lyrics]
 source = { root = true }
 use_environment = "mainnet"
-manifest_digest = "43DF63B9665E9CCBA07207ECCAC2ECCB56E6368FF7874781844309AB8B3F8BBC"
+manifest_digest = "B82AF3648A41045136462F59F6B4A60F8FB4430F0A013AF0B9035C55B4D7E6F5"
 deps = { language_code = "language_code", musicos = "musicos", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.composition_share]
-source = { git = "https://github.com/misofm/musicos.git", subdir = "templates/composition_share", rev = "654ea7d08ef2ae4f7f6b088ed665d147566db768" }
+source = { git = "https://github.com/misofm/musicos.git", subdir = "templates/composition_share", rev = "f68189873e712ee931460cc00404db4f01391a24" }
 use_environment = "mainnet"
 manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5ECF6"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -35,13 +35,13 @@ manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5E
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.musicos]
-source = { git = "https://github.com/misofm/musicos.git", subdir = ".", rev = "654ea7d08ef2ae4f7f6b088ed665d147566db768" }
+source = { git = "https://github.com/misofm/musicos.git", subdir = ".", rev = "f68189873e712ee931460cc00404db4f01391a24" }
 use_environment = "mainnet"
 manifest_digest = "91F68115106C97A76F66FC9BFA19FD697B62A8AD6D96022E6EF4F2230CA6B0CB"
 deps = { composition_share = "composition_share", recording_share = "recording_share", share = "share", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.recording_share]
-source = { git = "https://github.com/misofm/musicos.git", subdir = "templates/recording_share", rev = "654ea7d08ef2ae4f7f6b088ed665d147566db768" }
+source = { git = "https://github.com/misofm/musicos.git", subdir = "templates/recording_share", rev = "f68189873e712ee931460cc00404db4f01391a24" }
 use_environment = "mainnet"
 manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5ECF6"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -67,11 +67,11 @@ deps = { MoveStdlib = "MoveStdlib" }
 [pinned.testnet.composition_lyrics]
 source = { root = true }
 use_environment = "testnet"
-manifest_digest = "D524EA29F0713A86F2EB1EB06645F6BCF92CDA8D13FA7CE9AE69D3D10A9E7827"
+manifest_digest = "ECD496004167FDB544B124B50F58EF9BC9967E42D0CF3183D60EB6DBD7076AC6"
 deps = { language_code = "language_code", musicos = "musicos", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.composition_share]
-source = { git = "https://github.com/misofm/musicos.git", subdir = "templates/composition_share", rev = "654ea7d08ef2ae4f7f6b088ed665d147566db768" }
+source = { git = "https://github.com/misofm/musicos.git", subdir = "templates/composition_share", rev = "f68189873e712ee931460cc00404db4f01391a24" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -83,13 +83,13 @@ manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.musicos]
-source = { git = "https://github.com/misofm/musicos.git", subdir = ".", rev = "654ea7d08ef2ae4f7f6b088ed665d147566db768" }
+source = { git = "https://github.com/misofm/musicos.git", subdir = ".", rev = "f68189873e712ee931460cc00404db4f01391a24" }
 use_environment = "testnet"
 manifest_digest = "8C97395BEB9E5103B173E039DF728F39508D738528CF4B210CADDF1633E1332D"
 deps = { composition_share = "composition_share", recording_share = "recording_share", share = "share", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.recording_share]
-source = { git = "https://github.com/misofm/musicos.git", subdir = "templates/recording_share", rev = "654ea7d08ef2ae4f7f6b088ed665d147566db768" }
+source = { git = "https://github.com/misofm/musicos.git", subdir = "templates/recording_share", rev = "f68189873e712ee931460cc00404db4f01391a24" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }

@@ -11,7 +11,6 @@ module release_title::release_title_tests;
 
 use musicos::release::{Self, Release, ReleaseAdminCap};
 use musicos::test_helpers;
-use musicos::track;
 use release_title::release_title as rt;
 use std::string::String;
 use std::unit_test::{assert_eq, destroy};
@@ -22,7 +21,7 @@ use sui::event;
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let rec_id = test_helpers::fake_id(ctx);
     let target_id = test_helpers::fake_id(ctx);
-    release::new_for_testing(vector[track::consent_for_testing(rec_id, target_id)], ctx)
+    release::new_for_testing(vector[release::consent_for_testing(rec_id, target_id)], ctx)
 }
 
 /// `n` bytes of the given ASCII byte.

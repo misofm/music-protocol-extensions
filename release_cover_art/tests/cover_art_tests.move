@@ -11,7 +11,6 @@ module release_cover_art::cover_art_tests;
 
 use cover_art::cover_art as cover;
 use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::track;
 use release_cover_art::cover_art_fixtures as fixtures;
 use release_cover_art::release_cover_art::{
     Self,
@@ -29,9 +28,9 @@ use sui::event::events_by_type;
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let rel_id = object::id_from_address(@0xB0B);
     let tracks = vector[
-        track::consent_for_testing(object::id_from_address(@0xA0), rel_id),
-        track::consent_for_testing(object::id_from_address(@0xA1), rel_id),
-        track::consent_for_testing(object::id_from_address(@0xA2), rel_id),
+        release::consent_for_testing(object::id_from_address(@0xA0), rel_id),
+        release::consent_for_testing(object::id_from_address(@0xA1), rel_id),
+        release::consent_for_testing(object::id_from_address(@0xA2), rel_id),
     ];
     release::new_for_testing(tracks, ctx)
 }
