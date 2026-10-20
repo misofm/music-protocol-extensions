@@ -63,7 +63,8 @@ Changes in this generation:
   optional animated blob ID: 65/97, 32, 73/105, and 40 BCS bytes (down from
   374, 310, 596, and 532 maximums). Dropped: admin cap address, track count,
   field-existence flags, the track's recording and composition ids (joinable
-  via core's `ReleaseTrackAssignedEvent` on `(release_id, position)`),
+  via the `recording_ids` index of core's `ReleasePublishedEvent`, where
+  position is the index),
   previous/current/album snapshots, encryption flags, sealed-DEK lengths and
   digests, and the nested `CoverSnapshot`. On-chain `blake2b256` hashing of
   sealed DEKs goes with them; a blob's confidentiality envelope is read from
