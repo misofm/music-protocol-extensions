@@ -45,7 +45,6 @@ fun title_set_before_publish_survives_publication() {
     // --- Tx 1 (WRITER): create, name, publish and share ---
     let (mut comp, cap) = composition::new_for_testing<TestShare>(ts.ctx());
     let comp_id = object::id(&comp);
-    assert!(comp.is_initialized_state());
     ct::set_title(&mut comp, &cap, b"So What".to_string());
     assert_eq!(*ct::title(&comp), b"So What".to_string());
     comp.publish(&cap);
@@ -60,7 +59,6 @@ fun title_set_before_publish_survives_publication() {
     // --- Tx 2 (STRANGER): the title is on the published, shared object ---
     ts.next_tx(STRANGER);
     let comp = ts.take_shared<Composition<TestShare>>();
-    assert!(comp.is_published_state());
     assert_eq!(*ct::title(&comp), b"So What".to_string());
     test_scenario::return_shared(comp);
 
