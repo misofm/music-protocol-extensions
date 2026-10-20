@@ -4,7 +4,7 @@
 /// End-to-end scenarios under `sui::test_scenario`: canonical vocabulary
 /// entries feed a release that is published and shared before any genre
 /// operation touches it via `take_shared` — the production shape. CREATOR
-/// mints genres, LABEL holds the release's admin cap, and STRANGER owns
+/// creates genres, LABEL holds the release's admin cap, and STRANGER owns
 /// nothing relevant and plays the wrong-cap adversary.
 #[test_only]
 module release_genre::release_genre_e2e_tests;

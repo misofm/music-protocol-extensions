@@ -14,7 +14,7 @@
 /// are unranked. The value is a bare `vector<ID>`, non-empty by construction:
 /// removing the last genre drops the field, so "the field exists" and "there
 /// is a primary" are the same fact. Every add takes `&Genre`, so only an id
-/// the shared vocabulary minted can enter the list. Reordering, including
+/// the shared vocabulary created can enter the list. Reordering, including
 /// changing the primary, is `clear_genres` followed by `add_genre` in the
 /// desired order within one programmable transaction block. Emptiness and
 /// the primary are computed client-side from `genres()`.

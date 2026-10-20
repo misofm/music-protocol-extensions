@@ -71,7 +71,7 @@ from the frozen `Genre` objects, or derived offline with
   and cap-gated `uid_mut`.
 - [`genre`](https://github.com/misofm/genre) at
   `90baae2919f7272f6d4bbb245b643f7dba5dc0ba` — the canonical shared genre
-  vocabulary; `add_genre` takes a real `&Genre`, so only minted ids enter the
+  vocabulary; `add_genre` takes a real `&Genre`, so only created ids enter the
   list.
 
 ## Publishing
