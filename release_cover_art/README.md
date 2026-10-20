@@ -12,7 +12,7 @@ package.
 
 - Key: `ExtensionKey()` — a unit struct local to this package.
 - Value: one `ReleaseCoverArt { cover: Option<CoverArt>, track_covers:
-  PerTrack<Option<CoverArt>> }`. The overrides are one slot per track,
+  ReleaseTrackData<Option<CoverArt>> }`. The overrides are one slot per track,
   aligned to the tracklist by construction and sized when the record is first
   attached; the tracklist is fixed at release creation, so they stay aligned.
   A track's effective cover resolves to its override if set, otherwise the
@@ -63,14 +63,14 @@ state transition.
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Release`, `ReleaseAdminCap`,
+  `f68189873e712ee931460cc00404db4f01391a24` — `Release`, `ReleaseAdminCap`,
   and `uid_mut`.
 - [`cover_art`](https://github.com/misofm/cover-art) at
   `948213d99f4e0a56064181d9318936beba95e138` — the `CoverArt` value type,
   which rejects encrypted blobs.
-- [`per_track`](https://github.com/misofm/per-track) at
-  `b165b5466e294381740ee84ec0b96302345542ff` — the `PerTrack<Data>` array
-  behind the overrides, pinned to the same musicos.
+- [`release_track_data`](https://github.com/misofm/release-track-data) at
+  `85fe925683257969e2862739d97edefcc2eee0a2` — the `ReleaseTrackData<Data>`
+  array behind the overrides, pinned to the same musicos.
 - [`ori`](https://github.com/unconfirmedlabs/ori) at
   `367ed5fe92a8b62da02c1116537cf08d111e0789`, test mode only — blob fixtures.
 

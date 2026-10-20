@@ -8,13 +8,13 @@
 /// Cover art is presentation, not objective recording data, so it lives on
 /// the release rather than the recording. A track's effective cover resolves
 /// to its override if set, else the album cover. The overrides are a
-/// `PerTrack<Option<CoverArt>>` — one slot per track, aligned to the
-/// release's tracklist by construction.
+/// `ReleaseTrackData<Option<CoverArt>>` — one slot per track, aligned to
+/// the release's tracklist by construction.
 module release_cover_art::release_cover_art;
 
 use cover_art::cover_art::CoverArt;
 use musicos::release::{Release, ReleaseAdminCap};
-use per_track::per_track::{Self, PerTrack};
+use release_track_data::release_track_data::{Self, ReleaseTrackData};
 use sui::dynamic_field as df;
 use sui::event::emit;
 
@@ -34,7 +34,7 @@ public struct ExtensionKey() has copy, drop, store;
 /// track with no override inherits the album cover.
 public struct ReleaseCoverArt has store {
     cover: Option<CoverArt>,
-    track_covers: PerTrack<Option<CoverArt>>,
+    track_covers: ReleaseTrackData<Option<CoverArt>>,
 }
 
 // === Events ===
@@ -171,7 +171,7 @@ fun borrow(uid: &UID): &ReleaseCoverArt {
 /// The cap gate runs before the existence check on every path.
 fun borrow_mut_or_init(self: &mut Release, cap: &ReleaseAdminCap): &mut ReleaseCoverArt {
     if (!df::exists(self.uid_mut(cap), ExtensionKey())) {
-        let track_covers = per_track::filled(self, option::none<CoverArt>());
+        let track_covers = release_track_data::filled(self, option::none<CoverArt>());
         df::add(
             self.uid_mut(cap),
             ExtensionKey(),
