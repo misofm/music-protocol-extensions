@@ -170,15 +170,12 @@ fun borrow(uid: &UID): &ReleaseCoverArt {
 /// tracklist is fixed at release creation, so the overrides stay aligned.
 /// The cap gate runs before the existence check on every path.
 fun borrow_mut_or_init(self: &mut Release, cap: &ReleaseAdminCap): &mut ReleaseCoverArt {
-    if (!df::exists(self.uid_mut(cap), ExtensionKey())) {
-        let track_covers = release_track_data::filled(self, option::none<CoverArt>());
-        df::add(
-            self.uid_mut(cap),
-            ExtensionKey(),
-            ReleaseCoverArt { cover: option::none(), track_covers },
-        );
-    };
-    df::borrow_mut(self.uid_mut(cap), ExtensionKey())
+    let uid = self.uid_mut(cap);
+    if (df::exists(uid, ExtensionKey())) return df::borrow_mut(uid, ExtensionKey());
+    let track_covers = release_track_data::filled(self, option::none<CoverArt>());
+    let uid = self.uid_mut(cap);
+    df::add(uid, ExtensionKey(), ReleaseCoverArt { cover: option::none(), track_covers });
+    df::borrow_mut(uid, ExtensionKey())
 }
 
 // === Test Functions ===
