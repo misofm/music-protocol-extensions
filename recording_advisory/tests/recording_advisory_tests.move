@@ -18,7 +18,6 @@ use recording_advisory::recording_advisory::{
 
 public struct TestShare() has drop;
 
-/// Only a `Recording` is needed, so a bare id stands in for its composition.
 fun new_rec(
     ctx: &mut TxContext,
 ): (Recording<TestShare>, RecordingAdminCap<TestShare>) {
@@ -128,7 +127,6 @@ fun absence_is_not_not_explicit() {
     destroy(cap);
 }
 
-/// Every transition writes and emits; the new value is a one-byte variant index.
 #[test]
 fun set_events_carry_the_recording_and_the_new_value() {
     let ctx = &mut tx_context::dummy();

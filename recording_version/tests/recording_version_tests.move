@@ -19,7 +19,6 @@ use recording_version::recording_version::{
 
 public struct TestShare() has drop;
 
-/// Only a `Recording` is needed, so a bare id stands in for its composition.
 fun new_rec(
     ctx: &mut TxContext,
 ): (Recording<TestShare>, RecordingAdminCap<TestShare>) {
@@ -80,7 +79,6 @@ fun equal_set_neither_writes_nor_emits() {
     assert_eq!(*rv::version(&rec), b"Live".to_string());
     assert_eq!(events_by_type<RecordingVersionSetEvent>().length(), 1);
 
-    // Case and whitespace are content: a near-equal value is a real change.
     rv::set_version(&mut rec, &cap, b"live".to_string());
     assert_eq!(events_by_type<RecordingVersionSetEvent>().length(), 2);
 
@@ -106,8 +104,6 @@ fun clear_when_absent_is_silent() {
     destroy(cap);
 }
 
-/// The set event is the recording id plus the BCS string: one length
-/// byte below 128 bytes, two at the 300-byte maximum.
 #[test]
 fun set_event_carries_the_recording_and_the_new_value() {
     let ctx = &mut tx_context::dummy();
@@ -121,7 +117,6 @@ fun set_event_carries_the_recording_and_the_new_value() {
     assert_eq!(version, b"Live".to_string());
     assert_eq!(to_bytes(&events[0]).length(), 32 + 1 + 4);
 
-    // Multi-byte UTF-8 is measured in bytes, in storage and on the wire.
     rv::set_version(&mut rec, &cap, b"Acoustique \xc3\xa0 Paris".to_string());
     let events = events_by_type<RecordingVersionSetEvent>();
     assert_eq!(events.length(), 2);
@@ -269,8 +264,6 @@ fun version_over_the_maximum_aborts() {
     destroy(cap);
 }
 
-/// An over-long replacement is rejected before any stored-state check, so the
-/// existing value survives an aborted set.
 #[test, expected_failure(abort_code = rv::EVersionTooLong)]
 fun invalid_replacement_aborts_without_touching_the_stored_value() {
     let ctx = &mut tx_context::dummy();

@@ -98,7 +98,7 @@ fun reading_after_clear_aborts_for_any_reader() {
 
     ts.next_tx(STRANGER);
     let rec = ts.take_shared<Recording<TestShare>>();
-    let _ = rv::version(&rec); // aborts: ENoVersion
+    let _ = rv::version(&rec);
 
     ts::return_shared(rec);
     destroy(rec_cap);

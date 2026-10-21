@@ -21,13 +21,10 @@ use release_cover_art::release_cover_art::{
     ReleaseTrackCoverArtClearedEvent,
 };
 
-// READER owns nothing; STRANGER holds a different release's admin cap.
 const ADMIN: address = @0xAD;
 const READER: address = @0xFA;
 const STRANGER: address = @0x51;
 
-// `release::new_for_testing` retargets every track at the release it constructs, so the
-// placeholder id is arbitrary.
 fun mk_tracks(): vector<ReleaseConsent> {
     let placeholder = object::id_from_address(@0xB0B);
     vector[
@@ -39,7 +36,7 @@ fun mk_tracks(): vector<ReleaseConsent> {
 
 fun setup_published_release(ts: &mut Scenario): ReleaseAdminCap {
     let (rel, rel_cap) = release::new_for_testing(mk_tracks(), ts.ctx());
-    rel.publish(&rel_cap); // shares the release
+    rel.publish(&rel_cap);
     rel_cap
 }
 
@@ -166,8 +163,6 @@ fun set_cover_with_strangers_cap_aborts() {
     abort
 }
 
-// The cap gate precedes the attachment check: a stranger's cap aborts even
-// when nothing is attached, where the admin's own cap would silently no-op.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun clear_cover_with_strangers_cap_aborts_when_unattached() {
     let mut ts = ts::begin(ADMIN);

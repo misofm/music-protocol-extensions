@@ -98,8 +98,6 @@ fun wrong_cap_is_rejected_on_set() {
     abort
 }
 
-/// Clear authorizes before checking existence, so a wrong cap aborts even
-/// when there is nothing attached to remove.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun wrong_cap_is_rejected_on_clear_of_nothing() {
     let mut ts = test_scenario::begin(LABEL);

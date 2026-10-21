@@ -22,7 +22,8 @@ cap-gated `release::uid_mut`; views are permissionless.
 | `has_description(release): bool` | Whether a description is attached | — |
 | `description(release): &String` | The description | `ENoDescription` (0) when absent |
 
-The 8192-byte bound is on bytes, not characters. Long-form writing belongs in
+The 8192-byte bound is on bytes, not characters (roughly 1,300 words of
+English) and exists for storage hygiene only. Long-form writing belongs in
 a Walrus blob referenced by an extension.
 
 ## Events

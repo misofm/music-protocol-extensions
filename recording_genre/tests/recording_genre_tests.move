@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// A scenario is used only because `genre::Genre` objects are frozen and must be taken back via
-/// `take_immutable_by_id`.
 #[test_only]
 module recording_genre::recording_genre_tests;
 
@@ -28,7 +26,6 @@ public struct TestShare() has drop;
 
 public struct UnrelatedKey() has copy, drop, store;
 
-/// Only a `Recording` is needed, so a bare id stands in for its composition.
 fun new_rec(
     ctx: &mut TxContext,
 ): (Recording<TestShare>, RecordingAdminCap<TestShare>) {
@@ -178,7 +175,6 @@ fun clear_when_absent_is_silent() {
     assert!(!rg::has_genres(&rec));
     assert_eq!(events_by_type<RecordingGenresClearedEvent>().length(), 0);
 
-    // Silent after the field was dropped by removal, and after a real clear.
     rg::add_genre(&mut rec, &cap, &genres[0]);
     rg::remove_genre(&mut rec, &cap, ids[0]);
     rg::clear_genres(&mut rec, &cap);
@@ -330,7 +326,7 @@ fun add_genre_at_capacity_aborts() {
 
     6u64.do!(|i| rg::add_genre(&mut rec, &cap, &genres[i]));
     assert_eq!(rg::genres(&rec).length(), 6);
-    rg::add_genre(&mut rec, &cap, &genres[6]); // the 7th
+    rg::add_genre(&mut rec, &cap, &genres[6]);
 
     return_genres(genres);
     destroy(rec);
@@ -338,8 +334,6 @@ fun add_genre_at_capacity_aborts() {
     scenario.end();
 }
 
-/// The duplicate check precedes the capacity check: re-adding an existing
-/// genre to a full list aborts with `EDuplicateGenre`, not `EMaxGenresExceeded`.
 #[test, expected_failure(abort_code = rg::EDuplicateGenre)]
 fun duplicate_at_capacity_keeps_duplicate_guard_first() {
     let mut scenario = ts::begin(CREATOR);
@@ -369,7 +363,7 @@ fun remove_genre_not_found_aborts_when_field_exists() {
     let (mut rec, cap) = new_rec(scenario.ctx());
 
     rg::add_genre(&mut rec, &cap, &genres[0]);
-    rg::remove_genre(&mut rec, &cap, ids[1]); // never added
+    rg::remove_genre(&mut rec, &cap, ids[1]);
 
     return_genres(genres);
     destroy(rec);

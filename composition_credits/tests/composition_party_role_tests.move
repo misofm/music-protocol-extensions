@@ -10,8 +10,6 @@ use std::unit_test::assert_eq;
 use sui::bcs::to_bytes;
 use composition_credits::composition_party_role as cpr;
 
-/// The BCS variant index is how a consumer reads a role from an event or the
-/// stored credit, so the declaration order is a wire contract.
 #[test]
 fun bcs_variant_indices_are_stable() {
     assert_eq!(to_bytes(&cpr::new_adapter_role()), vector[0]);

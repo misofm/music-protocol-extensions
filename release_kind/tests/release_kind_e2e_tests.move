@@ -1,7 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Create-and-publish is atomic in core, so the release is shared from its first transaction.
 #[test_only]
 module release_kind::release_kind_e2e_tests;
 
@@ -94,8 +93,6 @@ fun wrong_cap_is_rejected_on_set() {
     abort
 }
 
-/// Clear authorizes before checking existence, so a wrong cap aborts even
-/// when there is nothing attached to remove.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun wrong_cap_is_rejected_on_clear_of_nothing() {
     let mut ts = test_scenario::begin(ADMIN);

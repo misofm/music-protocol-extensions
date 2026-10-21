@@ -63,7 +63,6 @@ fun admin_classifies_a_published_shared_recording_and_a_stranger_reads_it() {
     let mut rec = ts.take_shared<Recording<TestShare>>();
     assert!(!rg::has_genres(&rec));
 
-    // Added in the desired final order — b is meant to be primary.
     rg::add_genre(&mut rec, &rec_cap, &genre_b);
     rg::add_genre(&mut rec, &rec_cap, &genre_a);
     assert_eq!(*rg::genres(&rec), vector[b, a]);
@@ -128,7 +127,7 @@ fun duplicate_genre_aborts_against_a_shared_recording() {
     let genre_a = ts.take_immutable_by_id<Genre>(a);
     let mut rec = ts.take_shared<Recording<TestShare>>();
     rg::add_genre(&mut rec, &rec_cap, &genre_a);
-    rg::add_genre(&mut rec, &rec_cap, &genre_a); // duplicate
+    rg::add_genre(&mut rec, &rec_cap, &genre_a);
 
     ts::return_shared(rec);
     ts::return_immutable(genre_a);
@@ -148,7 +147,7 @@ fun removing_an_absent_genre_aborts_against_a_shared_recording() {
 
     ts.next_tx(ADMIN);
     let mut rec = ts.take_shared<Recording<TestShare>>();
-    rg::remove_genre(&mut rec, &rec_cap, a); // never added
+    rg::remove_genre(&mut rec, &rec_cap, a);
 
     ts::return_shared(rec);
     destroy(rec_cap);

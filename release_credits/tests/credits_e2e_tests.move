@@ -15,8 +15,6 @@ use miso_party::party::{Self, Party};
 use release_credits::release_credits as credits;
 use release_credits::release_party_role::{Self as rpr, ReleasePartyRole};
 
-// LABEL holds the release's admin cap; STRANGER holds a legitimate admin cap for an unrelated
-// release and tries to reuse it here.
 const LABEL: address = @0xAD;
 const ARTIST: address = @0xA1;
 const FEATURED_ARTIST: address = @0xA2;
@@ -117,7 +115,6 @@ fun credits_lifecycle_against_a_published_shared_release() {
     ts.end();
 }
 
-/// `release::uid_mut`'s authorization check is the real enforcement point.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun add_credit_aborts_for_a_cap_from_a_different_release() {
     let mut ts = test_scenario::begin(LABEL);
@@ -134,15 +131,14 @@ fun add_credit_aborts_for_a_cap_from_a_different_release() {
     let mut rel = ts.take_shared<Release>();
     credits::add_credit(
         &mut rel,
-        &stranger_cap, // wrong cap: authorizes `stranger_rel`, not the shared `rel`
+        &stranger_cap,
         &party,
         primary(b"Eve"),
-    ); // aborts: release::EUnauthorized
+    );
 
     abort
 }
 
-/// `remove_credit` authorizes before touching an attached record.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun remove_credit_aborts_for_a_cap_from_a_different_release() {
     let mut ts = test_scenario::begin(LABEL);

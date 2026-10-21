@@ -1,10 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Product-level genre claim. A recording's own genre lives in `recording_genre`; clients resolve
-/// a track's genre from the recording first and fall back to this release's primary. Index 0 is
-/// the primary. Taking `&Genre` admits only real vocabulary entries. The field exists exactly
-/// while a genre is attached; reorder with `clear_genres` then `add_genre` in one PTB.
 module release_genre::release_genre;
 
 // === Imports ===
@@ -23,7 +19,6 @@ const EGenreNotFound: u64 = 3;
 
 // === Constants ===
 
-/// Maximum genres on one release: the primary plus up to five more.
 const MAX_GENRES: u64 = 6;
 
 // === Structs ===
@@ -37,7 +32,6 @@ public struct ReleaseGenreAddedEvent has copy, drop {
     genre_id: ID,
 }
 
-/// Removing the last genre emits only this event, not `ReleaseGenresClearedEvent`.
 public struct ReleaseGenreRemovedEvent has copy, drop {
     release_id: ID,
     genre_id: ID,
@@ -64,7 +58,6 @@ public fun add_genre(release: &mut Release, cap: &ReleaseAdminCap, genre: &Genre
     emit(ReleaseGenreAddedEvent { release_id, genre_id });
 }
 
-/// Removing the primary promotes the next genre.
 public fun remove_genre(release: &mut Release, cap: &ReleaseAdminCap, genre_id: ID) {
     let release_id = object::id(release);
     let uid = release.uid_mut(cap);
@@ -79,7 +72,6 @@ public fun remove_genre(release: &mut Release, cap: &ReleaseAdminCap, genre_id: 
     emit(ReleaseGenreRemovedEvent { release_id, genre_id });
 }
 
-/// An absent list is a no-op, but the cap is still checked.
 public fun clear_genres(release: &mut Release, cap: &ReleaseAdminCap) {
     let release_id = object::id(release);
     let uid = release.uid_mut(cap);

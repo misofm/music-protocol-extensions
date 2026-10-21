@@ -34,7 +34,7 @@ cap check. Views are permissionless.
 | `set_track_cover(rel, cap, i, art)` | Sets or replaces track `i`'s override, attaching the record on first use; equal set is silent | `ETrackIndexOutOfBounds` (1) |
 | `clear_track_cover(rel, cap, i)` | Removes track `i`'s override so it falls back to the album cover; detaches the record when nothing remains; silent when absent | `ETrackIndexOutOfBounds` (1) |
 | `has_cover_art(rel)` | Whether an album cover or any override is set | none |
-| `cover(rel)` | The album cover, `&Option<CoverArt>` | `ENoCoverArt` (0) |
+| `cover(rel)` | The album cover, `&Option<CoverArt>`; none when only overrides are set | `ENoCoverArt` (0) |
 | `track_cover(rel, i)` | Track `i`'s effective cover | `ETrackIndexOutOfBounds` (1), `ENoCoverArt` (0) |
 | `track_cover_override(rel, i)` | Track `i`'s raw override slot, `&Option<CoverArt>` | `ETrackIndexOutOfBounds` (1), `ENoCoverArt` (0) |
 

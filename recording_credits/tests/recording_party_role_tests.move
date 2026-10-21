@@ -21,7 +21,6 @@ fun lead(): Option<rpr::RecordingPartyRoleLevel> {
     option::some(rpr::new_lead_role_level())
 }
 
-/// The BCS variant index is the declaration order (a wire contract) and the level reads back.
 #[test]
 fun leveled_roles_encode_their_index_and_report_their_level() {
     let roles = vector[
@@ -54,11 +53,10 @@ fun leveled_roles_encode_their_index_and_report_their_level() {
         rpr::new_speaker_role(lead()),
         rpr::new_vocalist_role(lead()),
     ];
-    // Declaration indices, skipping the clerical 2, 9 and instrumentalist 14.
     let indices = vector[0, 1, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20,
         21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
     let encoded = roles.map_ref!(|role| to_bytes(role));
-    let expected = indices.map!(|i| vector[i, 1, 6]); // Some(Lead) = [1, 6]
+    let expected = indices.map!(|i| vector[i, 1, 6]);
     assert_eq!(encoded, expected);
     let levels = roles.map_ref!(|role| role.level());
     assert_eq!(levels, vector::tabulate!(roles.length(), |_| lead()));

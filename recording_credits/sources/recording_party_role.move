@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Seniority is a separate axis: "Additional Producer" is `Producer` plus `Additional`.
-/// Consumers read a role by its BCS variant index, so declaration order is part of the format.
 module recording_credits::recording_party_role;
 
 // === Imports ===
@@ -20,44 +18,31 @@ const MAX_INSTRUMENT_LENGTH: u64 = 100;
 
 // === Enums ===
 
-/// `ArtistsAndRepertoire` and `Copyist` are clerical roles, so they carry no level.
 public enum RecordingPartyRole has copy, drop, store {
-    /// Performed voice acting or spoken-word performance.
     Actor(Option<RecordingPartyRoleLevel>),
     Arranger(Option<RecordingPartyRoleLevel>),
-    /// A&R representative who discovered or developed the artist.
     ArtistsAndRepertoire,
     BandLeader(Option<RecordingPartyRoleLevel>),
     Choir(Option<RecordingPartyRoleLevel>),
     ChoirMaster(Option<RecordingPartyRoleLevel>),
-    /// Lead performer of an orchestra/ensemble (e.g. first-chair).
     ConcertMaster(Option<RecordingPartyRoleLevel>),
     Conductor(Option<RecordingPartyRoleLevel>),
-    /// Hired and managed session musicians.
     Contractor(Option<RecordingPartyRoleLevel>),
-    /// Prepared written music parts for performers.
     Copyist,
     DJ(Option<RecordingPartyRoleLevel>),
-    /// Edited and compiled audio takes.
     Editor(Option<RecordingPartyRoleLevel>),
-    /// General engineering contribution not covered by a specific engineer role.
     Engineer(Option<RecordingPartyRoleLevel>),
     Ensemble(Option<RecordingPartyRoleLevel>),
-    /// Carries the instrument name.
     Instrumentalist(String, Option<RecordingPartyRoleLevel>),
     MasteringEngineer(Option<RecordingPartyRoleLevel>),
     MixingEngineer(Option<RecordingPartyRoleLevel>),
     MusicDirector(Option<RecordingPartyRoleLevel>),
-    /// Oversaw music selection and licensing.
     MusicSupervisor(Option<RecordingPartyRoleLevel>),
     Narrator(Option<RecordingPartyRoleLevel>),
     Orchestra(Option<RecordingPartyRoleLevel>),
-    /// Created orchestral arrangements.
     Orchestrator(Option<RecordingPartyRoleLevel>),
-    /// Performed on the recording (general performer).
     Performer(Option<RecordingPartyRoleLevel>),
     Producer(Option<RecordingPartyRoleLevel>),
-    /// Programmed beats, synths, or electronic elements.
     Programmer(Option<RecordingPartyRoleLevel>),
     RecordingEngineer(Option<RecordingPartyRoleLevel>),
     RemixingEngineer(Option<RecordingPartyRoleLevel>),
@@ -71,7 +56,6 @@ public enum RecordingPartyRoleLevel has copy, drop, store {
     Additional,
     Assistant,
     Associate,
-    /// Backing/support role (e.g., backing vocals).
     Backing,
     Executive,
     Featured,
@@ -138,7 +122,6 @@ public fun new_ensemble_role(level: Option<RecordingPartyRoleLevel>): RecordingP
     RecordingPartyRole::Ensemble(level)
 }
 
-/// The instrument name freezes into credits, so it is validated here.
 public fun new_instrumentalist_role(
     instrument: String,
     level: Option<RecordingPartyRoleLevel>,

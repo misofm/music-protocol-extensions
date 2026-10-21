@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// What a release calls itself ("Album", "EP", "Mixtape", "Split"). A free string rather than an
-/// enum: nothing depends on two releases agreeing about what an EP is. Stored verbatim, so "EP"
-/// and "ep" are distinct; clients normalise if they group.
 module release_kind::release_kind;
 
 // === Imports ===
@@ -21,8 +18,6 @@ const EKindTooLong: u64 = 2;
 
 // === Constants ===
 
-/// In bytes. Fits the long forms ("Extended Play", "Album (Deluxe Edition)"); anything longer is
-/// a title, not a kind.
 const MAX_KIND_LENGTH: u64 = 32;
 
 // === Structs ===
@@ -42,7 +37,6 @@ public struct ReleaseKindClearedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Setting the value already stored neither writes nor emits.
 public fun set_kind(release: &mut Release, cap: &ReleaseAdminCap, kind: String) {
     assert!(!kind.is_empty(), EEmptyKind);
     assert!(kind.length() <= MAX_KIND_LENGTH, EKindTooLong);
@@ -59,7 +53,6 @@ public fun set_kind(release: &mut Release, cap: &ReleaseAdminCap, kind: String) 
     emit(ReleaseKindSetEvent { release_id, kind });
 }
 
-/// An absent kind is a no-op, but the cap is still checked.
 public fun clear_kind(release: &mut Release, cap: &ReleaseAdminCap) {
     let release_id = object::id(release);
     let uid = release.uid_mut(cap);

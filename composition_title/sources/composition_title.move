@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Stored exactly as given; it can be set before publication and corrected after, and nothing
-/// on-chain reads it. An equal set or a clear of nothing writes and emits nothing, so every event
-/// is a transition.
 module composition_title::composition_title;
 
 // === Imports ===
@@ -16,13 +13,11 @@ use miso_music::composition::{Composition, CompositionAdminCap};
 // === Errors ===
 
 const ENoTitle: u64 = 0;
-/// Naming nothing is done by not attaching.
 const EEmptyTitle: u64 = 1;
 const ETitleTooLong: u64 = 2;
 
 // === Constants ===
 
-/// Maximum length of a title, in bytes; a multi-byte title fits fewer characters.
 const MAX_TITLE_LENGTH: u64 = 300;
 
 // === Structs ===
@@ -63,7 +58,6 @@ public fun set_title<CompositionShare>(
     emit(CompositionTitleSetEvent { composition_id, title });
 }
 
-/// A clear of nothing still requires the cap.
 public fun clear_title<CompositionShare>(
     composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,

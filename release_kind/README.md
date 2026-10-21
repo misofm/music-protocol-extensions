@@ -23,7 +23,8 @@ cap-gated `release::uid_mut`; views are permissionless.
 | `has_kind(release): bool` | Whether a kind is attached | — |
 | `kind(release): &String` | The kind | `ENoKind` (0) when absent |
 
-The 32-byte bound is on bytes, not characters.
+The 32-byte bound is on bytes, not characters; it fits long forms such as
+"Album (Deluxe Edition)", and anything longer is a title, not a kind.
 
 ## Events
 

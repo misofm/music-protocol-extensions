@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// The record exists exactly while at least one credit is held. Credits are display metadata
-/// and are not read by the economics. The primary and featured sets are disjoint subsets of the
-/// credited parties: removing a credit ends any designation the party held.
 module recording_credits::recording_credits;
 
 // === Imports ===
@@ -42,7 +39,6 @@ const MAX_FEATURED_ARTISTS: u64 = 50;
 // === Structs ===
 
 public struct RecordingCredits has store {
-    /// Keyed by party ID, in insertion order.
     credits: VecMap<ID, Credit<RecordingPartyRole>>,
     primary_artist_ids: VecSet<ID>,
     featured_artist_ids: VecSet<ID>,
@@ -69,7 +65,6 @@ public struct RecordingPrimaryArtistAddedEvent has copy, drop {
     party_id: ID,
 }
 
-/// Also emitted when the party's credit is removed, before `RecordingCreditRemovedEvent`.
 public struct RecordingPrimaryArtistRemovedEvent has copy, drop {
     recording_id: ID,
     party_id: ID,
@@ -80,7 +75,6 @@ public struct RecordingFeaturedArtistAddedEvent has copy, drop {
     party_id: ID,
 }
 
-/// Also emitted when the party's credit is removed, before `RecordingCreditRemovedEvent`.
 public struct RecordingFeaturedArtistRemovedEvent has copy, drop {
     recording_id: ID,
     party_id: ID,
@@ -88,7 +82,6 @@ public struct RecordingFeaturedArtistRemovedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
 public fun add_credit<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -236,7 +229,6 @@ public fun featured_artist_ids<RecordingShare>(
     &borrow(recording.uid()).featured_artist_ids
 }
 
-/// False, not an abort, when no record is attached.
 public fun is_primary_artist<RecordingShare>(
     recording: &Recording<RecordingShare>,
     party_id: ID,
@@ -244,7 +236,6 @@ public fun is_primary_artist<RecordingShare>(
     has_credits(recording) && borrow(recording.uid()).primary_artist_ids.contains(&party_id)
 }
 
-/// False, not an abort, when no record is attached.
 public fun is_featured_artist<RecordingShare>(
     recording: &Recording<RecordingShare>,
     party_id: ID,

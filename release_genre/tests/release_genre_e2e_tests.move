@@ -133,8 +133,6 @@ fun wrong_cap_is_rejected_on_add() {
     abort
 }
 
-/// The cap is checked before the presence check, so a wrong cap is rejected
-/// even when the release has no genres.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun wrong_cap_is_rejected_on_remove_of_nothing() {
     let mut scenario = ts::begin(LABEL);
@@ -172,7 +170,6 @@ fun wrong_cap_is_rejected_on_remove_of_present_genre() {
     abort
 }
 
-/// Clear authorizes even when there is no list to remove.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun wrong_cap_is_rejected_on_clear_of_nothing() {
     let mut scenario = ts::begin(LABEL);

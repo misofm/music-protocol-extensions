@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Languages sung or spoken, the first conventionally the predominant. An attached empty vector
-/// is an explicit instrumental claim, distinct from attaching nothing. `LanguageCode` is a valid
-/// ISO 639-1 code by construction, so only the count and repeats are checked.
 module recording_language::recording_language;
 
 // === Imports ===
@@ -31,7 +28,6 @@ public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
-/// An empty `languages` means instrumental.
 public struct RecordingLanguagesSetEvent has copy, drop {
     recording_id: ID,
     languages: vector<String>,
@@ -43,7 +39,6 @@ public struct RecordingLanguagesClearedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Setting the list already held neither writes nor emits.
 public fun set_languages<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -65,7 +60,6 @@ public fun set_languages<RecordingShare>(
     });
 }
 
-/// Silent when nothing is attached.
 public fun clear_languages<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,

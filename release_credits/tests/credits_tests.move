@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Every write that would leave the record unchanged aborts, so the no-op rule is covered by the
-/// abort tests.
 #[test_only]
 module release_credits::credits_tests;
 
@@ -72,8 +70,6 @@ fun add_credit_rejects_duplicate_party() {
     abort
 }
 
-/// Re-adding the exact credit already stored is not a silent no-op: the
-/// duplicate-party guard fires before any comparison of values.
 #[test, expected_failure(abort_code = credits::EDuplicateParty)]
 fun add_credit_rejects_identical_credit() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -96,7 +92,7 @@ fun add_credit_rejects_multiple_roles() {
         &p,
         credit::new(b"Alice".to_string(), vector[
             rpr::new_primary_role(),
-            rpr::new_featured_role(), // 2 != CREDIT_ROLE_COUNT (1)
+            rpr::new_featured_role(),
         ]),
     );
     abort
@@ -132,7 +128,6 @@ fun add_credit_capacity_precedes_duplicate_party() {
         destroy(party);
         destroy(party_cap);
     });
-    // The duplicate is checked only after the capacity guard.
     credits::add_credit(&mut rel, &cap, &first_party, featured(b"Changed"));
     abort
 }
@@ -208,7 +203,6 @@ fun add_credit_emits_the_full_record() {
     assert_eq!(event_party, object::id(&p2));
     assert_eq!(event_name, b"Bob".to_string());
     assert_eq!(event_role, rpr::new_featured_role());
-    // Two ids, the display name (1 + 5), and one unit-variant role.
     assert_eq!(to_bytes(&events[0]).length(), 32 + 32 + 1 + 5 + 1);
 
     destroy(rel); destroy(cap); destroy(p1); destroy(p1c); destroy(p2); destroy(p2c);
@@ -237,7 +231,6 @@ fun remove_credit_emits_the_removed_record() {
     ts.end();
 }
 
-/// Declaration order is a wire contract: consumers read roles by BCS variant index.
 #[test]
 fun role_bcs_variant_indices_are_stable() {
     assert_eq!(to_bytes(&rpr::new_primary_role()), vector[0]);
@@ -246,8 +239,6 @@ fun role_bcs_variant_indices_are_stable() {
     assert_eq!(events_by_type<credits::ReleaseCreditRemovedEvent>().length(), 0);
 }
 
-/// The event carries the credit's billing display name, which is not the
-/// party's own name, and its role.
 #[test]
 fun event_carries_billing_display_name_and_role() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -280,8 +271,6 @@ fun remove_shifts_stored_order_and_readd_appends() {
     credits::add_credit(&mut rel, &cap, &p3, primary(b"Three"));
     credits::remove_credit(&mut rel, &cap, object::id(&p2));
 
-    // The survivors shift left; the event names only the removed party, and
-    // an indexer replaying the ordered add/remove stream reaches this order.
     assert_eq!(credits::credits(&rel).length(), 2);
     assert_eq!(credits::credits(&rel).get_idx(&object::id(&p1)), 0);
     assert_eq!(credits::credits(&rel).get_idx(&object::id(&p3)), 1);
@@ -330,8 +319,6 @@ fun final_remove_detaches_record_and_readd_recreates_it() {
     ts.end();
 }
 
-/// The event size tracks the display name, including the ULEB128 length
-/// prefix growing to two bytes at 128.
 #[test]
 fun event_bcs_size_tracks_display_name_length() {
     let mut ts = test_scenario::begin(ARTIST);

@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Core `Release` carries no title, so it lives here as a mutable extension. Stored verbatim; the
-/// only checks are structural, and an empty string is rejected because absence already means
-/// "no title".
 module release_title::release_title;
 
 // === Imports ===
@@ -21,7 +18,6 @@ const ETitleTooLong: u64 = 2;
 
 // === Constants ===
 
-/// In bytes, not characters.
 const MAX_TITLE_LENGTH: u64 = 300;
 
 // === Structs ===
@@ -41,7 +37,6 @@ public struct ReleaseTitleClearedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Setting the value already stored neither writes nor emits.
 public fun set_title(release: &mut Release, cap: &ReleaseAdminCap, title: String) {
     assert!(!title.is_empty(), EEmptyTitle);
     assert!(title.length() <= MAX_TITLE_LENGTH, ETitleTooLong);
@@ -58,7 +53,6 @@ public fun set_title(release: &mut Release, cap: &ReleaseAdminCap, title: String
     emit(ReleaseTitleSetEvent { release_id, title });
 }
 
-/// An absent title is a no-op, but the cap is still checked.
 public fun clear_title(release: &mut Release, cap: &ReleaseAdminCap) {
     let release_id = object::id(release);
     let uid = release.uid_mut(cap);

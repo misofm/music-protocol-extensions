@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Lyrics per ISO 639-1 language. Payload convention: UTF-8 text compressed into one
-/// self-contained Zstandard frame without an external dictionary. Move stores opaque bytes and
-/// does not decode, validate, or attest to the lyrics or their language.
 module composition_lyrics::composition_lyrics;
 
 // === Imports ===
@@ -22,7 +19,6 @@ const ELyricsTooLong: u64 = 2;
 
 // === Constants ===
 
-/// Storage bound per language, in compressed bytes. Not a decoded text limit.
 const MAX_LYRICS_LENGTH: u64 = 32768;
 
 // === Structs ===
@@ -44,7 +40,6 @@ public struct CompositionLyricsClearedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Setting the bytes already stored neither writes nor emits.
 public fun set_lyrics<CompositionShare>(
     composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
@@ -67,7 +62,6 @@ public fun set_lyrics<CompositionShare>(
     emit(CompositionLyricsSetEvent { composition_id, language: language.code(), lyrics });
 }
 
-/// An absent entry is a no-op, but the cap is still checked.
 public fun clear_lyrics<CompositionShare>(
     composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,

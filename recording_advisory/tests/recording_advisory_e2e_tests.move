@@ -98,7 +98,7 @@ fun reading_after_clear_aborts_for_any_reader() {
 
     ts.next_tx(STRANGER);
     let rec = ts.take_shared<Recording<TestShare>>();
-    let _ = adv::advisory(&rec); // aborts: ENoAdvisory
+    let _ = adv::advisory(&rec);
 
     ts::return_shared(rec);
     destroy(rec_cap);

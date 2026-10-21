@@ -91,8 +91,6 @@ fun full_credit_lifecycle_on_published_shared_recording() {
     assert_eq!(credits::credits(&rec)[&lead_id], lead_credit);
     assert_eq!(credits::credits(&rec)[&guest_id], guest_credit);
 
-    // Assert in the emitting transaction: `next_tx` finalizes its effects, after which
-    // `events_by_type` no longer sees them.
     let primary_added = events_by_type<credits::RecordingPrimaryArtistAddedEvent>();
     assert_eq!(primary_added.length(), 1);
     let (event_object, event_party) =

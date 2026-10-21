@@ -111,7 +111,7 @@ fun reading_after_clear_aborts_for_any_reader() {
 
     ts.next_tx(STRANGER);
     let rec = ts.take_shared<Recording<TestShare>>();
-    let _ = rl::languages(&rec); // aborts: ENoLanguages
+    let _ = rl::languages(&rec);
 
     ts::return_shared(rec);
     destroy(rec_cap);

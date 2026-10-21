@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// A track's effective cover is its override if set, else the album cover. Overrides have one slot
-/// per track, aligned to the tracklist by construction. The record exists exactly while the album
-/// cover or at least one override is set.
 module release_cover_art::release_cover_art;
 
 // === Imports ===
@@ -30,14 +27,12 @@ public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
-/// The blob IDs are the value: cover art is always unencrypted.
 public struct ReleaseCoverArtSetEvent has copy, drop {
     release_id: ID,
     still_blob_id: u256,
     animated_blob_id: Option<u256>,
 }
 
-/// Overrides are unaffected.
 public struct ReleaseCoverArtClearedEvent has copy, drop {
     release_id: ID,
 }
@@ -49,7 +44,6 @@ public struct ReleaseTrackCoverArtSetEvent has copy, drop {
     animated_blob_id: Option<u256>,
 }
 
-/// The track falls back to the album cover.
 public struct ReleaseTrackCoverArtClearedEvent has copy, drop {
     release_id: ID,
     track_index: u64,
@@ -57,7 +51,6 @@ public struct ReleaseTrackCoverArtClearedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Setting the value already held neither writes nor emits.
 public fun set_cover(release: &mut Release, cap: &ReleaseAdminCap, art: CoverArt) {
     let release_id = object::id(release);
     let cover = &mut borrow_mut_or_init(release, cap).cover;
@@ -67,8 +60,6 @@ public fun set_cover(release: &mut Release, cap: &ReleaseAdminCap, art: CoverArt
     emit(ReleaseCoverArtSetEvent { release_id, still_blob_id, animated_blob_id });
 }
 
-/// Overrides are untouched. Silent when nothing is attached or the album cover is already
-/// absent.
 public fun clear_cover(release: &mut Release, cap: &ReleaseAdminCap) {
     let release_id = object::id(release);
     let uid = release.uid_mut(cap);
@@ -82,7 +73,6 @@ public fun clear_cover(release: &mut Release, cap: &ReleaseAdminCap) {
     emit(ReleaseCoverArtClearedEvent { release_id });
 }
 
-/// Setting the value already held neither writes nor emits.
 public fun set_track_cover(
     release: &mut Release,
     cap: &ReleaseAdminCap,
@@ -103,7 +93,6 @@ public fun set_track_cover(
     });
 }
 
-/// Silent when nothing is attached or the override is already absent.
 public fun clear_track_cover(release: &mut Release, cap: &ReleaseAdminCap, track_index: u64) {
     assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
     let release_id = object::id(release);
@@ -125,12 +114,10 @@ public fun has_cover_art(release: &Release): bool {
     df::exists(release.uid(), ExtensionKey())
 }
 
-/// None when only overrides are set. Aborts `ENoCoverArt` when no record is attached.
 public fun cover(release: &Release): &Option<CoverArt> {
     &borrow(release.uid()).cover
 }
 
-/// Aborts `ENoCoverArt` when no record is attached.
 public fun track_cover(release: &Release, track_index: u64): Option<CoverArt> {
     assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
     let record = borrow(release.uid());
@@ -138,7 +125,6 @@ public fun track_cover(release: &Release, track_index: u64): Option<CoverArt> {
     if (override.is_some()) *override else record.cover
 }
 
-/// None when the track inherits the album cover. Aborts `ENoCoverArt` when no record is attached.
 public fun track_cover_override(release: &Release, track_index: u64): &Option<CoverArt> {
     assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
     borrow(release.uid()).track_covers.borrow(track_index)
@@ -165,8 +151,6 @@ fun borrow(uid: &UID): &ReleaseCoverArt {
     df::borrow(uid, ExtensionKey())
 }
 
-/// The tracklist is fixed at release creation, so the overrides stay aligned. The cap gate runs
-/// before the existence check on every path.
 fun borrow_mut_or_init(release: &mut Release, cap: &ReleaseAdminCap): &mut ReleaseCoverArt {
     let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) return df::borrow_mut(uid, ExtensionKey());

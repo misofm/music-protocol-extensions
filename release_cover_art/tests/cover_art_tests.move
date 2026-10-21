@@ -20,7 +20,6 @@ use release_cover_art::release_cover_art::{
     ReleaseTrackCoverArtClearedEvent,
 };
 
-// Recording ids are synthetic: this package never inspects them.
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let rel_id = object::id_from_address(@0xB0B);
     let tracks = vector[
@@ -105,7 +104,6 @@ fun track_cover_override_resolves_over_album() {
     assert_eq!(release_cover_art::track_cover(&rel, 1), option::some(override));
     assert_eq!(release_cover_art::track_cover(&rel, 2), option::some(album));
 
-    // Replacing or clearing the album must preserve the independent override.
     release_cover_art::set_cover(&mut rel, &cap, replacement);
     assert_eq!(release_cover_art::track_cover(&rel, 0), option::some(replacement));
     assert_eq!(release_cover_art::track_cover(&rel, 1), option::some(override));
@@ -152,13 +150,11 @@ fun set_track_cover_rejects_max_index() {
 #[test, expected_failure(abort_code = release_cover_art::ETrackIndexOutOfBounds)]
 fun set_track_cover_rejects_out_of_bounds_index() {
     let ctx = &mut tx_context::dummy();
-    let (mut rel, cap) = mk_release(ctx); // 3 tracks → index 3 is invalid
+    let (mut rel, cap) = mk_release(ctx);
     release_cover_art::set_track_cover(&mut rel, &cap, 3, cover::new_for_testing());
     abort
 }
 
-// Exercised with nothing attached, so the view's bounds check must fire before the attachment
-// check.
 #[test, expected_failure(abort_code = release_cover_art::ETrackIndexOutOfBounds)]
 fun track_cover_view_rejects_out_of_bounds_index() {
     let ctx = &mut tx_context::dummy();
@@ -167,9 +163,6 @@ fun track_cover_view_rejects_out_of_bounds_index() {
     abort
 }
 
-// Argument validation precedes every stored-state check: an out-of-range
-// clear aborts even though nothing is attached and an in-range clear would
-// have been a silent no-op.
 #[test, expected_failure(abort_code = release_cover_art::ETrackIndexOutOfBounds)]
 fun clear_track_cover_rejects_out_of_bounds_index_when_unattached() {
     let ctx = &mut tx_context::dummy();
@@ -200,7 +193,6 @@ fun set_cover_emits_release_and_blob_ids() {
     let events = events_by_type<ReleaseCoverArtSetEvent>();
     assert_eq!(events.length(), 1);
     assert_set_event(&events[0], rel_id, 100, option::none());
-    // Address, still blob ID, and an absent animated blob ID (one byte).
     assert_eq!(to_bytes(&events[0]).length(), 65);
 
     destroy(rel);
@@ -249,7 +241,6 @@ fun set_track_cover_emits_release_index_and_blob_ids() {
     let (mut rel, cap) = mk_release(ctx);
     let rel_id = object::id(&rel);
 
-    // A per-track set lazily initializes the record (no album cover first).
     release_cover_art::set_track_cover(&mut rel, &cap, 1, fixtures::animated(200, 201));
     assert!(release_cover_art::has_cover_art(&rel));
     assert!(release_cover_art::cover(&rel).is_none());
@@ -297,8 +288,6 @@ fun equal_sets_neither_write_nor_emit() {
     release_cover_art::set_track_cover(&mut rel, &cap, 1, art);
     assert_eq!(events_by_type<ReleaseTrackCoverArtSetEvent>().length(), 1);
 
-    // Equality is over the whole value: the same still with an animation
-    // added is a change.
     release_cover_art::set_cover(&mut rel, &cap, fixtures::animated(100, 101));
     assert_eq!(events_by_type<ReleaseCoverArtSetEvent>().length(), 2);
 
@@ -311,19 +300,16 @@ fun clears_of_absent_values_are_silent() {
     let ctx = &mut tx_context::dummy();
     let (mut rel, cap) = mk_release(ctx);
 
-    // No record attached at all: nothing to remove, nothing attached either.
     release_cover_art::clear_cover(&mut rel, &cap);
     release_cover_art::clear_track_cover(&mut rel, &cap, 0);
     assert!(!release_cover_art::has_cover_art(&rel));
     assert_eq!(events_by_type<ReleaseCoverArtClearedEvent>().length(), 0);
     assert_eq!(events_by_type<ReleaseTrackCoverArtClearedEvent>().length(), 0);
 
-    // Record attached by an override, album cover absent.
     release_cover_art::set_track_cover(&mut rel, &cap, 1, fixtures::plain(200));
     release_cover_art::clear_cover(&mut rel, &cap);
     assert_eq!(events_by_type<ReleaseCoverArtClearedEvent>().length(), 0);
 
-    // Record attached by the album cover, override absent.
     release_cover_art::set_cover(&mut rel, &cap, fixtures::plain(100));
     release_cover_art::clear_track_cover(&mut rel, &cap, 0);
     assert_eq!(events_by_type<ReleaseTrackCoverArtClearedEvent>().length(), 0);
@@ -385,8 +371,6 @@ fun track_cover_override_without_attachment_aborts() {
     abort
 }
 
-/// The record detaches only once the album cover and every override are
-/// cleared, whichever is cleared last.
 #[test]
 fun record_detaches_when_everything_is_cleared() {
     let ctx = &mut tx_context::dummy();
@@ -402,7 +386,6 @@ fun record_detaches_when_everything_is_cleared() {
     release_cover_art::clear_track_cover(&mut rel, &cap, 2);
     assert!(!release_cover_art::has_cover_art(&rel));
 
-    // A later set attaches a fresh record with every override empty.
     release_cover_art::set_cover(&mut rel, &cap, fixtures::plain(400));
     assert_eq!(*release_cover_art::track_cover_override(&rel, 2), option::none());
     assert_eq!(events_by_type<ReleaseCoverArtClearedEvent>().length(), 1);

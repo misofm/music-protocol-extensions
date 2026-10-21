@@ -88,7 +88,6 @@ fun exactly_max_length_is_accepted() {
     let ctx = &mut tx_context::dummy();
     let (mut comp, cap) = mk_composition(ctx);
 
-    // 300 bytes exactly — the inclusive bound.
     let text = title_of_length(300);
     ct::set_title(&mut comp, &cap, text);
     assert_eq!(ct::title(&comp).as_bytes().length(), 300);
@@ -102,7 +101,6 @@ fun multibyte_text_is_bounded_by_bytes() {
     let ctx = &mut tx_context::dummy();
     let (mut comp, cap) = mk_composition(ctx);
 
-    // "été ✿" — 5 characters, 9 bytes. Accepted, and read back intact.
     let text = b"\xc3\xa9t\xc3\xa9 \xe2\x9c\xbf".to_string();
     assert_eq!(text.as_bytes().length(), 9);
     ct::set_title(&mut comp, &cap, text);
@@ -121,7 +119,6 @@ fun multibyte_text_is_bounded_by_bytes() {
 fun multibyte_text_over_the_byte_bound_aborts() {
     let ctx = &mut tx_context::dummy();
     let (mut comp, cap) = mk_composition(ctx);
-    // 101 characters, 303 bytes — few characters, too many bytes.
     let over = vector::tabulate!(101, |_| b"\xe2\x9c\xbf").flatten().to_string();
     ct::set_title(&mut comp, &cap, over);
     destroy(comp);
@@ -205,8 +202,6 @@ fun set_emits_each_transition() {
     destroy(cap);
 }
 
-/// Only an attached value can be equalled: a set after a clear of the same
-/// value is a real write and emits again.
 #[test]
 fun first_set_is_never_a_no_op() {
     let ctx = &mut tx_context::dummy();
@@ -263,8 +258,6 @@ fun views_are_silent() {
     destroy(cap);
 }
 
-/// Set carries the composition id plus the exact value (32-byte id,
-/// ULEB length, bytes); clear carries the id alone.
 #[test]
 fun payloads_have_exact_bcs_sizes() {
     let ctx = &mut tx_context::dummy();

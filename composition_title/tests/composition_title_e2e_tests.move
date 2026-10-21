@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// A composition cannot outlive its creating transaction unpublished, so "before publish" means
-/// earlier in the same transaction.
 #[test_only]
 module composition_title::composition_title_e2e_tests;
 

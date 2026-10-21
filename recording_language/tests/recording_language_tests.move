@@ -23,7 +23,6 @@ const TEN_CODES: vector<vector<u8>> =
 
 public struct TestShare() has drop;
 
-/// Only a `Recording` is needed, so a bare id stands in for its composition.
 fun new_rec(
     ctx: &mut TxContext,
 ): (Recording<TestShare>, RecordingAdminCap<TestShare>) {
@@ -63,7 +62,6 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(event_rec_id, rec_id);
     assert_eq!(languages, strings(vector[b"en", b"fr"]));
 
-    // Reordering is a replacement and preserves caller order.
     rl::set_languages(&mut rec, &cap, langs(vector[b"fr", b"en"]));
     assert_eq!(stored_codes(&rec), strings(vector[b"fr", b"en"]));
     let set_events = events_by_type<RecordingLanguagesSetEvent>();
@@ -159,10 +157,8 @@ fun instrumental_is_distinct_from_absent_and_from_sung() {
     let (mut rec, cap) = new_rec(ctx);
     let rec_id = object::id(&rec);
 
-    // Nothing attached: no claim either way.
     assert!(!rl::has_languages(&rec));
 
-    // Attached and empty: asserts instrumental, and emits an empty list.
     rl::set_languages(&mut rec, &cap, vector[]);
     assert!(rl::has_languages(&rec));
     assert!(rl::languages(&rec).is_empty());
@@ -192,8 +188,6 @@ fun instrumental_is_distinct_from_absent_and_from_sung() {
     destroy(cap);
 }
 
-/// The set event is the recording id plus the ordered codes: one
-/// vector-length byte, then three bytes per two-letter code.
 #[test]
 fun set_event_carries_the_recording_and_the_new_value() {
     let ctx = &mut tx_context::dummy();
@@ -311,8 +305,6 @@ fun more_than_max_languages_aborts() {
     destroy(cap);
 }
 
-/// Count is validated before duplicates: an eleven-entry list that also
-/// repeats a code aborts on the count.
 #[test, expected_failure(abort_code = rl::EMaxLanguagesExceeded)]
 fun count_is_checked_before_duplicates() {
     let ctx = &mut tx_context::dummy();
@@ -324,8 +316,6 @@ fun count_is_checked_before_duplicates() {
     destroy(cap);
 }
 
-/// An invalid replacement is rejected before any stored-state check, so the
-/// existing value survives an aborted set.
 #[test, expected_failure(abort_code = rl::EDuplicateLanguage)]
 fun invalid_replacement_aborts_without_touching_the_stored_value() {
     let ctx = &mut tx_context::dummy();
@@ -336,8 +326,6 @@ fun invalid_replacement_aborts_without_touching_the_stored_value() {
     destroy(cap);
 }
 
-/// A malformed code cannot reach this package: `LanguageCode` validates on
-/// construction, which is why `validate` checks only count and repeats.
 #[test, expected_failure(abort_code = language_code::EInvalidLanguageCode)]
 fun invalid_code_is_rejected_by_the_primitive() {
     let _ = lang(b"zzz");

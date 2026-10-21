@@ -112,7 +112,6 @@ fun add_credit_rejects_duplicate_party() {
     abort
 }
 
-/// Re-adding the exact credit already stored is not a silent no-op.
 #[test, expected_failure(abort_code = credits::EDuplicateParty)]
 fun add_credit_rejects_identical_credit() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -124,8 +123,6 @@ fun add_credit_rejects_identical_credit() {
     abort
 }
 
-/// Removing the middle entry keeps the survivors in stored order; removing the
-/// last credit detaches the record, and a later add creates it afresh.
 #[test]
 fun remove_credit_round_trip() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -203,7 +200,6 @@ fun add_credit_emits_full_record() {
     assert_eq!(event_roles, roles);
     assert_eq!(to_bytes(&events[0]).length(), 32 + 32 + 2 + 200 + 1 + 6);
 
-    // Events from separate compositions share a type and carry their IDs.
     let (mut other_comp, other_cap) = mk_composition(ctx);
     let (other_party, other_party_cap) = mk_party(b"Other", ctx);
     credits::add_credit(&mut other_comp, &other_cap, &other_party, composer(b"Other"));
@@ -238,8 +234,6 @@ fun remove_credit_emits_the_removed_party() {
     destroy(comp); destroy(cap); destroy(p); destroy(pc);
 }
 
-/// Production shape: the composition is published (shared) atomically, and the
-/// extension operates on it in a later transaction via `take_shared`.
 #[test]
 fun add_credit_against_published_and_shared_composition() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -267,8 +261,6 @@ fun add_credit_rejects_when_max_credits_reached() {
     abort
 }
 
-/// Capacity is checked before the duplicate-party conflict, so a duplicate at
-/// a full map aborts `EMaxCreditsExceeded`.
 #[test, expected_failure(abort_code = credits::EMaxCreditsExceeded)]
 fun add_credit_duplicate_at_capacity_reports_capacity() {
     let ctx = &mut tx_context::dummy();

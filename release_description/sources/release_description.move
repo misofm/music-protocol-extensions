@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// The paragraph under the release title. A free string that nothing on-chain reads, stored
-/// exactly as given. An empty string is rejected because absence already means "no description".
 module release_description::release_description;
 
 // === Imports ===
@@ -20,7 +18,6 @@ const EDescriptionTooLong: u64 = 2;
 
 // === Constants ===
 
-/// In bytes, not characters: 8 KB, roughly 1,300 words of English prose. Storage hygiene only.
 const MAX_DESCRIPTION_LENGTH: u64 = 8192;
 
 // === Structs ===
@@ -40,7 +37,6 @@ public struct ReleaseDescriptionClearedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Setting the value already stored neither writes nor emits.
 public fun set_description(release: &mut Release, cap: &ReleaseAdminCap, description: String) {
     assert!(!description.is_empty(), EEmptyDescription);
     assert!(description.length() <= MAX_DESCRIPTION_LENGTH, EDescriptionTooLong);
@@ -57,7 +53,6 @@ public fun set_description(release: &mut Release, cap: &ReleaseAdminCap, descrip
     emit(ReleaseDescriptionSetEvent { release_id, description });
 }
 
-/// An absent description is a no-op, but the cap is still checked.
 public fun clear_description(release: &mut Release, cap: &ReleaseAdminCap) {
     let release_id = object::id(release);
     let uid = release.uid_mut(cap);

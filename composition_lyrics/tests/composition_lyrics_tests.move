@@ -67,7 +67,6 @@ fun languages_are_independent_and_events_replay_transitions() {
     cl::clear_lyrics(&mut comp, &cap, en);
     assert!(event::events_by_type<cl::CompositionLyricsClearedEvent>().is_empty());
 
-    // Deliberately opaque, non-UTF-8 data: only size and authority are enforced.
     let first = vector[0u8, 255, 128];
     cl::set_lyrics(&mut comp, &cap, en, first);
     cl::set_lyrics(&mut comp, &cap, ja, vector[42]);
@@ -76,7 +75,6 @@ fun languages_are_independent_and_events_replay_transitions() {
     assert_eq!(*cl::lyrics(&comp, en), vector[7]);
     assert_eq!(*cl::lyrics(&comp, ja), vector[42]);
 
-    // Equal replacement is silent; each other transition emits one event.
     let sets = event::events_by_type<cl::CompositionLyricsSetEvent>();
     assert_eq!(sets.length(), 3);
     assert_set_event(&sets[0], id, b"en", first);
@@ -142,7 +140,6 @@ fun views_and_absent_clear_are_silent() {
     destroy(cap);
 }
 
-/// Empty input is rejected rather than stored; absence is the only "no lyrics".
 #[test, expected_failure(abort_code = cl::EEmptyLyrics)]
 fun empty_payload_aborts() {
     let ctx = &mut tx_context::dummy();
@@ -156,8 +153,6 @@ fun max_lyrics_length_is_32_kib() {
     assert_eq!(cl::max_lyrics_length(), 32768);
 }
 
-/// A full 32,768-byte body is carried whole: each set event is 32,806 bytes,
-/// well under Sui's per-event limit.
 #[test]
 fun maximum_payload_can_be_added_replaced_and_cleared() {
     let ctx = &mut tx_context::dummy();

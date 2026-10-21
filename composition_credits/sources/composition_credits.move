@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// The record exists exactly while at least one credit is held. Credits are display metadata
-/// and are not read by the economics.
 module composition_credits::composition_credits;
 
 // === Imports ===
@@ -30,7 +28,6 @@ const MAX_CREDITS: u64 = 50;
 // === Structs ===
 
 public struct CompositionCredits has store {
-    /// Keyed by party ID, in insertion order.
     credits: VecMap<ID, Credit<CompositionPartyRole>>,
 }
 
@@ -52,7 +49,6 @@ public struct CompositionCreditRemovedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
 public fun add_credit<CompositionShare>(
     composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,

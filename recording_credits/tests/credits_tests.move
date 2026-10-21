@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Every write that would leave the record unchanged aborts, so the no-op rule is covered by the
-/// abort tests.
 #[test_only]
 module recording_credits::credits_tests;
 
@@ -122,8 +120,6 @@ fun add_credit_rejects_duplicate_party() {
     abort
 }
 
-/// Re-adding the exact credit already stored is not a silent no-op: the
-/// duplicate-party guard fires before any comparison of values.
 #[test, expected_failure(abort_code = credits::EDuplicateParty)]
 fun add_credit_rejects_identical_credit() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -156,7 +152,7 @@ fun add_credit_rejects_too_many_roles() {
             rpr::new_recording_engineer_role(n),
             rpr::new_programmer_role(n),
             rpr::new_sound_designer_role(n),
-            rpr::new_narrator_role(n), // 11 > MAX_ROLES_PER_CREDIT (10)
+            rpr::new_narrator_role(n),
         ]),
     );
     abort
@@ -188,10 +184,9 @@ fun primary_artist_must_be_credited() {
     let mut ts = test_scenario::begin(ARTIST);
     let (mut rec, cap) = mk_recording(ts.ctx());
     let (p, _pc) = mk_party(b"Ghost", ts.ctx());
-    // attach a credits record (so the DF exists) via a different party
     let (other, _otherc) = mk_party(b"Real", ts.ctx());
     credits::add_credit(&mut rec, &cap, &other, vocalist(b"Real"));
-    credits::add_primary_artist(&mut rec, &cap, object::id(&p)); // not credited
+    credits::add_primary_artist(&mut rec, &cap, object::id(&p));
     abort
 }
 
@@ -202,7 +197,7 @@ fun featured_rejects_existing_primary() {
     let (p, _pc) = mk_party(b"Alice", ts.ctx());
     credits::add_credit(&mut rec, &cap, &p, vocalist(b"Alice"));
     credits::add_primary_artist(&mut rec, &cap, object::id(&p));
-    credits::add_featured_artist(&mut rec, &cap, object::id(&p)); // already primary
+    credits::add_featured_artist(&mut rec, &cap, object::id(&p));
     abort
 }
 
@@ -255,13 +250,9 @@ fun add_credit_emits_the_full_credit() {
     assert_eq!(event_party_id, party_id);
     assert_eq!(event_name, b"Alice Display".to_string());
     assert_eq!(event_roles, *credit.roles());
-    // Two ids, the display name (1 + 13), and three roles: `Producer(None)`
-    // (1 + 1), `Producer(Some(Primary))` (1 + 2), and `Instrumentalist("Piano",
-    // Some(Lead))` (1 + 1 + 5 + 2).
     assert_eq!(to_bytes(&events[0]).length(), 32 + 32 + 1 + 13 + 1 + 2 + 3 + 9);
     assert_eq!(credits::credits(&rec)[&object::id(&p)], credit);
 
-    // Views are silent and do not change the event count.
     assert!(credits::has_credits(&rec));
     assert_eq!(credits::credits(&rec).length(), 1);
     assert!(!credits::is_primary_artist(&rec, object::id(&p)));
@@ -297,7 +288,6 @@ fun remove_credit_emits_the_removed_party() {
     assert_eq!(event_party, party_id);
     assert_eq!(to_bytes(&events[0]).length(), 64);
 
-    // The party held no designation, so no artist-removed event cascades.
     assert_eq!(events_by_type<credits::RecordingPrimaryArtistRemovedEvent>().length(), 0);
     assert_eq!(events_by_type<credits::RecordingFeaturedArtistRemovedEvent>().length(), 0);
 
@@ -305,9 +295,6 @@ fun remove_credit_emits_the_removed_party() {
     ts.end();
 }
 
-/// Billing changes are business-visible, so the cascade emits its own events rather than leaving
-/// them for the indexer to infer. Events are exposed per type, so the order fixed by
-/// `remove_credit` is asserted through exact per-type counts and per-call event deltas.
 #[test]
 fun remove_credit_cascade_emits_artist_removals_before_the_credit_removal() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -328,15 +315,11 @@ fun remove_credit_cascade_emits_artist_removals_before_the_credit_removal() {
     credits::add_primary_artist(&mut rec, &cap, object::id(&p2));
     credits::add_featured_artist(&mut rec, &cap, object::id(&p3));
 
-    // Removing a primary artist's credit emits exactly two events: the
-    // primary removal, then the credit removal.
     let before = num_events();
     credits::remove_credit(&mut rec, &cap, object::id(&p2));
     assert_eq!(num_events() - before, 2);
-    // Removing the middle credit shifts the surviving guest from index 2 to 1.
     assert_eq!(credits::credits(&rec).get_idx(&object::id(&p1)), 0);
     assert_eq!(credits::credits(&rec).get_idx(&object::id(&p3)), 1);
-    // Likewise for a featured artist: the featured removal, then the credit.
     let before = num_events();
     credits::remove_credit(&mut rec, &cap, object::id(&p3));
     assert_eq!(num_events() - before, 2);
@@ -347,7 +330,6 @@ fun remove_credit_cascade_emits_artist_removals_before_the_credit_removal() {
     assert_eq!(credits::primary_artist_ids(&rec).length(), 1);
     assert_eq!(credits::featured_artist_ids(&rec).length(), 0);
 
-    // Only the removed parties cascade; the surviving primary (p1) does not.
     let primary_removed = events_by_type<credits::RecordingPrimaryArtistRemovedEvent>();
     assert_eq!(primary_removed.length(), 1);
     let (event_object, event_party) =
@@ -425,7 +407,6 @@ fun add_credit_rejects_past_max_credits() {
     });
     assert_eq!(credits::credits(&rec).length(), MAX_CREDITS);
 
-    // The 151st credit is the one that must abort.
     let (p, _pc) = mk_party(b"Overflow", ts.ctx());
     credits::add_credit(&mut rec, &cap, &p, vocalist(b"Overflow"));
     abort
@@ -443,7 +424,6 @@ fun add_primary_artist_rejects_past_max_primary_artists() {
     });
     assert_eq!(credits::primary_artist_ids(&rec).length(), MAX_PRIMARY_ARTISTS);
 
-    // The 21st credited party's primary designation is the one that must abort.
     let (p, _pc) = mk_party(b"Overflow", ts.ctx());
     credits::add_credit(&mut rec, &cap, &p, vocalist(b"Overflow"));
     credits::add_primary_artist(&mut rec, &cap, object::id(&p));
@@ -462,7 +442,6 @@ fun add_featured_artist_rejects_past_max_featured_artists() {
     });
     assert_eq!(credits::featured_artist_ids(&rec).length(), MAX_FEATURED_ARTISTS);
 
-    // The 51st credited party's featured designation is the one that must abort.
     let (p, _pc) = mk_party(b"Overflow", ts.ctx());
     credits::add_credit(&mut rec, &cap, &p, vocalist(b"Overflow"));
     credits::add_featured_artist(&mut rec, &cap, object::id(&p));
@@ -474,7 +453,7 @@ fun add_primary_artist_rejects_when_no_credits_record() {
     let mut ts = test_scenario::begin(ARTIST);
     let (mut rec, cap) = mk_recording(ts.ctx());
     let (p, _pc) = mk_party(b"Ghost", ts.ctx());
-    credits::add_primary_artist(&mut rec, &cap, object::id(&p)); // no add_credit ever called
+    credits::add_primary_artist(&mut rec, &cap, object::id(&p));
     abort
 }
 
@@ -492,9 +471,6 @@ fun is_primary_and_featured_artist_are_false_before_any_credit() {
     let (rec, cap) = mk_recording(ts.ctx());
     let (p, pc) = mk_party(b"Ghost", ts.ctx());
 
-    // `has_credits` short-circuits `is_primary_artist`/`is_featured_artist` to
-    // `false` rather than aborting — absence must read as "not designated",
-    // not as an error.
     assert!(!credits::has_credits(&rec));
     assert!(!credits::is_primary_artist(&rec, object::id(&p)));
     assert!(!credits::is_featured_artist(&rec, object::id(&p)));
@@ -510,7 +486,7 @@ fun add_primary_artist_rejects_existing_featured() {
     let (p, _pc) = mk_party(b"Alice", ts.ctx());
     credits::add_credit(&mut rec, &cap, &p, vocalist(b"Alice"));
     credits::add_featured_artist(&mut rec, &cap, object::id(&p));
-    credits::add_primary_artist(&mut rec, &cap, object::id(&p)); // already featured
+    credits::add_primary_artist(&mut rec, &cap, object::id(&p));
     abort
 }
 
@@ -521,7 +497,7 @@ fun add_primary_artist_rejects_duplicate_designation() {
     let (p, _pc) = mk_party(b"Alice", ts.ctx());
     credits::add_credit(&mut rec, &cap, &p, vocalist(b"Alice"));
     credits::add_primary_artist(&mut rec, &cap, object::id(&p));
-    credits::add_primary_artist(&mut rec, &cap, object::id(&p)); // already primary
+    credits::add_primary_artist(&mut rec, &cap, object::id(&p));
     abort
 }
 
@@ -532,7 +508,7 @@ fun add_featured_artist_rejects_uncredited_party() {
     let (p, _pc) = mk_party(b"Ghost", ts.ctx());
     let (other, _oc) = mk_party(b"Real", ts.ctx());
     credits::add_credit(&mut rec, &cap, &other, vocalist(b"Real"));
-    credits::add_featured_artist(&mut rec, &cap, object::id(&p)); // not credited
+    credits::add_featured_artist(&mut rec, &cap, object::id(&p));
     abort
 }
 
@@ -543,7 +519,7 @@ fun add_featured_artist_rejects_duplicate_designation() {
     let (p, _pc) = mk_party(b"Alice", ts.ctx());
     credits::add_credit(&mut rec, &cap, &p, vocalist(b"Alice"));
     credits::add_featured_artist(&mut rec, &cap, object::id(&p));
-    credits::add_featured_artist(&mut rec, &cap, object::id(&p)); // already featured
+    credits::add_featured_artist(&mut rec, &cap, object::id(&p));
     abort
 }
 
@@ -553,7 +529,7 @@ fun remove_primary_artist_rejects_when_not_primary() {
     let (mut rec, cap) = mk_recording(ts.ctx());
     let (p, _pc) = mk_party(b"Alice", ts.ctx());
     credits::add_credit(&mut rec, &cap, &p, vocalist(b"Alice"));
-    credits::remove_primary_artist(&mut rec, &cap, object::id(&p)); // never was primary
+    credits::remove_primary_artist(&mut rec, &cap, object::id(&p));
     abort
 }
 
@@ -563,12 +539,10 @@ fun remove_featured_artist_rejects_when_not_featured() {
     let (mut rec, cap) = mk_recording(ts.ctx());
     let (p, _pc) = mk_party(b"Alice", ts.ctx());
     credits::add_credit(&mut rec, &cap, &p, vocalist(b"Alice"));
-    credits::remove_featured_artist(&mut rec, &cap, object::id(&p)); // never was featured
+    credits::remove_featured_artist(&mut rec, &cap, object::id(&p));
     abort
 }
 
-/// With another credit keeping the record attached, a second removal of the
-/// same party aborts `EPartyNotFound`.
 #[test, expected_failure(abort_code = credits::EPartyNotFound)]
 fun remove_credit_rejects_double_removal() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -583,7 +557,6 @@ fun remove_credit_rejects_double_removal() {
     abort
 }
 
-/// Removing the last credit detaches the record, so a second removal finds none.
 #[test, expected_failure(abort_code = credits::ENoCredits)]
 fun remove_last_credit_detaches_the_record() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -725,8 +698,6 @@ fun remove_and_readd_preserves_order() {
     assert_eq!(credits::credits(&rec).get_idx(&id3), 2);
     assert_eq!(credits::credits(&rec).get_idx(&id4), 3);
 
-    // Removing the middle entry shifts the survivors left; re-adding that
-    // party appends it after the survivors rather than restoring index 1.
     credits::remove_credit(&mut rec, &cap, id2);
     assert_eq!(credits::credits(&rec).get_idx(&id1), 0);
     assert_eq!(credits::credits(&rec).get_idx(&id3), 1);
@@ -764,10 +735,6 @@ fun remove_and_readd_preserves_order() {
     ts.end();
 }
 
-/// The largest credit event: ten distinct instrumentalist roles, each with a
-/// 100-byte instrument name and a level (1 + 1 + 100 + 2 bytes apiece), plus
-/// two ids and the vector length. The 200-byte display name stays in
-/// storage. Designation events are two ids regardless of the credit.
 #[test]
 fun event_bcs_sizes_match_declared_maxima() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -811,7 +778,6 @@ fun event_bcs_sizes_match_declared_maxima() {
     ts.end();
 }
 
-/// Capacity is checked before the duplicate-party conflict.
 #[test, expected_failure(abort_code = credits::EMaxCreditsExceeded)]
 fun add_credit_duplicate_at_capacity_reports_capacity() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -827,7 +793,6 @@ fun add_credit_duplicate_at_capacity_reports_capacity() {
     abort
 }
 
-/// The primary capacity check runs before the credited-party check.
 #[test, expected_failure(abort_code = credits::EMaxPrimaryArtistsExceeded)]
 fun add_primary_artist_full_set_and_uncredited_party_reports_capacity() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -842,7 +807,6 @@ fun add_primary_artist_full_set_and_uncredited_party_reports_capacity() {
     abort
 }
 
-/// The featured capacity check runs before the credited-party check.
 #[test, expected_failure(abort_code = credits::EMaxFeaturedArtistsExceeded)]
 fun add_featured_artist_full_set_and_uncredited_party_reports_capacity() {
     let mut ts = test_scenario::begin(ARTIST);

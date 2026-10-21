@@ -14,7 +14,6 @@ use miso_music::release::{Self, Release, ReleaseAdminCap};
 use miso_music::test_helpers;
 use release_title::release_title as rt;
 
-/// A one-track release; a title is never derived from the tracklist.
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let rec_id = test_helpers::fake_id(ctx);
     let target_id = test_helpers::fake_id(ctx);
@@ -145,8 +144,6 @@ fun titles_are_per_release() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// 300 bytes is the inclusive bound; the set event is then exactly
-/// 32 (release id) + 2 (ULEB128 length) + 300 = 334 bytes.
 #[test]
 fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     let ctx = &mut tx_context::dummy();
@@ -265,8 +262,6 @@ fun over_max_length_aborts() {
     destroy(cap);
 }
 
-/// Argument validation precedes cap authorization, so a foreign cap cannot
-/// change which validation error a caller observes.
 #[test, expected_failure(abort_code = rt::EEmptyTitle)]
 fun empty_validation_precedes_wrong_cap() {
     let ctx = &mut tx_context::dummy();
@@ -300,8 +295,6 @@ fun another_releases_cap_is_rejected_on_set() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// Clear authorizes before checking existence, so a foreign cap is rejected
-/// even when nothing is attached.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun another_releases_cap_is_rejected_on_clear_of_nothing() {
     let ctx = &mut tx_context::dummy();

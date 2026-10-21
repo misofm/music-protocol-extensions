@@ -13,7 +13,6 @@ use miso_music::release::{Self, Release, ReleaseAdminCap};
 use miso_music::test_helpers;
 use release_kind::release_kind as rk;
 
-/// A one-track release; a kind is never derived from the tracklist.
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let rec_id = test_helpers::fake_id(ctx);
     let target_id = test_helpers::fake_id(ctx);
@@ -140,8 +139,6 @@ fun kinds_are_per_release() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// 32 bytes is the inclusive bound; the set event is then exactly
-/// 32 (release id) + 1 (ULEB128 length) + 32 = 65 bytes.
 #[test]
 fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     let ctx = &mut tx_context::dummy();
@@ -276,14 +273,11 @@ fun empty_kind_aborts() {
 fun over_max_length_aborts() {
     let ctx = &mut tx_context::dummy();
     let (mut rel, cap) = mk_release(ctx);
-    // 33 bytes — one past the bound.
     rk::set_kind(&mut rel, &cap, b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".to_string());
     destroy(rel);
     destroy(cap);
 }
 
-/// Argument validation precedes cap authorization, so a foreign cap cannot
-/// change which validation error a caller observes.
 #[test, expected_failure(abort_code = rk::EEmptyKind)]
 fun empty_kind_precedes_foreign_cap_authorization() {
     let ctx = &mut tx_context::dummy();
@@ -317,8 +311,6 @@ fun another_releases_cap_is_rejected_on_set() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// Clear authorizes before checking existence, so a foreign cap is rejected
-/// even when nothing is attached.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun another_releases_cap_is_rejected_on_clear_of_nothing() {
     let ctx = &mut tx_context::dummy();

@@ -1,10 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Genre is a fact about the audio, so it lives on the recording; `release_genre` holds the
-/// separate product-level claim. Index 0 is the primary. Taking `&Genre` admits only real
-/// vocabulary entries. The field exists exactly while a genre is attached; reorder with
-/// `clear_genres` then `add_genre` in one PTB.
 module recording_genre::recording_genre;
 
 // === Imports ===
@@ -23,7 +19,6 @@ const EGenreNotFound: u64 = 3;
 
 // === Constants ===
 
-/// Maximum genres on one recording: the primary plus up to five more.
 const MAX_GENRES: u64 = 6;
 
 // === Structs ===
@@ -37,7 +32,6 @@ public struct RecordingGenreAddedEvent has copy, drop {
     genre_id: ID,
 }
 
-/// Removing the last genre emits only this event, not `RecordingGenresClearedEvent`.
 public struct RecordingGenreRemovedEvent has copy, drop {
     recording_id: ID,
     genre_id: ID,
@@ -68,7 +62,6 @@ public fun add_genre<RecordingShare>(
     emit(RecordingGenreAddedEvent { recording_id, genre_id });
 }
 
-/// Removing the primary promotes the next genre.
 public fun remove_genre<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -87,7 +80,6 @@ public fun remove_genre<RecordingShare>(
     emit(RecordingGenreRemovedEvent { recording_id, genre_id });
 }
 
-/// Silent when nothing is attached.
 public fun clear_genres<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,

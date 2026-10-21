@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// A present advisory was asserted by the rights holder; absence means nothing was asserted and
-/// is distinct from `NotExplicit`.
 module recording_advisory::recording_advisory;
 
 // === Imports ===
@@ -23,9 +21,7 @@ public struct ExtensionKey() has copy, drop, store;
 
 public enum Advisory has copy, drop, store {
     Explicit,
-    /// Contains no explicit content, and never did.
     NotExplicit,
-    /// An edited version of a recording that was originally explicit.
     Cleaned,
 }
 
@@ -48,7 +44,6 @@ public fun not_explicit(): Advisory { Advisory::NotExplicit }
 
 public fun cleaned(): Advisory { Advisory::Cleaned }
 
-/// Setting the value already held neither writes nor emits.
 public fun set_advisory<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -66,7 +61,6 @@ public fun set_advisory<RecordingShare>(
     emit(RecordingAdvisorySetEvent { recording_id, advisory });
 }
 
-/// Silent when nothing is attached.
 public fun clear_advisory<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,

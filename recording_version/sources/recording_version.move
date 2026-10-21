@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Which take of the composition a recording is ("Live", "Radio Edit", "Acoustic"). A recording
-/// displays as its composition's title plus this name; absence means the plain rendition.
 module recording_version::recording_version;
 
 // === Imports ===
@@ -20,7 +18,6 @@ const EVersionTooLong: u64 = 2;
 
 // === Constants ===
 
-/// In bytes.
 const MAX_VERSION_LENGTH: u64 = 300;
 
 // === Structs ===
@@ -40,7 +37,6 @@ public struct RecordingVersionClearedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Setting the value already held neither writes nor emits.
 public fun set_version<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -60,7 +56,6 @@ public fun set_version<RecordingShare>(
     emit(RecordingVersionSetEvent { recording_id, version });
 }
 
-/// Silent when nothing is attached.
 public fun clear_version<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,

@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// A single CREATOR sender suffices: every write is gated by a locally held `ReleaseAdminCap`,
-/// not by sender identity.
 #[test_only]
 module release_genre::release_genre_tests;
 
@@ -39,7 +37,6 @@ fun create_genres(scenario: &mut Scenario, names: vector<vector<u8>>): vector<ID
     })
 }
 
-/// A two-track release; this package never reads the tracklist.
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let target_id = test_helpers::fake_id(ctx);
     let tracks = vector[
@@ -91,9 +88,6 @@ fun views_before_assignment_are_empty_and_silent() {
     scenario.end();
 }
 
-/// An indexer replays the list from added/removed/cleared events alone: the
-/// projection below never reads the field, and matches `genres()` after
-/// every transition.
 #[test]
 fun event_replay_tracks_order_and_field_lifecycle() {
     let mut scenario = ts::begin(CREATOR);
@@ -145,7 +139,6 @@ fun event_replay_tracks_order_and_field_lifecycle() {
     assert_eq!(removed.length(), 2);
     assert_removed_event(&removed[1], release_id, c_id);
     assert!(!rg::has_genres(&rel));
-    // The field is gone: a clear now has nothing to remove and stays silent.
     rg::clear_genres(&mut rel, &cap);
     assert_eq!(event::events_by_type<rg::ReleaseGenresClearedEvent>().length(), 1);
 
@@ -288,7 +281,6 @@ fun add_genre_at_max_aborts() {
     abort
 }
 
-/// At capacity, a duplicate is reported as such rather than as full.
 #[test, expected_failure(abort_code = rg::EDuplicateGenre)]
 fun duplicate_is_checked_before_capacity() {
     let mut scenario = ts::begin(CREATOR);
@@ -331,8 +323,6 @@ fun remove_genre_aborts_when_nothing_attached() {
     abort
 }
 
-/// The cap is checked before any stored-state check, so a foreign cap is
-/// rejected even when nothing is attached.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun remove_genre_with_foreign_cap_aborts_before_presence_check() {
     let mut scenario = ts::begin(CREATOR);
@@ -402,7 +392,6 @@ fun removing_the_last_genre_drops_the_field_and_permits_re_add() {
     assert!(!rg::has_genres(&rel));
     assert_eq!(event::events_by_type<rg::ReleaseGenreRemovedEvent>().length(), 1);
     assert_eq!(event::events_by_type<rg::ReleaseGenresClearedEvent>().length(), 0);
-    // The field is gone: a clear now has nothing to remove and stays silent.
     rg::clear_genres(&mut rel, &cap);
     assert_eq!(event::events_by_type<rg::ReleaseGenresClearedEvent>().length(), 0);
 

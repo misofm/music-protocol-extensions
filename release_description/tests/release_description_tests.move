@@ -14,7 +14,6 @@ use miso_music::release::{Self, Release, ReleaseAdminCap};
 use miso_music::test_helpers;
 use release_description::release_description as rd;
 
-/// A one-track release; a description is never derived from the tracklist.
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let rec_id = test_helpers::fake_id(ctx);
     let target_id = test_helpers::fake_id(ctx);
@@ -256,8 +255,6 @@ fun over_max_length_aborts() {
     destroy(cap);
 }
 
-/// Argument validation precedes cap authorization, so a foreign cap cannot
-/// change which validation error a caller observes.
 #[test, expected_failure(abort_code = rd::EEmptyDescription)]
 fun empty_validation_precedes_wrong_cap() {
     let ctx = &mut tx_context::dummy();
@@ -291,8 +288,6 @@ fun another_releases_cap_is_rejected_on_set() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// Clear authorizes before checking existence, so a foreign cap is rejected
-/// even when nothing is attached.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun another_releases_cap_is_rejected_on_clear_of_nothing() {
     let ctx = &mut tx_context::dummy();

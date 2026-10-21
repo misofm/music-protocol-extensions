@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Top-line billing. The record exists exactly while at least one credit is held. Credits are
-/// display metadata and are not read by the economics. A credit carries exactly one role, so a
-/// party is billed as either a `Primary` or a `Featured` artist.
 module release_credits::release_credits;
 
 // === Imports ===
@@ -33,7 +30,6 @@ const MAX_CREDITS: u64 = 50;
 // === Structs ===
 
 public struct ReleaseCredits has store {
-    /// Keyed by party ID, in insertion order.
     credits: VecMap<ID, Credit<ReleasePartyRole>>,
 }
 
@@ -55,7 +51,6 @@ public struct ReleaseCreditRemovedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
 public fun add_credit(
     release: &mut Release,
     cap: &ReleaseAdminCap,
