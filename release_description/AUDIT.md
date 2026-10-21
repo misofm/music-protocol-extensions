@@ -1,29 +1,35 @@
-# Security review — `release_description`
+# Security Audit — `release_description`
 
-Pre-publication qualification, 2026-10-20. See `Move.toml`, `README.md`, and
-the tests for the current API.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `release_description`, against `miso_music` `1538d77` as pinned in `Move.toml`.
 
-## Dependency provenance
+## What it does
 
-`Move.toml` pins `miso_music` at `1538d77035c4fb6b45b74f7d85168b7c3a80564b`.
+It stores a release's free-text description, up to 8,192 bytes, as one `String` under `ExtensionKey()`. See [README.md](README.md).
 
-## Threat model
+## Trust model
 
-Set and clear go through `Release::uid_mut`, which aborts
-`release::EUnauthorized` for a cap of another release, including on absent
-clears. `set_description` rejects an empty string (`EEmptyDescription`, 1)
-and more than 8,192 bytes (`EDescriptionTooLong`, 2) before authorization.
-The value is stored verbatim under a module-owned key. Set events carry the
-release id and the full description (at most 8,226 BCS bytes); clear events
-carry the release id (32). Equal sets, absent
-clears, and views emit nothing. No funds, custody, or external calls are
-involved.
+- **Writer:** the holder of the release's `ReleaseAdminCap`. `Release::uid_mut` aborts with `release::EUnauthorized` (0) for a cap of another release (`miso_music` `release.move:150-151,189-190`).
+- **Reader:** anyone.
+- **What nobody else can do:** no other package can construct `ExtensionKey`.
 
-## Evidence
+## Findings
 
-With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
-passes 20/20 tests with no warnings and 100.00% coverage. Tests cover the
-published/shared lifecycle with distinct senders, foreign caps on set and on
-clear (absent and present), validation-before-authorization, the 8,192-byte
-bound in ASCII and four-byte UTF-8, verbatim storage, equal-set and
-absent-clear silence, per-release isolation, and exact event BCS layouts.
+None.
+
+## Checked, no finding
+
+- **Authorization:** `set_description` validates first. It rejects an empty description (`release_description.move:41`) and one over 8,192 bytes (`:42`), then calls `uid_mut` (`:45`). `clear_description` authorizes before checking whether a description exists (`:58-59`).
+- **Bound:** the limit counts bytes, not characters. The tests cover it with ASCII and with four-byte UTF-8.
+- **PTB argument size:** the largest value, 8,194 BCS bytes, fits within Sui's 16 KiB per-argument limit.
+- **Events:**
+  - An equal set is silent (`:48`).
+  - A clear of an absent description is silent (`:59`).
+  - The set event is 34 to 8,226 BCS bytes. The clear event is 32 bytes.
+- **Lifecycle and money:** the field exists exactly when a description is attached. No objects or coins are involved.
+
+## Verification
+
+- Sui 1.82.1.
+- `sui move test --coverage --lint --warnings-are-errors`: 20/20 passed, no warnings.
+- `sui move coverage summary`: 100.00%.
+- Mainnet and testnet builds with `--lint --warnings-are-errors`: pass.

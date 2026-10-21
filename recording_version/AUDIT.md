@@ -1,30 +1,34 @@
-# Security review — `recording_version`
+# Security Audit — `recording_version`
 
-Pre-publication qualification, 2026-10-20. This package is unpublished: there
-is no `Published.toml`. See `Move.toml`, `README.md`, and the tests for the
-current API.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_version`, against `miso_music` `1538d77` as pinned in `Move.toml`. The package is unpublished and has no `Published.toml`.
 
-## Dependency provenance
+## What it does
 
-`Move.toml` pins `miso_music` at `1538d77035c4fb6b45b74f7d85168b7c3a80564b`.
+It stores a recording's version name, such as "Live" or "Radio Edit", as one `String` under `ExtensionKey()`. See [README.md](README.md).
 
-## Threat model
+## Trust model
 
-Set and clear go through `Recording::uid_mut`, which requires the
-`RecordingAdminCap` of the recording's share type, including the equal-set
-and absent-clear paths. `set_version` rejects an empty string
-(`EEmptyVersion`, 1) and more than 300 bytes (`EVersionTooLong`, 2) before
-authorization, so an invalid replacement leaves the stored value untouched.
-The bound is on bytes, not characters. The module-owned key prevents
-cross-extension collisions. No funds, custody, or external calls are
-involved. Set events are at most 334 BCS bytes; clear events are 32.
+- **Writer:** the holder of `RecordingAdminCap<RecordingShare>`. `uid_mut` (`miso_music` `recording.move:113`) authorizes by type, and the cap is unique to its recording (`:77,131`).
+- **Reader:** anyone.
+- **What nobody else can do:** no other package can construct `ExtensionKey`.
 
-## Evidence
+## Findings
 
-With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
-passes 18/18 tests with no warnings and 100.00% coverage. Tests cover the
-published/shared lifecycle with a stranger reader, the inclusive 1- and
-300-byte bounds, a 300-byte three-byte-UTF-8 value accepted and 303 bytes
-rejected, empty and over-long values, invalid replacements leaving storage
-intact, equal-set and absent-clear silence, per-recording isolation, and
-exact event BCS layouts.
+None.
+
+## Checked, no finding
+
+- **Authorization:** `set_version` validates first. It rejects an empty name (`recording_version.move:45`) and a name over 300 bytes (`:46`), then calls `uid_mut` (`:48`). `clear_version` authorizes before checking whether a name exists (`:64-65`).
+- **Bound:** the limit counts bytes, not characters. The tests cover a value of exactly 300 bytes in three-byte UTF-8 and a rejected value of 303 bytes.
+- **Events:**
+  - An equal set is silent (`:51`).
+  - A clear of an absent name is silent (`:65`).
+  - The set event is 34 to 334 BCS bytes. The clear event is 32 bytes.
+- **Lifecycle and money:** the field exists exactly when a name is attached. No objects or coins are involved.
+
+## Verification
+
+- Sui 1.82.1.
+- `sui move test --coverage --lint --warnings-are-errors`: 18/18 passed, no warnings.
+- `sui move coverage summary`: 100.00%.
+- Mainnet and testnet builds with `--lint --warnings-are-errors`: pass.

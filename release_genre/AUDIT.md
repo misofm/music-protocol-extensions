@@ -1,32 +1,36 @@
-# Security review — `release_genre`
+# Security Audit — `release_genre`
 
-Pre-publication qualification, 2026-10-20. See `Move.toml`, `README.md`, and
-the tests for the current API.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `release_genre`, against `miso_music` `1538d77` and `genre` `4c47bd1` as pinned in `Move.toml`.
 
-## Dependency provenance
+## What it does
 
-`Move.toml` pins `miso_music` at `1538d77035c4fb6b45b74f7d85168b7c3a80564b` and
-`genre` at `4c47bd1cd78c4bf1dad0e72e6598060fe8a553cd`.
+It stores an ordered `vector<ID>` of `genre::Genre` IDs on a `Release` under `ExtensionKey()`. The first entry is the primary genre. See [README.md](README.md).
 
-## Threat model
+## Trust model
 
-All three mutations go through `Release::uid_mut`, which aborts
-`release::EUnauthorized` for a cap of another release before any stored-state
-check, including on absent removes and clears. `add_genre` takes a `&Genre`,
-so only ids of real vocabulary entries can enter; removal takes a bare `ID`
-and only removes. The list is unique, bounded at six, and non-empty by
-construction: removing the last genre drops the field, so `has_genres` means
-at least one genre, and `genres` aborts `ENoGenres` rather than returning an
-empty list. The module-owned key prevents cross-extension collisions. No
-funds, custody, or external calls are involved. Events are 64 (add/remove)
-and 32 (clear) BCS bytes.
+- **Writer:** the holder of the release's `ReleaseAdminCap`. `Release::uid_mut` aborts with `release::EUnauthorized` (0) for a cap of another release (`miso_music` `release.move:150-151,189-190`).
+- **Reader:** anyone.
+- **Genres:** anyone can create a `Genre`. Each one is frozen and unique by name.
+- **What nobody else can do:** no other package can construct `ExtensionKey`.
 
-## Evidence
+## Findings
 
-With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
-passes 25/25 tests with no warnings and 100.00% coverage. Tests cover the
-published/shared lifecycle with distinct senders, foreign caps on add,
-remove (absent and present), and clear (absent and present), primary
-promotion, the six-genre bound, duplicate rejection, absent and not-found
-removals, event replay of the ordered list, field removal with the last
-genre, per-release isolation, and exact event BCS layouts.
+None.
+
+## Checked, no finding
+
+- **Authorization:** all three writes call `uid_mut` (`release_genre.move:49`, `:63`, `:77`) before reading stored state. The tests cover a foreign cap on every write, both with the record present and absent.
+- **Genre IDs:** `add_genre` takes a `&Genre` (`:46`), so only an existing `Genre` can enter the list.
+- **List invariants:**
+  - No duplicates (`:52`).
+  - At most six entries (`:53`).
+  - Never empty: the last removal drops the field (`:69-71`), and `genres` aborts on absence (`:91`).
+- **Events:** the add and remove events are 64 bytes and the clear event is 32 bytes. Replaying them in order reproduces the list. A clear of an absent list is silent (`:78`).
+- **Limits and money:** the record is at most 193 bytes. No objects or coins are involved.
+
+## Verification
+
+- Sui 1.82.1.
+- `sui move test --coverage --lint --warnings-are-errors`: 25/25 passed, no warnings.
+- `sui move coverage summary`: 100.00%.
+- Mainnet and testnet builds with `--lint --warnings-are-errors`: pass.

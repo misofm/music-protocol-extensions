@@ -1,41 +1,58 @@
-# Security review — `recording_credits`
+# Security Audit — `recording_credits`
 
-Pre-publication qualification, 2026-10-20. See `Move.toml`, `README.md`, and
-the tests for the current API.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: modules `recording_credits` and `recording_party_role`, against `miso_music` `1538d77`, `miso_party` `8e59a81` and `credit` `a5ad1f6` as pinned in `Move.toml`.
 
-## Dependency provenance
+## What it does
 
-`Move.toml` pins `miso_music` at `1538d77035c4fb6b45b74f7d85168b7c3a80564b`,
-`miso_party` at `8e59a815dc1129166b66a76d568edb8822859255`, and `credit` at
-`a5ad1f65e0ef905d204857b519aaa7964abd5d0f`. `credit` provides
-`Credit<RecordingPartyRole>`; `miso_party` provides only the credited `Party`
-identity.
+It stores performance and production credits on a `Recording`, together with primary-artist and featured-artist designations. Everything lives in one `RecordingCredits` record under `ExtensionKey()`. See [README.md](README.md).
 
-## Threat model
+## Trust model
 
-All six mutations go through `Recording::uid_mut`, which requires the
-`RecordingAdminCap` of the recording's share type. Module-owned keys and
-private stored fields protect the dynamic-field schema. The implementation
-enforces unique credited parties, bounded credits (150), roles (10),
-primary (20) and featured (50) artists, designation only of credited parties,
-and disjoint primary and featured sets. Removing a credit cascades through
-both designations, emitting each artist-removed event before the
-credit-removed event, and removing the last credit removes the record, so
-presence means at least one credit. Credits are administrator-authored
-attribution and never drive royalty accounting. Views and constructors are
-silent. No funds, custody, or external calls are involved.
+- **Writer:** the holder of `RecordingAdminCap<RecordingShare>`. Core claims one recording per share type (`miso_music` `recording.move:77`) and one cap per recording (`:131`). `uid_mut` (`:113`) authorizes by type, so a foreign cap fails to type-check.
+- **Reader:** anyone.
+- **What nobody else can do:** no other package can construct `ExtensionKey` or reach the record's private fields.
+- **What nobody can do:** revoke the cap or delete the recording.
 
-`RecordingCreditAddedEvent` carries the stored credit (display name and
-roles): up to 1,307 bytes for a 200-byte display name and ten instrumentalist
-roles with 100-byte instrument names.
+## Findings
 
-## Evidence
+**RC-1 · Info · Accepted. Credits are admin claims.** `add_credit` (`recording_credits.move:85-115`) accepts any shared `&Party` without that party's consent. It also accepts a free-text `display_name` that is unrelated to `Party::name`. Credits drive no economics.
 
-With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
-passes 47/47 tests with no warnings, and both modules report 100.00%
-coverage. Tests cover the published/shared lifecycle with a stranger reader,
-every capacity bound and its precedence over duplicate and membership checks,
-designation conflicts, not-designated removals, absent-record aborts on every
-mutator, cascades and their event order, record removal and re-creation,
-per-recording isolation, role BCS encoding, instrument validation, and exact
-event sizes including the 1,105-byte maximum.
+**RC-2 · Info · Open. A role's level and the billing designations are independent.**
+- `RecordingPartyRoleLevel` includes `Primary` and `Featured` (`recording_party_role.move:61,63`).
+- These levels have no connection to `primary_artist_ids` or `featured_artist_ids` (`recording_credits.move:142-206`).
+- So a party can be designated primary while its roles carry the `Featured` level, and the reverse.
+- Consumers should treat the designation sets as authoritative for billing.
+
+**RC-3 · Info · Open. The worst-case record is about 76% of the object size limit.**
+- A probe filled every bound at once: 150 credits, each with a 200-byte display name and ten instrumentalist roles that each have a 100-byte instrument name and a level, plus 20 primary and 50 featured designations. The resulting record serialized to 193,494 BCS bytes.
+- The object limit is 256,000 bytes, so the current bounds fit.
+- Every mutation rewrites the whole record, so storage gas grows with its size.
+- Raising any bound needs this size check redone.
+
+## Checked, no finding
+
+- **Authorization:**
+  - `add_credit` checks the role count (`:91`, at most 10) before `uid_mut` (`:97`).
+  - Every other write authorizes first (`:123`, `:148`, `:167`, `:181`, `:200`).
+- **Invariants:**
+  - At most one credit per party (`:111`).
+  - Bounds: 150 credits (`:110`), 20 primary (`:150`) and 50 featured (`:183`), each with capacity checked before membership.
+  - Only credited parties can be designated (`:153`, `:186`).
+  - The primary and featured sets are disjoint (`:154`, `:187`).
+  - `credit::new` guarantees at least one role and no duplicates.
+  - `new_instrumentalist_role` bounds the instrument name to 1 to 100 bytes (`recording_party_role.move:129-130`).
+- **Cascade:** `remove_credit` clears any designation and emits that removal before `RecordingCreditRemovedEvent` (`:126-139`). The stream therefore never shows a designated party that has no credit. The last removal drops the record (`:135-137`). Leftover designations are impossible because each one requires a credit.
+- **Events:** each mutation emits one event, except the cascade above. `RecordingCreditAddedEvent` carries the full stored credit. The probe matched the README's maximum of 1,307 bytes (64 + 202 + 1 + 1,040). The designation events are 64 bytes.
+- **Limits:** a probe ran 150 credits and 70 designations in one scenario without error. That is 220 events, well under the 1,024 limit.
+- **Money:** none.
+
+## Operational requirements
+
+- Credit events can come before `RecordingPublishedEvent` within the recording's creation transaction.
+
+## Verification
+
+- Sui 1.82.1.
+- `sui move test --coverage --lint --warnings-are-errors`: 47/47 passed, no warnings.
+- `sui move coverage summary`: 100.00% for both modules.
+- Mainnet and testnet builds with `--lint --warnings-are-errors`: pass.

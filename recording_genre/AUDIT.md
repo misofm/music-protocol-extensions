@@ -1,31 +1,43 @@
-# Security review — `recording_genre`
+# Security Audit — `recording_genre`
 
-Pre-publication qualification, 2026-10-20. See `Move.toml`, `README.md`, and
-the tests for the current API.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_genre`, against `miso_music` `1538d77` and `genre` `4c47bd1` as pinned in `Move.toml`.
 
-## Dependency provenance
+## What it does
 
-`Move.toml` pins `miso_music` at `1538d77035c4fb6b45b74f7d85168b7c3a80564b` and
-`genre` at `4c47bd1cd78c4bf1dad0e72e6598060fe8a553cd`.
+It stores an ordered `vector<ID>` of `genre::Genre` IDs on a `Recording` under `ExtensionKey()`. The first entry is the primary genre. See [README.md](README.md).
 
-## Threat model
+## Trust model
 
-All three mutations go through `Recording::uid_mut`, which requires the
-`RecordingAdminCap` of the recording's share type, including the absent-clear
-path. `add_genre` takes a `&Genre`, so only ids of real vocabulary entries
-can enter; removal takes a bare `ID` and only removes. The list is unique,
-bounded at six, and non-empty by construction: removing the last genre drops
-the field, so `has_genres` means at least one genre, and `genres` aborts
-`ENoGenres` rather than returning an empty list. The module-owned key prevents
-cross-extension collisions. No funds, custody, or external calls are
-involved. Events are 64 (add/remove) and 32 (clear) BCS bytes.
+- **Writer:** the holder of `RecordingAdminCap<RecordingShare>`. `uid_mut` (`miso_music` `recording.move:113`) authorizes by type, and the cap is unique to its recording (`:77,131`).
+- **Reader:** anyone.
+- **Genres:** anyone can create a `Genre` through `genre::new`. Each one is frozen and derived from its name, so names are unique.
+- **What nobody else can do:** no other package can construct `ExtensionKey`.
 
-## Evidence
+## Findings
 
-With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
-passes 18/18 tests with no warnings and 100.00% coverage. Tests cover the
-published/shared lifecycle with a stranger reader, primary promotion on
-removal, the six-genre bound, duplicate rejection, absent and not-found
-removals, field removal with the last genre, clear-and-re-add reordering,
-silent absent clears, an unrelated dynamic field left untouched, and exact
-event BCS layouts.
+None.
+
+## Checked, no finding
+
+- **Authorization:** all three writes call `uid_mut` (`recording_genre.move:53`, `:71`, `:88`) before reading stored state.
+- **Genre IDs:** `add_genre` takes a `&Genre` (`:49`), so only the ID of an existing frozen `Genre` from the pinned package can enter the list. `remove_genre` takes a bare `ID`, but it can only remove.
+- **List invariants:**
+  - No duplicates (`:56`).
+  - At most six entries (`:57`), with duplicates checked before capacity, as documented.
+  - Never empty: the last removal drops the field (`:77-79`). `genres` aborts with `ENoGenres` (`:102`) instead of returning an empty list.
+- **Events:**
+  - The add and remove events are 64 bytes each and carry the genre ID. The clear event is 32 bytes.
+  - Replaying them in order reproduces the list, including which genre becomes primary when the first one is removed.
+  - A clear of an absent list is silent (`:89`).
+- **Limits and money:** the record is at most 193 bytes. No objects or coins are involved.
+
+## Operational requirements
+
+- Resolve genre names from the frozen `Genre` objects or from `GenreCreatedEvent`.
+
+## Verification
+
+- Sui 1.82.1.
+- `sui move test --coverage --lint --warnings-are-errors`: 18/18 passed, no warnings.
+- `sui move coverage summary`: 100.00%.
+- Mainnet and testnet builds with `--lint --warnings-are-errors`: pass.
