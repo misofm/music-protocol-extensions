@@ -16,7 +16,7 @@ module release_cover_art::release_cover_art;
 use sui::dynamic_field as df;
 use sui::event::emit;
 use cover_art::cover_art::CoverArt;
-use musicos::release::{Release, ReleaseAdminCap};
+use miso_music::release::{Release, ReleaseAdminCap};
 use release_track_data::release_track_data::{Self, ReleaseTrackData};
 
 // === Errors ===

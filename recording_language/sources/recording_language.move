@@ -17,7 +17,7 @@ use sui::dynamic_field as df;
 use sui::event::emit;
 use sui::vec_set;
 use language_code::language_code::LanguageCode;
-use musicos::recording::{Recording, RecordingAdminCap};
+use miso_music::recording::{Recording, RecordingAdminCap};
 
 // === Errors ===
 

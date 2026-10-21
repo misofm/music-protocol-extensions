@@ -14,9 +14,9 @@ use sui::bcs::to_bytes;
 use sui::event::events_by_type;
 use sui::test_scenario;
 use credit::credit::{Self, Credit};
-use musicos::composition::{Self, Composition, CompositionAdminCap};
-use musicos::test_helpers;
-use partyos::party::{Self, Party, PartyAdminCap};
+use miso_music::composition::{Self, Composition, CompositionAdminCap};
+use miso_music::test_helpers;
+use miso_party::party::{Self, Party, PartyAdminCap};
 use composition_credits::composition_credits as credits;
 use composition_credits::composition_party_role::{Self as cpr, CompositionPartyRole};
 

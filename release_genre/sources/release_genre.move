@@ -1,7 +1,7 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// The genres a musicos `Release` is classified under as a released product,
+/// The genres a `miso_music` `Release` is classified under as a released product,
 /// stored as a dynamic field on the release's UID and written through its
 /// cap-gated `uid_mut`. A recording's own genre lives in `recording_genre`;
 /// clients resolve a track's genre from the recording first and fall back to
@@ -18,7 +18,7 @@ module release_genre::release_genre;
 use sui::dynamic_field as df;
 use sui::event::emit;
 use genre::genre::Genre;
-use musicos::release::{Release, ReleaseAdminCap};
+use miso_music::release::{Release, ReleaseAdminCap};
 
 // === Errors ===
 

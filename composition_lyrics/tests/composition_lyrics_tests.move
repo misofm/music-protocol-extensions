@@ -12,7 +12,7 @@ use sui::bcs;
 use sui::event;
 use sui::test_scenario;
 use language_code::language_code as lc;
-use musicos::composition::{Self, Composition, CompositionAdminCap};
+use miso_music::composition::{Self, Composition, CompositionAdminCap};
 use composition_lyrics::composition_lyrics as cl;
 
 public struct TestShare() has drop;

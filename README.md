@@ -1,7 +1,7 @@
-# MusicOS Extensions
+# Music Protocol Extensions
 
 Data-model extensions for
-[`misofm/musicos`](https://github.com/misofm/musicos) on Sui.
+[`misofm/music-protocol`](https://github.com/misofm/music-protocol) (`miso_music`) on Sui.
 
 Miso keeps `Composition`, `Recording`, and `Release` focused on constitutive
 protocol state. An extension adds optional typed data as a dynamic field on one
@@ -15,7 +15,7 @@ platform adapters bridge Vault custody to an Action:
 
 | Repository | Responsibility |
 |------------|----------------|
-| [`misofm/musicos`](https://github.com/misofm/musicos) | Core music objects and the canonical `ReleaseRegistry` namespace. |
+| [`misofm/music-protocol`](https://github.com/misofm/music-protocol) | Core music objects and the canonical `ReleaseRegistry` namespace. |
 | [`misofm/royalty-pool`](https://github.com/misofm/royalty-pool) | Each work's canonical royalty pools. |
 | [`misofm/release-revenue-forwarder`](https://github.com/misofm/release-revenue-forwarder) | Forwards release revenue to the tracks' pools. |
 | [`misofm/partyos-actions`](https://github.com/misofm/partyos-actions) | Custody-agnostic, return-oriented Party workflows. |
@@ -51,7 +51,7 @@ First-party, platform-neutral metadata extensions.
 
 Each package covers one concern and stores one value under a single
 `ExtensionKey()`, so changing one attribute's schema never forces a data
-migration of another. Titles live here because musicos core stores none.
+migration of another. Titles live here because `miso_music` stores none.
 
 ## Usage
 
@@ -59,12 +59,12 @@ Reference an extension by repository subdirectory and exact commit:
 
 ```toml
 [dependencies]
-release_genre = { git = "https://github.com/misofm/musicos-extensions.git", subdir = "release_genre", rev = "<40-character-commit>" }
+release_genre = { git = "https://github.com/misofm/music-protocol-extensions.git", subdir = "release_genre", rev = "<40-character-commit>" }
 ```
 
 Each package's `Move.toml` pins its own protocol and supporting dependencies.
-The current sources target musicos commit
-`24570431c1c02118c2b558d4ac1c30b39ca4cb2f`: Composition and Recording are
+The current sources target `miso_music` commit
+`e676920b70e03cd2de8a52f440374d88d17d063f`: Composition and Recording are
 generic over their share coin type, and their admin capabilities authorize by
 that type; a Release admin capability authorizes by the release's ID.
 Composition and Recording extension events carry no share type arguments;

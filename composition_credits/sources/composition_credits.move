@@ -14,8 +14,8 @@ use sui::dynamic_field as df;
 use sui::event::emit;
 use sui::vec_map::{Self, VecMap};
 use credit::credit::Credit;
-use musicos::composition::{Composition, CompositionAdminCap};
-use partyos::party::Party;
+use miso_music::composition::{Composition, CompositionAdminCap};
+use miso_party::party::Party;
 use composition_credits::composition_party_role::CompositionPartyRole;
 
 // === Errors ===

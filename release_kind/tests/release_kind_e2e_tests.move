@@ -15,8 +15,8 @@ module release_kind::release_kind_e2e_tests;
 use std::unit_test::{assert_eq, destroy};
 use sui::event;
 use sui::test_scenario::{Self, Scenario};
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::test_helpers;
+use miso_music::release::{Self, Release, ReleaseAdminCap};
+use miso_music::test_helpers;
 use release_kind::release_kind as rk;
 
 const ADMIN: address = @0xAD;

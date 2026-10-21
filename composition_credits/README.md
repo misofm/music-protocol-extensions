@@ -1,8 +1,8 @@
 # `composition_credits`
 
-Writing credits for a `musicos::composition::Composition`:
+Writing credits for a `miso_music::composition::Composition`:
 one `Credit<CompositionPartyRole>` (display name plus one or more roles) per credited
-`partyos` `Party`, kept in a single `CompositionCredits` record stored as a
+`miso_party` `Party`, kept in a single `CompositionCredits` record stored as a
 dynamic field on the composition and written through its cap-gated `uid_mut`.
 Attribution is display-oriented and varies across platforms, so it lives here
 rather than in immutable core; it is not read by any economics, and because it
@@ -56,7 +56,7 @@ that keys the entry, and — on add — the roles exactly as stored.
 `roles` is the credit's role vector in stored order; every
 `CompositionPartyRole` is a unit variant, so each role is one byte (its
 variant index in declaration order). The display name stays in storage (it
-normally duplicates the party's own name from `partyos` events); the events
+normally duplicates the party's own name from `miso_party` events); the events
 do not carry the admin cap (derived from the composition), counts or indices
 (replayable from the ordered add/remove stream), or presence flags.
 
@@ -71,11 +71,11 @@ do not carry the admin cap (derived from the composition), counts or indices
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Composition`
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Composition`
   and `CompositionAdminCap`.
-- [`partyos`](https://github.com/misofm/partyos) at
-  `88c2e40353dbee8d8f98272069b4d836b02b12ae` — `Party`, the credited identity.
+- [`miso_party`](https://github.com/misofm/party-protocol) at
+  `defb05a6066cdf7e8949f9162f00589d38eef6ce` — `Party`, the credited identity.
 - [`credit`](https://github.com/misofm/credit) at
   `6c295ea10f796edfec18f54783733a35210f4b06` — the generic `Credit<Role>`.
 

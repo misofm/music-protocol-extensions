@@ -15,8 +15,8 @@ use std::unit_test::{assert_eq, destroy};
 use sui::event;
 use sui::test_scenario::{Self as ts, Scenario};
 use genre::genre::{Self as g, GenreRegistry, Genre};
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::test_helpers;
+use miso_music::release::{Self, Release, ReleaseAdminCap};
+use miso_music::test_helpers;
 use release_genre::release_genre as rg;
 
 const CREATOR: address = @0xC0;

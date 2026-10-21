@@ -1,7 +1,7 @@
 # release_kind
 
 `release_kind` stores the free-form label a release uses for itself — for
-example `Album`, `EP`, `Mixtape`, or `Split` — on a `musicos::release::Release`.
+example `Album`, `EP`, `Mixtape`, or `Split` — on a `miso_music::release::Release`.
 It is deliberately not a closed vocabulary and is not derived from the track
 list. The value is stored verbatim as a `std::string::String`, including case,
 whitespace, NUL bytes, and other valid UTF-8 bytes.
@@ -45,12 +45,12 @@ event only when a kind was actually removed. Views emit nothing.
 | 0 | `ENoKind` | `release_kind::release_kind` | `kind` with nothing attached |
 | 1 | `EEmptyKind` | `release_kind::release_kind` | `set_kind` with an empty string |
 | 2 | `EKindTooLong` | `release_kind::release_kind` | `set_kind` with more than 32 bytes |
-| 0 | `EUnauthorized` | `musicos::release` | any write with a cap for a different release |
+| 0 | `EUnauthorized` | `miso_music::release` | any write with a cap for a different release |
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release`, `ReleaseAdminCap`,
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Release`, `ReleaseAdminCap`,
   and cap-gated `uid_mut`.
 
 ## Publishing

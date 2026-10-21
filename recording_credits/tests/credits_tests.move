@@ -16,9 +16,9 @@ use sui::bcs::to_bytes;
 use sui::event::{events_by_type, num_events};
 use sui::test_scenario;
 use credit::credit::{Self, Credit};
-use musicos::recording::{Self, Recording, RecordingAdminCap};
-use musicos::test_helpers;
-use partyos::party::{Self, Party, PartyAdminCap};
+use miso_music::recording::{Self, Recording, RecordingAdminCap};
+use miso_music::test_helpers;
+use miso_party::party::{Self, Party, PartyAdminCap};
 use recording_credits::recording_credits as credits;
 use recording_credits::recording_party_role::{Self as rpr, RecordingPartyRole};
 

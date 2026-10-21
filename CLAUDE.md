@@ -1,6 +1,6 @@
 # Repository Guidance
 
-This repository contains independent Sui Move packages that extend a `musicos`
+This repository contains independent Sui Move packages that extend a `miso_music`
 `Composition`, `Recording`, or `Release` with neutral metadata stored as
 cap-gated dynamic fields. `recording_license` moved to `misofm/recording-license`.
 

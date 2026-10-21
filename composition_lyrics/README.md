@@ -1,7 +1,7 @@
 # composition_lyrics
 
 `composition_lyrics` stores language-specific song lyrics as compressed bytes
-on a `musicos::composition::Composition`, one entry per ISO
+on a `miso_music::composition::Composition`, one entry per ISO
 639-1 language code.
 
 ## Storage and encoding
@@ -76,8 +76,8 @@ languages currently attached.
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Composition`,
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Composition`,
   `CompositionAdminCap`, and cap-gated `uid_mut`.
 - [`language_code`](https://github.com/unconfirmedlabs/language_code) at
   `61542357f3d2ff989d120185046def7cf6c8bdcb` — the validated ISO 639-1 key.

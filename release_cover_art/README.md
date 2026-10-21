@@ -1,6 +1,6 @@
 # `release_cover_art`
 
-Cover art for a `musicos::release::Release`: an album-level cover plus
+Cover art for a `miso_music::release::Release`: an album-level cover plus
 optional per-track overrides, stored as one `ReleaseCoverArt` record under a
 dynamic field on the release and written through its cap-gated `uid_mut`.
 Cover art is presentation, not objective recording data, so it lives on the
@@ -64,15 +64,15 @@ state transition.
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release`, `ReleaseAdminCap`,
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Release`, `ReleaseAdminCap`,
   and `uid_mut`.
 - [`cover_art`](https://github.com/misofm/cover-art) at
   `948213d99f4e0a56064181d9318936beba95e138` — the `CoverArt` value type,
   which rejects encrypted blobs.
 - [`release_track_data`](https://github.com/misofm/release-track-data) at
-  `8c17dfd96de046b34afe18e5a4890533c4ae321a` — the `ReleaseTrackData<Data>`
-  array behind the overrides, pinned to the same musicos.
+  `af1272f0cd85841f7eb28f2fc91e5cb4af35724b` — the `ReleaseTrackData<Data>`
+  array behind the overrides, pinned to the same `miso_music`.
 - [`ori`](https://github.com/unconfirmedlabs/ori) at
   `367ed5fe92a8b62da02c1116537cf08d111e0789`, test mode only — blob fixtures.
 

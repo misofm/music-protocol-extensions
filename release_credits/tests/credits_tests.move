@@ -14,8 +14,8 @@ use sui::bcs::to_bytes;
 use sui::event::events_by_type;
 use sui::test_scenario;
 use credit::credit::{Self, Credit};
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use partyos::party::{Self, Party, PartyAdminCap};
+use miso_music::release::{Self, Release, ReleaseAdminCap};
+use miso_party::party::{Self, Party, PartyAdminCap};
 use release_credits::release_credits as credits;
 use release_credits::release_party_role::{Self as rpr, ReleasePartyRole};
 

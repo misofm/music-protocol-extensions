@@ -14,9 +14,9 @@ use std::unit_test::{assert_eq, destroy};
 use sui::event::events_by_type;
 use sui::test_scenario::{Self, Scenario};
 use credit::credit::{Self, Credit};
-use musicos::composition;
-use musicos::recording::{Self, Recording, RecordingAdminCap};
-use partyos::party::{Self, Party, PartyAdminCap};
+use miso_music::composition;
+use miso_music::recording::{Self, Recording, RecordingAdminCap};
+use miso_party::party::{Self, Party, PartyAdminCap};
 use recording_credits::recording_credits as credits;
 use recording_credits::recording_party_role::{Self as rpr, RecordingPartyRole};
 

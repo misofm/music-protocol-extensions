@@ -13,7 +13,7 @@ use std::unit_test::{assert_eq, destroy};
 use sui::bcs::to_bytes;
 use sui::event::events_by_type;
 use cover_art::cover_art as cover;
-use musicos::release::{Self, Release, ReleaseAdminCap};
+use miso_music::release::{Self, Release, ReleaseAdminCap};
 use release_cover_art::cover_art_fixtures as fixtures;
 use release_cover_art::release_cover_art::{
     Self,

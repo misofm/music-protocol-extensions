@@ -15,7 +15,7 @@ use std::unit_test::{assert_eq, destroy};
 use sui::bcs::to_bytes;
 use sui::event::events_by_type;
 use language_code::language_code::{Self, LanguageCode};
-use musicos::recording::{Self, Recording, RecordingAdminCap};
+use miso_music::recording::{Self, Recording, RecordingAdminCap};
 use recording_language::recording_language::{
     Self as rl,
     RecordingLanguagesSetEvent,

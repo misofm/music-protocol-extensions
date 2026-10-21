@@ -1,6 +1,6 @@
 # `recording_language`
 
-The languages sung or spoken on a `musicos::recording::Recording`: one ordered
+The languages sung or spoken on a `miso_music::recording::Recording`: one ordered
 `vector<LanguageCode>` of ISO 639-1 codes stored as a dynamic field on the
 recording and written through its cap-gated `uid_mut`. An attached empty
 vector is an explicit instrumental claim; absence means no claim has been made.
@@ -53,8 +53,8 @@ codes in a different order are a different value and emit a set event.
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Recording<RecordingShare>`
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Recording<RecordingShare>`
   and its type-bound `RecordingAdminCap<RecordingShare>`.
 - [`language_code`](https://github.com/unconfirmedlabs/language_code) at
   `61542357f3d2ff989d120185046def7cf6c8bdcb` — ISO 639-1 codes valid by

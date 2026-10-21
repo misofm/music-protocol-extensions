@@ -17,8 +17,8 @@ use sui::dynamic_field as df;
 use sui::event::emit;
 use sui::vec_map::{Self, VecMap};
 use credit::credit::Credit;
-use musicos::release::{Release, ReleaseAdminCap};
-use partyos::party::Party;
+use miso_music::release::{Release, ReleaseAdminCap};
+use miso_party::party::Party;
 use release_credits::release_party_role::ReleasePartyRole;
 
 // === Errors ===

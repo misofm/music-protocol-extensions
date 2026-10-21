@@ -15,8 +15,8 @@ module release_title::release_title_e2e_tests;
 use std::unit_test::{assert_eq, destroy};
 use sui::event;
 use sui::test_scenario::{Self, Scenario};
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::test_helpers;
+use miso_music::release::{Self, Release, ReleaseAdminCap};
+use miso_music::test_helpers;
 use release_title::release_title as rt;
 
 const LABEL: address = @0xAD;

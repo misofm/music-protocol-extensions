@@ -14,7 +14,7 @@ use std::string::String;
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs::to_bytes;
 use sui::event::events_by_type;
-use musicos::recording::{Self, Recording, RecordingAdminCap};
+use miso_music::recording::{Self, Recording, RecordingAdminCap};
 use recording_version::recording_version::{
     Self as rv,
     RecordingVersionSetEvent,

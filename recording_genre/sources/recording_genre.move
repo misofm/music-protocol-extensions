@@ -17,7 +17,7 @@ module recording_genre::recording_genre;
 use sui::dynamic_field as df;
 use sui::event::emit;
 use genre::genre::Genre;
-use musicos::recording::{Recording, RecordingAdminCap};
+use miso_music::recording::{Recording, RecordingAdminCap};
 
 // === Errors ===
 

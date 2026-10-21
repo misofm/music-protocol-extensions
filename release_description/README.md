@@ -1,7 +1,7 @@
 # release_description
 
 `release_description` stores one bounded, non-empty UTF-8 `String` — the
-paragraph a release says about itself — on a `musicos::release::Release`. The
+paragraph a release says about itself — on a `miso_music::release::Release`. The
 prose is stored exactly as supplied: whitespace, case, line breaks, and
 multi-byte UTF-8 are not normalized.
 
@@ -46,12 +46,12 @@ event only when a description was actually removed. Views emit nothing.
 | 0 | `ENoDescription` | `release_description::release_description` | `description` with nothing attached |
 | 1 | `EEmptyDescription` | `release_description::release_description` | `set_description` with an empty string |
 | 2 | `EDescriptionTooLong` | `release_description::release_description` | `set_description` with more than 8192 bytes |
-| 0 | `EUnauthorized` | `musicos::release` | any write with a cap for a different release |
+| 0 | `EUnauthorized` | `miso_music::release` | any write with a cap for a different release |
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release`, `ReleaseAdminCap`,
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Release`, `ReleaseAdminCap`,
   and cap-gated `uid_mut`.
 
 ## Publishing

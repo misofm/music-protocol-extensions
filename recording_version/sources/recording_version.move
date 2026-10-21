@@ -14,7 +14,7 @@ module recording_version::recording_version;
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
-use musicos::recording::{Recording, RecordingAdminCap};
+use miso_music::recording::{Recording, RecordingAdminCap};
 
 // === Errors ===
 

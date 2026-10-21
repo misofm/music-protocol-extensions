@@ -1,7 +1,7 @@
 # `composition_title`
 
 `composition_title` stores a composition's preferred title, attached to a
-`musicos::composition::Composition` as one dynamic field.
+`miso_music::composition::Composition` as one dynamic field.
 Core stores the composition's identity but carries no title. Anything with more than one correct rendering
 (translations, alternate titles, corrections) is presentation and lives in
 the extension layer.
@@ -91,6 +91,6 @@ sui move test --build-env mainnet --coverage --lint --warnings-are-errors
 sui move coverage summary --build-env mainnet
 ```
 
-`musicos` is pinned to `24570431c1c02118c2b558d4ac1c30b39ca4cb2f`. This is an
+`miso_music` is pinned to `e676920b70e03cd2de8a52f440374d88d17d063f`. This is an
 independent package intended for fresh immutable publication under the
 repository's release policy. No publication has been performed.

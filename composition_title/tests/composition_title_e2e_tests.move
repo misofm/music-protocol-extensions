@@ -14,7 +14,7 @@ module composition_title::composition_title_e2e_tests;
 use std::unit_test::assert_eq;
 use sui::event;
 use sui::test_scenario::{Self, Scenario};
-use musicos::composition::{Self, Composition, CompositionAdminCap};
+use miso_music::composition::{Self, Composition, CompositionAdminCap};
 use composition_title::composition_title as ct;
 
 const WRITER: address = @0xA0;

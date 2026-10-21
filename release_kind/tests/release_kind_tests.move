@@ -14,8 +14,8 @@ module release_kind::release_kind_tests;
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs;
 use sui::event;
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::test_helpers;
+use miso_music::release::{Self, Release, ReleaseAdminCap};
+use miso_music::test_helpers;
 use release_kind::release_kind as rk;
 
 /// A one-track release; a kind is never derived from the tracklist.

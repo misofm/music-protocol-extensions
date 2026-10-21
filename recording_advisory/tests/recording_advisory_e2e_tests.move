@@ -14,8 +14,8 @@ use std::unit_test::{assert_eq, destroy};
 use sui::bcs::to_bytes;
 use sui::event::events_by_type;
 use sui::test_scenario::{Self as ts, Scenario};
-use musicos::composition;
-use musicos::recording::{Self, Recording, RecordingAdminCap};
+use miso_music::composition;
+use miso_music::recording::{Self, Recording, RecordingAdminCap};
 use recording_advisory::recording_advisory::{
     Self as adv,
     RecordingAdvisorySetEvent,

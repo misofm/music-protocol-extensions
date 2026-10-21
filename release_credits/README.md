@@ -1,8 +1,8 @@
 # `release_credits`
 
-Top-line billing for a `musicos::release::Release`: one
+Top-line billing for a `miso_music::release::Release`: one
 `Credit<ReleasePartyRole>` (display name plus exactly one role, `Primary` or
-`Featured`) per credited `partyos` `Party`, kept in a single `ReleaseCredits`
+`Featured`) per credited `miso_party` `Party`, kept in a single `ReleaseCredits`
 record stored as a dynamic field on the release and written through its
 cap-gated `uid_mut`. Attribution is display-oriented and varies across
 platforms, so it lives here rather than in immutable core; it is not read by
@@ -55,7 +55,7 @@ on add — the role exactly as stored.
 `role` is the credit's one role; `ReleasePartyRole` is a unit variant
 (`Primary = 0`, `Featured = 1` by declaration order), so every add event is
 exactly 65 bytes. The display name stays in storage (it normally
-duplicates the party's own name from `partyos` events); the events do not
+duplicates the party's own name from `miso_party` events); the events do not
 carry the admin cap (derived from the release), counts or indices (replayable
 from the ordered add/remove stream), or presence flags.
 
@@ -71,11 +71,11 @@ from the ordered add/remove stream), or presence flags.
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release` and
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Release` and
   `ReleaseAdminCap`.
-- [`partyos`](https://github.com/misofm/partyos) at
-  `88c2e40353dbee8d8f98272069b4d836b02b12ae` — `Party`, the credited identity.
+- [`miso_party`](https://github.com/misofm/party-protocol) at
+  `defb05a6066cdf7e8949f9162f00589d38eef6ce` — `Party`, the credited identity.
 - [`credit`](https://github.com/misofm/credit) at
   `6c295ea10f796edfec18f54783733a35210f4b06` — the generic `Credit<Role>`.
 

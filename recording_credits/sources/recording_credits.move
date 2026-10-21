@@ -18,8 +18,8 @@ use sui::event::emit;
 use sui::vec_map::{Self, VecMap};
 use sui::vec_set::{Self, VecSet};
 use credit::credit::Credit;
-use musicos::recording::{Recording, RecordingAdminCap};
-use partyos::party::Party;
+use miso_music::recording::{Recording, RecordingAdminCap};
+use miso_party::party::Party;
 use recording_credits::recording_party_role::RecordingPartyRole;
 
 // === Errors ===

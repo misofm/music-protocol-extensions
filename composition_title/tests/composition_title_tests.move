@@ -17,7 +17,7 @@ use std::unit_test::{assert_eq, destroy};
 use sui::bcs::to_bytes;
 use sui::dynamic_field as df;
 use sui::event;
-use musicos::composition::{Self, Composition, CompositionAdminCap};
+use miso_music::composition::{Self, Composition, CompositionAdminCap};
 use composition_title::composition_title as ct;
 
 public struct TestShare() has drop;

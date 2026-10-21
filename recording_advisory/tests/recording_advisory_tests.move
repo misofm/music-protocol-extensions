@@ -12,7 +12,7 @@ module recording_advisory::recording_advisory_tests;
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs::to_bytes;
 use sui::event::events_by_type;
-use musicos::recording::{Self, Recording, RecordingAdminCap};
+use miso_music::recording::{Self, Recording, RecordingAdminCap};
 use recording_advisory::recording_advisory::{
     Self as adv,
     RecordingAdvisorySetEvent,

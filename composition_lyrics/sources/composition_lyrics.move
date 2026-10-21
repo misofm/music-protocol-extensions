@@ -18,7 +18,7 @@ use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
 use language_code::language_code::LanguageCode;
-use musicos::composition::{Composition, CompositionAdminCap};
+use miso_music::composition::{Composition, CompositionAdminCap};
 
 // === Errors ===
 

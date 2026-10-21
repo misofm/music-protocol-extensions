@@ -1,6 +1,6 @@
 # `recording_version`
 
-The version name of a `musicos::recording::Recording` — which take of the
+The version name of a `miso_music::recording::Recording` — which take of the
 composition it is ("Live", "Radio Edit", "Acoustic") — stored as a dynamic
 field on the recording and written through its cap-gated `uid_mut`.
 
@@ -54,8 +54,8 @@ event is a real state transition.
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Recording<RecordingShare>`
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Recording<RecordingShare>`
   and its type-bound `RecordingAdminCap<RecordingShare>`.
 
 ## Publishing

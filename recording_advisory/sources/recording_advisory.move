@@ -12,7 +12,7 @@ module recording_advisory::recording_advisory;
 
 use sui::dynamic_field as df;
 use sui::event::emit;
-use musicos::recording::{Recording, RecordingAdminCap};
+use miso_music::recording::{Recording, RecordingAdminCap};
 
 // === Errors ===
 

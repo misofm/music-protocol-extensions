@@ -15,8 +15,8 @@ use sui::bcs::to_bytes;
 use sui::event::events_by_type;
 use sui::test_scenario::{Self as ts, Scenario};
 use genre::genre::{Self as g, GenreRegistry, Genre};
-use musicos::composition;
-use musicos::recording::{Self, Recording, RecordingAdminCap};
+use miso_music::composition;
+use miso_music::recording::{Self, Recording, RecordingAdminCap};
 use recording_genre::recording_genre::{
     Self as rg,
     RecordingGenreAddedEvent,

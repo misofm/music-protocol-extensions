@@ -1,7 +1,7 @@
 # release_title
 
 `release_title` stores the title a release prefers to be known by on a
-`musicos::release::Release`. Core `Release` carries no title — a title is
+`miso_music::release::Release`. Core `Release` carries no title — a title is
 presentation, not the tracklist the release id commits to —
 so it lives here as a mutable extension. The value is stored verbatim as a
 `std::string::String`, including case, whitespace, and multi-byte UTF-8.
@@ -45,12 +45,12 @@ event only when a title was actually removed. Views emit nothing.
 | 0 | `ENoTitle` | `release_title::release_title` | `title` with nothing attached |
 | 1 | `EEmptyTitle` | `release_title::release_title` | `set_title` with an empty string |
 | 2 | `ETitleTooLong` | `release_title::release_title` | `set_title` with more than 300 bytes |
-| 0 | `EUnauthorized` | `musicos::release` | any write with a cap for a different release |
+| 0 | `EUnauthorized` | `miso_music::release` | any write with a cap for a different release |
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release`, `ReleaseAdminCap`,
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Release`, `ReleaseAdminCap`,
   and cap-gated `uid_mut`.
 
 ## Publishing

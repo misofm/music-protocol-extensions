@@ -1,8 +1,8 @@
 # `recording_credits`
 
-Credits for a `musicos::recording::Recording`: one
+Credits for a `miso_music::recording::Recording`: one
 `Credit<RecordingPartyRole>` (display name plus 1-10 roles) per credited
-`partyos` `Party`, plus primary and featured artist designations, kept in a
+`miso_party` `Party`, plus primary and featured artist designations, kept in a
 single `RecordingCredits` record stored as a dynamic field on the recording
 and written through its cap-gated `uid_mut`. Attribution is display-oriented
 and varies across platforms, so it lives here rather than in immutable core;
@@ -89,7 +89,7 @@ level's variant index) for every role except the levelless
 or two bytes; the worst case is ten instrumentalists each with a 100-byte
 instrument name and a level (104 bytes apiece), 1105 in total. The display
 name stays in storage (it normally duplicates the party's own name from
-`partyos` events).
+`miso_party` events).
 
 The events do not carry the composition id (joinable via core's
 `RecordingPublishedEvent`), the admin cap (derived from
@@ -116,11 +116,11 @@ stream), or presence and cascade flags.
 
 ## Dependencies
 
-- [`musicos`](https://github.com/misofm/musicos) at
-  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Recording<RecordingShare>`
+- [`miso_music`](https://github.com/misofm/music-protocol) at
+  `e676920b70e03cd2de8a52f440374d88d17d063f` — `Recording<RecordingShare>`
   and its type-bound `RecordingAdminCap<RecordingShare>`.
-- [`partyos`](https://github.com/misofm/partyos) at
-  `88c2e40353dbee8d8f98272069b4d836b02b12ae` — `Party`, the credited identity.
+- [`miso_party`](https://github.com/misofm/party-protocol) at
+  `defb05a6066cdf7e8949f9162f00589d38eef6ce` — `Party`, the credited identity.
 - [`credit`](https://github.com/misofm/credit) at
   `6c295ea10f796edfec18f54783733a35210f4b06` — the generic `Credit<Role>`.
 

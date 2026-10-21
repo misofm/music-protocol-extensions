@@ -14,7 +14,7 @@ module release_description::release_description;
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
-use musicos::release::{Release, ReleaseAdminCap};
+use miso_music::release::{Release, ReleaseAdminCap};
 
 // === Errors ===
 
