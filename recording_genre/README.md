@@ -70,7 +70,7 @@ resolve client-side from the frozen `Genre` objects.
   `a62de87ff9c24c692ba711855b5acd94c4a6472e` — `Recording<RecordingShare>`
   and its type-bound `RecordingAdminCap<RecordingShare>`.
 - [`genre`](https://github.com/misofm/genre) at
-  `c891068a038d53564baf3134276fcd42f68fb0c8` — the canonical shared genre
+  `78e34e9587ad56d2477289d03adb6c850565a531` — the canonical shared genre
   vocabulary.
 
 ## Publishing

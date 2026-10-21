@@ -23,7 +23,7 @@ manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5E
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.genre]
-source = { git = "https://github.com/misofm/genre.git", subdir = ".", rev = "c891068a038d53564baf3134276fcd42f68fb0c8" }
+source = { git = "https://github.com/misofm/genre.git", subdir = ".", rev = "78e34e9587ad56d2477289d03adb6c850565a531" }
 use_environment = "mainnet"
 manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5ECF6"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -43,7 +43,7 @@ deps = { std = "MoveStdlib", sui = "Sui" }
 [pinned.mainnet.release_genre]
 source = { root = true }
 use_environment = "mainnet"
-manifest_digest = "74E99880569B09431D2BA7984028080A16FA36A1CB812B2F8DF9462E89C1D75A"
+manifest_digest = "CAE88CE7198817885A2014E789412C09D9BAC96B1040A3959EF9367BAAA4B1E1"
 deps = { genre = "genre", miso_music = "miso_music", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.share]
@@ -71,7 +71,7 @@ manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.genre]
-source = { git = "https://github.com/misofm/genre.git", subdir = ".", rev = "c891068a038d53564baf3134276fcd42f68fb0c8" }
+source = { git = "https://github.com/misofm/genre.git", subdir = ".", rev = "78e34e9587ad56d2477289d03adb6c850565a531" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -91,7 +91,7 @@ deps = { std = "MoveStdlib", sui = "Sui" }
 [pinned.testnet.release_genre]
 source = { root = true }
 use_environment = "testnet"
-manifest_digest = "81248DE0437784F9B83F5CFEC774DF4085F7C2FB3CB6DCF4626576ECE7C18BFF"
+manifest_digest = "14A47C3F78999A9A41F1CF17DC2EED00FB50520DE6AE763E5560019A0D4CC6C6"
 deps = { genre = "genre", miso_music = "miso_music", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.share]

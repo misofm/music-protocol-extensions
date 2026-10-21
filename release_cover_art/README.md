@@ -68,7 +68,7 @@ state transition.
   `a62de87ff9c24c692ba711855b5acd94c4a6472e` — `Release`, `ReleaseAdminCap`,
   and `uid_mut`.
 - [`cover_art`](https://github.com/misofm/cover-art) at
-  `d5e472ca4ba90a99883ff0cf849679d8c4bca501` — the `CoverArt` value type,
+  `ccc18714c65428ae5715fde06b60a911451e120b` — the `CoverArt` value type,
   which rejects encrypted blobs.
 - [`release_track_data`](https://github.com/misofm/release-track-data) at
   `e91e247e092202d354681ba56b1453afaab08664` — the `ReleaseTrackData<Data>`

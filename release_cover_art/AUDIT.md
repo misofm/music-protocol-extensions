@@ -6,7 +6,7 @@ the tests for the current API.
 ## Dependency provenance
 
 `Move.toml` pins `miso_music` at `a62de87ff9c24c692ba711855b5acd94c4a6472e`,
-`cover_art` at `d5e472ca4ba90a99883ff0cf849679d8c4bca501`,
+`cover_art` at `ccc18714c65428ae5715fde06b60a911451e120b`,
 `release_track_data` at `e91e247e092202d354681ba56b1453afaab08664`, and, in
 test mode only, `ori` at `367ed5fe92a8b62da02c1116537cf08d111e0789`.
 

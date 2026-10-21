@@ -7,7 +7,7 @@ the tests for the current API.
 
 `Move.toml` pins `miso_music` at `a62de87ff9c24c692ba711855b5acd94c4a6472e`,
 `miso_party` at `9374c6eed64c907722ac1c93813c76dc7912b357`, and `credit` at
-`c8d5be0a462760c74b45dcdc39a3e5e0a2f10b99`. `credit` provides
+`5aa56d788657f7438d85ae07862d07ebd3cb5f8c`. `credit` provides
 `Credit<RecordingPartyRole>`; `miso_party` provides only the credited `Party`
 identity.
 
