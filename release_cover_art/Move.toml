@@ -5,7 +5,7 @@ license = "FSL-1.1-ALv2"
 authors = ["Miso Labs, Inc. (build@miso.fm)"]
 
 [dependencies]
-cover_art = { git = "https://github.com/misofm/cover-art.git", rev = "ccc18714c65428ae5715fde06b60a911451e120b" }
-miso_music = { git = "https://github.com/misofm/music-protocol.git", rev = "f52e79db4f44e9c59f277c4291c2b167295d002b" }
-release_track_data = { git = "https://github.com/misofm/release-track-data.git", rev = "751f37569ccb98d3c03c5d967a4204ca37eba9ad" }
+cover_art = { git = "https://github.com/misofm/cover-art.git", rev = "2065cb49bbd896ec308b211b2a4c9891bb26ba2f" }
+miso_music = { git = "https://github.com/misofm/music-protocol.git", rev = "1538d77035c4fb6b45b74f7d85168b7c3a80564b" }
+release_track_data = { git = "https://github.com/misofm/release-track-data.git", rev = "269a9211f35889a724e1d5a0d43c22b5e5ec7130" }
 ori = { git = "https://github.com/unconfirmedlabs/ori.git", rev = "367ed5fe92a8b62da02c1116537cf08d111e0789", subdir = "move", modes = ["test"] }

@@ -80,7 +80,7 @@ languages currently attached.
 ## Dependencies
 
 - [`miso_music`](https://github.com/misofm/music-protocol) at
-  `f52e79db4f44e9c59f277c4291c2b167295d002b` — `Composition`,
+  `1538d77035c4fb6b45b74f7d85168b7c3a80564b` — `Composition`,
   `CompositionAdminCap`, and cap-gated `uid_mut`.
 - [`language_code`](https://github.com/unconfirmedlabs/language_code) at
   `61542357f3d2ff989d120185046def7cf6c8bdcb` — the validated ISO 639-1 key.

@@ -55,7 +55,7 @@ event only when a description was actually removed. Views emit nothing.
 ## Dependencies
 
 - [`miso_music`](https://github.com/misofm/music-protocol) at
-  `f52e79db4f44e9c59f277c4291c2b167295d002b` — `Release`, `ReleaseAdminCap`,
+  `1538d77035c4fb6b45b74f7d85168b7c3a80564b` — `Release`, `ReleaseAdminCap`,
   and cap-gated `uid_mut`.
 
 ## Publishing
