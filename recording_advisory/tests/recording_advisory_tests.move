@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Set/read/replace/clear mechanics against a bare `Recording`. Nothing here
-/// crosses a transaction boundary, so `tx_context::dummy()` suffices; the
-/// published, shared shape is covered in `recording_advisory_e2e_tests`.
 #[test_only]
 module recording_advisory::recording_advisory_tests;
 
@@ -45,7 +42,6 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(event_rec_id, rec_id);
     assert!(advisory.is_explicit());
 
-    // Replacement in place — a recording has one advisory, not a history.
     adv::set_advisory(&mut rec, &cap, adv::cleaned());
     assert!(adv::advisory(&rec).is_cleaned());
     assert!(!adv::advisory(&rec).is_explicit());
@@ -60,7 +56,6 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(cleared.length(), 1);
     assert_eq!(adv::recording_advisory_cleared_fields(&cleared[0]), rec_id);
 
-    // Re-attachment after a clear starts fresh.
     adv::set_advisory(&mut rec, &cap, adv::not_explicit());
     assert!(adv::advisory(&rec).is_not_explicit());
     assert_eq!(events_by_type<RecordingAdvisorySetEvent>().length(), 3);
@@ -101,7 +96,6 @@ fun clear_when_absent_is_silent() {
     destroy(cap);
 }
 
-/// A cleaned edit is not "never explicit", and neither collapses into the other.
 #[test]
 fun the_three_advisories_are_mutually_exclusive() {
     let cases = vector[adv::explicit(), adv::not_explicit(), adv::cleaned()];
@@ -118,8 +112,6 @@ fun the_three_advisories_are_mutually_exclusive() {
     });
 }
 
-/// An unrated recording has said nothing; asserting `NotExplicit` is a
-/// different, stronger claim.
 #[test]
 fun absence_is_not_not_explicit() {
     let ctx = &mut tx_context::dummy();
@@ -136,8 +128,7 @@ fun absence_is_not_not_explicit() {
     destroy(cap);
 }
 
-/// Every transition between the three values writes and emits; the set event
-/// carries the recording and the new value as a one-byte variant index.
+/// Every transition writes and emits; the new value is a one-byte variant index.
 #[test]
 fun set_events_carry_the_recording_and_the_new_value() {
     let ctx = &mut tx_context::dummy();
@@ -205,8 +196,6 @@ fun constructors_and_views_are_silent() {
     destroy(cap);
 }
 
-/// Advisories live on their own recording's UID, with events identified by
-/// recording ID.
 #[test]
 fun advisories_are_per_recording() {
     let ctx = &mut tx_context::dummy();

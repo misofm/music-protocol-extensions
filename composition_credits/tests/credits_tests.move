@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Add/remove mechanics, guard order, event payloads, record lifetime, and the
-/// published-and-shared shape for `composition_credits`.
 #[test_only]
 module composition_credits::credits_tests;
 
@@ -45,7 +43,6 @@ fun long_string(len: u64): String {
     bytes.to_string()
 }
 
-/// Fills `comp` to `MAX_CREDITS` and returns the first credited party.
 fun fill_to_capacity(
     comp: &mut Composition<TestShare>,
     cap: &CompositionAdminCap<TestShare>,
@@ -179,8 +176,6 @@ fun remove_credit_round_trip() {
     ts.end();
 }
 
-/// All six roles fit in one credit; the event carries the 200-byte display
-/// name and one byte per role.
 #[test]
 fun add_credit_emits_full_record() {
     let ctx = &mut tx_context::dummy();
@@ -262,7 +257,6 @@ fun add_credit_against_published_and_shared_composition() {
     ts.end();
 }
 
-/// `MAX_CREDITS` (50) is enforced at the boundary: the 51st party aborts.
 #[test, expected_failure(abort_code = credits::EMaxCreditsExceeded)]
 fun add_credit_rejects_when_max_credits_reached() {
     let ctx = &mut tx_context::dummy();

@@ -1,12 +1,7 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// End-to-end scenarios under `sui::test_scenario`: the release is published
-/// and shared exactly as in production (create-and-publish is atomic in
-/// core), and the kind extension operates on it via `take_shared` in later
-/// transactions. ADMIN holds the release's admin cap; STRANGER owns nothing
-/// and proves both that reads are permissionless and that a foreign cap is
-/// rejected against the shared release.
+/// Create-and-publish is atomic in core, so the release is shared from its first transaction.
 #[test_only]
 module release_kind::release_kind_e2e_tests;
 
@@ -22,8 +17,6 @@ use release_kind::release_kind as rk;
 const ADMIN: address = @0xAD;
 const STRANGER: address = @0x51;
 
-/// Creates, publishes and shares a one-track release as the current sender.
-/// Returns the admin cap and the release id.
 fun publish_and_share(ts: &mut Scenario): (ReleaseAdminCap, ID) {
     let ctx = ts.ctx();
     let rec_id = test_helpers::fake_id(ctx);
@@ -35,16 +28,12 @@ fun publish_and_share(ts: &mut Scenario): (ReleaseAdminCap, ID) {
     (cap, rel_id)
 }
 
-/// Set → replace → clear against a published, shared release, crossing
-/// transaction boundaries with distinct senders.
 #[test]
 fun kind_lifecycle_against_a_published_shared_release() {
     let mut ts = test_scenario::begin(ADMIN);
 
-    // --- Tx 1 (ADMIN): create, publish, share ---
     let (cap, rel_id) = publish_and_share(&mut ts);
 
-    // --- Tx 2 (ADMIN): set the kind on the now-shared release ---
     ts.next_tx(ADMIN);
     let mut rel = ts.take_shared<Release>();
     assert!(rel.is_published_state());
@@ -59,14 +48,12 @@ fun kind_lifecycle_against_a_published_shared_release() {
     assert_eq!(event_id, rel_id);
     assert_eq!(event_kind, b"Album".to_string());
 
-    // --- Tx 3 (STRANGER, owns nothing): reads are permissionless ---
     ts.next_tx(STRANGER);
     let rel = ts.take_shared<Release>();
     assert!(rk::has_kind(&rel));
     assert_eq!(*rk::kind(&rel), b"Album".to_string());
     test_scenario::return_shared(rel);
 
-    // --- Tx 4 (ADMIN): replace, then clear ---
     ts.next_tx(ADMIN);
     let mut rel = ts.take_shared<Release>();
     rk::set_kind(&mut rel, &cap, b"Extended Play".to_string());
@@ -84,7 +71,6 @@ fun kind_lifecycle_against_a_published_shared_release() {
     assert_eq!(cleared_events.length(), 1);
     assert_eq!(rk::release_kind_cleared_fields(&cleared_events[0]), rel_id);
 
-    // --- Tx 5 (STRANGER): the clear is visible too ---
     ts.next_tx(STRANGER);
     let rel = ts.take_shared<Release>();
     assert!(!rk::has_kind(&rel));
@@ -94,8 +80,6 @@ fun kind_lifecycle_against_a_published_shared_release() {
     ts.end();
 }
 
-/// A validly-scoped cap for STRANGER's own shared release is rejected against
-/// ADMIN's shared release.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun wrong_cap_is_rejected_on_set() {
     let mut ts = test_scenario::begin(ADMIN);

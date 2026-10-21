@@ -1,11 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// End-to-end scenario for this package's full use case, run under
-/// `sui::test_scenario`: a one-track release is published and shared,
-/// credits are attached to and removed from it via `take_shared`
-/// in later transactions by distinct senders, and a stranger holding a
-/// legitimate admin cap for an unrelated release cannot use it here.
 #[test_only]
 module release_credits::credits_e2e_tests;
 
@@ -20,9 +15,8 @@ use miso_party::party::{Self, Party};
 use release_credits::release_credits as credits;
 use release_credits::release_party_role::{Self as rpr, ReleasePartyRole};
 
-// Actors. LABEL holds the release's admin cap. ARTIST and FEATURED_ARTIST
-// are the credited parties; they own nothing on the release. STRANGER holds
-// a legitimate admin cap for an unrelated release and tries to reuse it here.
+// LABEL holds the release's admin cap; STRANGER holds a legitimate admin cap for an unrelated
+// release and tries to reuse it here.
 const LABEL: address = @0xAD;
 const ARTIST: address = @0xA1;
 const FEATURED_ARTIST: address = @0xA2;
@@ -47,26 +41,22 @@ fun new_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
 fun credits_lifecycle_against_a_published_shared_release() {
     let mut ts = test_scenario::begin(LABEL);
 
-    // === Tx 1 (LABEL): create and publish the release — shares it ===
     let (rel, rel_cap) = new_release(ts.ctx());
     let rel_id = object::id(&rel);
     rel.publish(&rel_cap);
 
-    // === Tx 2 (ARTIST): registers and shares their own party ===
     ts.next_tx(ARTIST);
     let (artist_party, artist_cap) =
         party::new(party::new_individual_kind(), b"Alice".to_string(), ts.ctx());
     let artist_id = object::id(&artist_party);
     artist_party.share(&artist_cap);
 
-    // === Tx 3 (FEATURED_ARTIST): registers and shares their own party ===
     ts.next_tx(FEATURED_ARTIST);
     let (feat_party, feat_cap) =
         party::new(party::new_individual_kind(), b"Bob".to_string(), ts.ctx());
     let feat_id = object::id(&feat_party);
     feat_party.share(&feat_cap);
 
-    // === Tx 4 (LABEL): credits both parties on the now-published, shared release ===
     ts.next_tx(LABEL);
     let mut rel = ts.take_shared<Release>();
     assert!(rel.is_published_state());
@@ -104,7 +94,6 @@ fun credits_lifecycle_against_a_published_shared_release() {
     test_scenario::return_shared(feat_party);
     test_scenario::return_shared(rel);
 
-    // === Tx 5 (LABEL): removes the artist's credit; the feature stays ===
     ts.next_tx(LABEL);
     let mut rel = ts.take_shared<Release>();
     credits::remove_credit(&mut rel, &rel_cap, artist_id);
@@ -128,19 +117,15 @@ fun credits_lifecycle_against_a_published_shared_release() {
     ts.end();
 }
 
-/// A cap that legitimately authorizes a different release cannot be used to
-/// credit this one — `add_credit` routes through `release::uid_mut`, whose
-/// authorization check is the real enforcement point.
+/// `release::uid_mut`'s authorization check is the real enforcement point.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun add_credit_aborts_for_a_cap_from_a_different_release() {
     let mut ts = test_scenario::begin(LABEL);
 
-    // === Tx 1 (LABEL): create and publish the real release — shares it ===
     let (rel, rel_cap) = new_release(ts.ctx());
     rel.publish(&rel_cap);
     destroy(rel_cap);
 
-    // === Tx 2 (STRANGER): owns an unrelated release, its own cap, and a party ===
     ts.next_tx(STRANGER);
     let (_stranger_rel, stranger_cap) = new_release(ts.ctx());
     let (party, _party_cap) =

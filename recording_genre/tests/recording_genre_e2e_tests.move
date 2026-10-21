@@ -1,10 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Scenario coverage of `recording_genre` against the production shape: a
-/// `Recording` is published and shared first, and the extension operates on
-/// it later, across real transaction boundaries and distinct senders. Reads
-/// are open to anyone; writes require the admin cap.
 #[test_only]
 module recording_genre::recording_genre_e2e_tests;
 
@@ -30,7 +26,6 @@ const CREATOR: address = @0xC0;
 
 public struct TestShare() has drop;
 
-/// Creates a genre in the permissionless registry and returns its derived id.
 fun create_genre(scenario: &Scenario, name: vector<u8>): ID {
     let mut registry = scenario.take_shared<GenreRegistry>();
     let id = g::derive_address(&registry, name.to_string()).to_id();
@@ -39,7 +34,6 @@ fun create_genre(scenario: &Scenario, name: vector<u8>): ID {
     id
 }
 
-/// Creates and publishes (shares) a recording as the current sender.
 fun publish_recording(ts: &mut Scenario): (ID, RecordingAdminCap<TestShare>) {
     let (comp, comp_cap) = composition::new_for_testing<TestShare>(ts.ctx());
     let (rec, cap) = recording::new_for_testing<TestShare>(object::id(&comp), ts.ctx());
@@ -54,18 +48,15 @@ fun publish_recording(ts: &mut Scenario): (ID, RecordingAdminCap<TestShare>) {
 fun admin_classifies_a_published_shared_recording_and_a_stranger_reads_it() {
     let mut ts = ts::begin(CREATOR);
 
-    // === Tx 0 (CREATOR): stand up the genre vocabulary ===
     g::init_for_testing(ts.ctx());
     ts.next_tx(CREATOR);
     let a = create_genre(&ts, b"HIP_HOP");
     ts.next_tx(CREATOR);
     let b = create_genre(&ts, b"ELECTRONIC");
 
-    // === Tx (ADMIN): create and publish the recording — this shares it ===
     ts.next_tx(ADMIN);
     let (rec_id, rec_cap) = publish_recording(&mut ts);
 
-    // === Tx (ADMIN): take the shared recording, classify it ===
     ts.next_tx(ADMIN);
     let genre_a = ts.take_immutable_by_id<Genre>(a);
     let genre_b = ts.take_immutable_by_id<Genre>(b);
@@ -88,13 +79,11 @@ fun admin_classifies_a_published_shared_recording_and_a_stranger_reads_it() {
     assert_eq!(to_bytes(&added[1]).length(), 64);
     ts::return_shared(rec);
 
-    // === Tx (STRANGER): reads are open to anyone, no cap required ===
     ts.next_tx(STRANGER);
     let rec = ts.take_shared<Recording<TestShare>>();
     assert_eq!(*rg::genres(&rec), vector[b, a]);
     ts::return_shared(rec);
 
-    // === Tx (ADMIN): remove the primary, then clear the rest ===
     ts.next_tx(ADMIN);
     let mut rec = ts.take_shared<Recording<TestShare>>();
     rg::remove_genre(&mut rec, &rec_cap, b);
@@ -114,7 +103,6 @@ fun admin_classifies_a_published_shared_recording_and_a_stranger_reads_it() {
     assert_eq!(to_bytes(&cleared[0]).length(), 32);
     ts::return_shared(rec);
 
-    // === Tx (STRANGER): removal is visible to any reader ===
     ts.next_tx(STRANGER);
     let rec = ts.take_shared<Recording<TestShare>>();
     assert!(!rg::has_genres(&rec));

@@ -1,11 +1,8 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Writing credits for a composition: one `Credit<CompositionPartyRole>` per
-/// credited `Party`, kept in a single record stored as a dynamic field on the
-/// composition's UID and written through its cap-gated `uid_mut`. The record
-/// exists exactly while at least one credit is held. Credits are display
-/// metadata and are not read by the economics.
+/// The record exists exactly while at least one credit is held. Credits are display metadata
+/// and are not read by the economics.
 module composition_credits::composition_credits;
 
 // === Imports ===
@@ -21,34 +18,26 @@ use composition_credits::composition_party_role::CompositionPartyRole;
 
 // === Errors ===
 
-/// Composition already holds `MAX_CREDITS` credits.
 const EMaxCreditsExceeded: u64 = 0;
-/// Party already has a credit on this composition.
 const EDuplicateParty: u64 = 1;
-/// No credits record is attached to this composition.
 const ENoCredits: u64 = 2;
-/// Party is not credited on the composition.
 const EPartyNotFound: u64 = 3;
 
 // === Constants ===
 
-/// Maximum number of credits allowed on a composition.
 const MAX_CREDITS: u64 = 50;
 
 // === Structs ===
 
-/// The per-composition attribution record, stored under `ExtensionKey()`.
 public struct CompositionCredits has store {
-    /// Party ID to credit (display name + roles), in insertion order.
+    /// Keyed by party ID, in insertion order.
     credits: VecMap<ID, Credit<CompositionPartyRole>>,
 }
 
-/// Dynamic-field key: one canonical credits record per composition.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
-/// Emitted when a party is credited, with the credit as stored.
 public struct CompositionCreditAddedEvent has copy, drop {
     composition_id: ID,
     party_id: ID,
@@ -56,7 +45,6 @@ public struct CompositionCreditAddedEvent has copy, drop {
     roles: vector<CompositionPartyRole>,
 }
 
-/// Emitted when a party's credit is removed.
 public struct CompositionCreditRemovedEvent has copy, drop {
     composition_id: ID,
     party_id: ID,
@@ -64,8 +52,7 @@ public struct CompositionCreditRemovedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Credits a party, creating the record on first use. A party holds at most
-/// one credit. At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
+/// At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
 public fun add_credit<CompositionShare>(
     self: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
@@ -88,7 +75,6 @@ public fun add_credit<CompositionShare>(
     emit(CompositionCreditAddedEvent { composition_id, party_id, display_name, roles });
 }
 
-/// Removes a party's credit, detaching the record when it was the last one.
 public fun remove_credit<CompositionShare>(
     self: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
@@ -110,12 +96,10 @@ public fun remove_credit<CompositionShare>(
 
 // === View Functions ===
 
-/// Whether at least one credit is attached to this composition.
 public fun has_credits<CompositionShare>(self: &Composition<CompositionShare>): bool {
     df::exists(self.uid(), ExtensionKey())
 }
 
-/// The party-to-credit map. Aborts `ENoCredits` when none is attached.
 public fun credits<CompositionShare>(
     self: &Composition<CompositionShare>,
 ): &VecMap<ID, Credit<CompositionPartyRole>> {

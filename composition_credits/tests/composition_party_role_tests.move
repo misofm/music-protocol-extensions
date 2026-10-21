@@ -1,7 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// BCS wire contract for `CompositionPartyRole`.
 #[test_only]
 module composition_credits::composition_party_role_tests;
 

@@ -17,7 +17,6 @@ public fun plain(blob_id: u256): CoverArt {
     )
 }
 
-/// A still plus an animated blob, both plaintext.
 public fun animated(still_blob_id: u256, animated_blob_id: u256): CoverArt {
     cover_art::new(
         data::new_blob(still_blob_id, confidentiality::new_unencrypted()),

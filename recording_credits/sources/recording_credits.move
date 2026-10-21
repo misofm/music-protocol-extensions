@@ -1,14 +1,9 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Credits for a recording: one `Credit<RecordingPartyRole>` per credited
-/// `Party` plus primary and featured artist designations, kept in a single
-/// record stored as a dynamic field on the recording's UID and written through
-/// its cap-gated `uid_mut`. The record exists exactly while at least one credit
-/// is held. Credits are display metadata and are not read by the economics.
-///
-/// The primary and featured sets are disjoint subsets of the credited parties:
-/// removing a credit ends any designation the party held.
+/// The record exists exactly while at least one credit is held. Credits are display metadata
+/// and are not read by the economics. The primary and featured sets are disjoint subsets of the
+/// credited parties: removing a credit ends any designation the party held.
 module recording_credits::recording_credits;
 
 // === Imports ===
@@ -25,59 +20,38 @@ use recording_credits::recording_party_role::RecordingPartyRole;
 
 // === Errors ===
 
-/// Credit has more than `MAX_ROLES_PER_CREDIT` roles.
 const EMaxRolesExceeded: u64 = 0;
-/// Recording already holds `MAX_CREDITS` credits.
 const EMaxCreditsExceeded: u64 = 1;
-/// Recording already has `MAX_PRIMARY_ARTISTS` primary artists.
 const EMaxPrimaryArtistsExceeded: u64 = 2;
-/// Recording already has `MAX_FEATURED_ARTISTS` featured artists.
 const EMaxFeaturedArtistsExceeded: u64 = 3;
-/// Party already has a credit on this recording.
 const EDuplicateParty: u64 = 4;
-/// Party is already a primary artist.
 const EAlreadyPrimaryArtist: u64 = 5;
-/// Party is already a featured artist.
 const EAlreadyFeaturedArtist: u64 = 6;
-/// No credits record is attached to this recording.
 const ENoCredits: u64 = 7;
-/// Party is not credited on the recording.
 const EPartyNotFound: u64 = 8;
-/// Credited party is not a primary artist.
 const ENotPrimaryArtist: u64 = 9;
-/// Credited party is not a featured artist.
 const ENotFeaturedArtist: u64 = 10;
 
 // === Constants ===
 
-/// Maximum number of roles a credit can have.
 const MAX_ROLES_PER_CREDIT: u64 = 10;
-/// Maximum number of credits allowed on a recording.
 const MAX_CREDITS: u64 = 150;
-/// Maximum number of primary artists allowed on a recording.
 const MAX_PRIMARY_ARTISTS: u64 = 20;
-/// Maximum number of featured artists allowed on a recording.
 const MAX_FEATURED_ARTISTS: u64 = 50;
 
 // === Structs ===
 
-/// The per-recording attribution record, stored under `ExtensionKey()`.
 public struct RecordingCredits has store {
-    /// Party ID to credit (display name + roles), in insertion order.
+    /// Keyed by party ID, in insertion order.
     credits: VecMap<ID, Credit<RecordingPartyRole>>,
-    /// IDs of the primary artists. Always a subset of `credits`.
     primary_artist_ids: VecSet<ID>,
-    /// IDs of the featured artists. Always a subset of `credits`.
     featured_artist_ids: VecSet<ID>,
 }
 
-/// Dynamic-field key: one canonical credits record per recording.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
-/// Emitted when a party is credited, with the credit as stored (instrument
-/// names and levels included).
 public struct RecordingCreditAddedEvent has copy, drop {
     recording_id: ID,
     party_id: ID,
@@ -85,34 +59,28 @@ public struct RecordingCreditAddedEvent has copy, drop {
     roles: vector<RecordingPartyRole>,
 }
 
-/// Emitted when a party's credit is removed, after the artist-removed event
-/// for any designation the party held.
 public struct RecordingCreditRemovedEvent has copy, drop {
     recording_id: ID,
     party_id: ID,
 }
 
-/// Emitted when a credited party is designated a primary artist.
 public struct RecordingPrimaryArtistAddedEvent has copy, drop {
     recording_id: ID,
     party_id: ID,
 }
 
-/// Emitted when a primary artist is un-designated, explicitly or because
-/// their credit is removed (then before `RecordingCreditRemovedEvent`).
+/// Also emitted when the party's credit is removed, before `RecordingCreditRemovedEvent`.
 public struct RecordingPrimaryArtistRemovedEvent has copy, drop {
     recording_id: ID,
     party_id: ID,
 }
 
-/// Emitted when a credited party is designated a featured artist.
 public struct RecordingFeaturedArtistAddedEvent has copy, drop {
     recording_id: ID,
     party_id: ID,
 }
 
-/// Emitted when a featured artist is un-designated, explicitly or because
-/// their credit is removed (then before `RecordingCreditRemovedEvent`).
+/// Also emitted when the party's credit is removed, before `RecordingCreditRemovedEvent`.
 public struct RecordingFeaturedArtistRemovedEvent has copy, drop {
     recording_id: ID,
     party_id: ID,
@@ -120,9 +88,7 @@ public struct RecordingFeaturedArtistRemovedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Credits a party, creating the record on first use. A credit carries 1-10
-/// roles and a party holds at most one credit. At capacity, even a duplicate
-/// party aborts `EMaxCreditsExceeded`.
+/// At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
 public fun add_credit<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -155,9 +121,6 @@ public fun add_credit<RecordingShare>(
     emit(RecordingCreditAddedEvent { recording_id, party_id, display_name, roles });
 }
 
-/// Removes a party's credit and any designation it held. A cleared designation
-/// emits its artist-removed event before the credit-removed event. Removing the
-/// last credit detaches the record.
 public fun remove_credit<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -183,8 +146,6 @@ public fun remove_credit<RecordingShare>(
     emit(RecordingCreditRemovedEvent { recording_id, party_id });
 }
 
-/// Designates a credited party as a primary artist. Aborts if the primary set
-/// is full, the party is uncredited, or it is already primary or featured.
 public fun add_primary_artist<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -204,7 +165,6 @@ public fun add_primary_artist<RecordingShare>(
     emit(RecordingPrimaryArtistAddedEvent { recording_id, party_id });
 }
 
-/// Removes a party's primary designation, leaving the credit intact.
 public fun remove_primary_artist<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -219,8 +179,6 @@ public fun remove_primary_artist<RecordingShare>(
     emit(RecordingPrimaryArtistRemovedEvent { recording_id, party_id });
 }
 
-/// Designates a credited party as a featured artist. Aborts if the featured
-/// set is full, the party is uncredited, or it is already primary or featured.
 public fun add_featured_artist<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -240,7 +198,6 @@ public fun add_featured_artist<RecordingShare>(
     emit(RecordingFeaturedArtistAddedEvent { recording_id, party_id });
 }
 
-/// Removes a party's featured designation, leaving the credit intact.
 public fun remove_featured_artist<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -257,33 +214,29 @@ public fun remove_featured_artist<RecordingShare>(
 
 // === View Functions ===
 
-/// Whether at least one credit is attached to this recording.
 public fun has_credits<RecordingShare>(self: &Recording<RecordingShare>): bool {
     df::exists(self.uid(), ExtensionKey())
 }
 
-/// The party-to-credit map. Aborts `ENoCredits` when none is attached.
 public fun credits<RecordingShare>(
     self: &Recording<RecordingShare>,
 ): &VecMap<ID, Credit<RecordingPartyRole>> {
     &borrow(self.uid()).credits
 }
 
-/// The primary-artist IDs. Aborts `ENoCredits` when none is attached.
 public fun primary_artist_ids<RecordingShare>(
     self: &Recording<RecordingShare>,
 ): &VecSet<ID> {
     &borrow(self.uid()).primary_artist_ids
 }
 
-/// The featured-artist IDs. Aborts `ENoCredits` when none is attached.
 public fun featured_artist_ids<RecordingShare>(
     self: &Recording<RecordingShare>,
 ): &VecSet<ID> {
     &borrow(self.uid()).featured_artist_ids
 }
 
-/// Whether the party is a primary artist (false if no record is attached).
+/// False, not an abort, when no record is attached.
 public fun is_primary_artist<RecordingShare>(
     self: &Recording<RecordingShare>,
     party_id: ID,
@@ -291,7 +244,7 @@ public fun is_primary_artist<RecordingShare>(
     has_credits(self) && borrow(self.uid()).primary_artist_ids.contains(&party_id)
 }
 
-/// Whether the party is a featured artist (false if no record is attached).
+/// False, not an abort, when no record is attached.
 public fun is_featured_artist<RecordingShare>(
     self: &Recording<RecordingShare>,
     party_id: ID,

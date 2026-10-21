@@ -1,10 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// End-to-end scenarios for `release_cover_art` under `sui::test_scenario`:
-/// the release is published (shared) in one admin transaction, then operated
-/// on via `take_shared` across later transactions. Distinct senders prove the
-/// cap gate and that reads are open to anyone.
 #[test_only]
 module release_cover_art::cover_art_e2e_tests;
 
@@ -25,17 +21,13 @@ use release_cover_art::release_cover_art::{
     ReleaseTrackCoverArtClearedEvent,
 };
 
-// ADMIN holds the release admin cap and performs every cap-gated write.
-// READER owns nothing and proves the views are open to anyone. STRANGER
-// holds a *different* release's admin cap and proves the cap gate rejects
-// it against ADMIN's release.
+// READER owns nothing; STRANGER holds a different release's admin cap.
 const ADMIN: address = @0xAD;
 const READER: address = @0xFA;
 const STRANGER: address = @0x51;
 
-// A 3-track tracklist. `release::new_for_testing` retargets every track at
-// the release it constructs, so the placeholder id never needs to predict
-// anything.
+// `release::new_for_testing` retargets every track at the release it constructs, so the
+// placeholder id is arbitrary.
 fun mk_tracks(): vector<ReleaseConsent> {
     let placeholder = object::id_from_address(@0xB0B);
     vector[
@@ -45,20 +37,12 @@ fun mk_tracks(): vector<ReleaseConsent> {
     ]
 }
 
-// Creates, publishes, and shares a 3-track release as the scenario's current
-// sender, returning its admin cap.
 fun setup_published_release(ts: &mut Scenario): ReleaseAdminCap {
     let (rel, rel_cap) = release::new_for_testing(mk_tracks(), ts.ctx());
     rel.publish(&rel_cap); // shares the release
     rel_cap
 }
 
-/// The flagship path: ADMIN publishes the release, attaches an album cover
-/// and a track override, a disinterested READER resolves the effective cover
-/// for every track, and ADMIN then clears the override and the album cover —
-/// all against the shared object, across four transactions, with exact event
-/// payload assertions at each write.
-/// Event fields, compared one at a time.
 fun assert_set_event(
     e: &ReleaseCoverArtSetEvent,
     release_id: ID,
@@ -103,7 +87,6 @@ fun cover_art_lifecycle_against_published_shared_release() {
     let mut ts = ts::begin(ADMIN);
     let rel_cap = setup_published_release(&mut ts);
 
-    // === Tx 2 (ADMIN): attach the album cover and a track override ===
     ts.next_tx(ADMIN);
     let mut rel = ts.take_shared<Release>();
     let rel_id = object::id(&rel);
@@ -128,7 +111,6 @@ fun cover_art_lifecycle_against_published_shared_release() {
     assert_eq!(to_bytes(&track_set_events[0]).length(), 73);
     ts::return_shared(rel);
 
-    // === Tx 3 (READER, owns nothing): resolution follows the override rule ===
     ts.next_tx(READER);
     let rel = ts.take_shared<Release>();
     assert_eq!(release_cover_art::track_cover(&rel, 0), option::some(album_art));
@@ -136,8 +118,6 @@ fun cover_art_lifecycle_against_published_shared_release() {
     assert_eq!(release_cover_art::track_cover(&rel, 2), option::some(album_art));
     ts::return_shared(rel);
 
-    // === Tx 4 (ADMIN): equal sets are silent; clear the override, then the
-    // album cover ===
     ts.next_tx(ADMIN);
     let mut rel = ts.take_shared<Release>();
     release_cover_art::set_cover(&mut rel, &rel_cap, album_art);
@@ -146,7 +126,6 @@ fun cover_art_lifecycle_against_published_shared_release() {
     assert_eq!(events_by_type<ReleaseTrackCoverArtSetEvent>().length(), 0);
 
     release_cover_art::clear_track_cover(&mut rel, &rel_cap, 1);
-    // Track 1 falls back to the album cover now that its override is gone.
     assert_eq!(release_cover_art::track_cover(&rel, 1), option::some(album_art));
 
     let track_cleared = events_by_type<ReleaseTrackCoverArtClearedEvent>();
@@ -164,7 +143,6 @@ fun cover_art_lifecycle_against_published_shared_release() {
     assert_eq!(to_bytes(&cover_cleared[0]).length(), 32);
     ts::return_shared(rel);
 
-    // === Tx 5 (READER): the record is gone once everything is cleared ===
     ts.next_tx(READER);
     let rel = ts.take_shared<Release>();
     assert!(!release_cover_art::has_cover_art(&rel));
@@ -181,7 +159,6 @@ fun set_cover_with_strangers_cap_aborts() {
     let mut ts = ts::begin(ADMIN);
     let _admin_cap = setup_published_release(&mut ts);
 
-    // === Tx 2 (STRANGER): owns a different release's cap, not this one's ===
     ts.next_tx(STRANGER);
     let (_other_rel, other_cap) = release::new_for_testing(mk_tracks(), ts.ctx());
     let mut rel = ts.take_shared<Release>();

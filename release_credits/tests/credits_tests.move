@@ -1,9 +1,8 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Add/remove mechanics, guard order, record lifetime, and event payloads for
-/// `release_credits` against an unshared release. Every write that would leave
-/// the record unchanged aborts, so the no-op rule is covered by the abort tests.
+/// Every write that would leave the record unchanged aborts, so the no-op rule is covered by the
+/// abort tests.
 #[test_only]
 module release_credits::credits_tests;
 
@@ -103,7 +102,6 @@ fun add_credit_rejects_multiple_roles() {
     abort
 }
 
-/// `MAX_CREDITS` (50) is enforced at the boundary.
 #[test, expected_failure(abort_code = credits::EMaxCreditsExceeded)]
 fun add_credit_rejects_the_fifty_first_credit() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -239,8 +237,7 @@ fun remove_credit_emits_the_removed_record() {
     ts.end();
 }
 
-/// The BCS variant index is how a consumer reads a role, so the declaration
-/// order is a wire contract; constructors are silent.
+/// Declaration order is a wire contract: consumers read roles by BCS variant index.
 #[test]
 fun role_bcs_variant_indices_are_stable() {
     assert_eq!(to_bytes(&rpr::new_primary_role()), vector[0]);

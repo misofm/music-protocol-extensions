@@ -1,11 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// End-to-end scenarios under `sui::test_scenario`: canonical vocabulary
-/// entries feed a release that is published and shared before any genre
-/// operation touches it via `take_shared` — the production shape. CREATOR
-/// creates genres, LABEL holds the release's admin cap, and STRANGER owns
-/// nothing relevant and plays the wrong-cap adversary.
 #[test_only]
 module release_genre::release_genre_e2e_tests;
 
@@ -25,7 +20,6 @@ const STRANGER: address = @0x51;
 
 // === Helpers ===
 
-/// Creates a genre in the shared registry and returns its derived id.
 fun create_genre(scenario: &Scenario, name: vector<u8>): ID {
     let mut registry = scenario.take_shared<GenreRegistry>();
     let id = g::derive_address(&registry, name.to_string()).to_id();
@@ -34,8 +28,6 @@ fun create_genre(scenario: &Scenario, name: vector<u8>): ID {
     id
 }
 
-/// Creates, publishes and shares a two-track release as the current sender.
-/// Returns the admin cap and the release id.
 fun publish_and_share_release(scenario: &mut Scenario): (ReleaseAdminCap, ID) {
     let ctx = scenario.ctx();
     let target_id = test_helpers::fake_id(ctx);
@@ -56,17 +48,14 @@ fun genre_lifecycle_on_published_shared_release() {
     let mut scenario = ts::begin(CREATOR);
     g::init_for_testing(scenario.ctx());
 
-    // --- Tx 1 (CREATOR): create the vocabulary entries ---
     scenario.next_tx(CREATOR);
     let hiphop_id = create_genre(&scenario, b"HIP_HOP");
     scenario.next_tx(CREATOR);
     let electronic_id = create_genre(&scenario, b"ELECTRONIC");
 
-    // --- Tx 2 (LABEL): create-and-publish the release (shares it) ---
     scenario.next_tx(LABEL);
     let (cap, release_id) = publish_and_share_release(&mut scenario);
 
-    // --- Tx 3 (LABEL): add in the desired primary-first order ---
     scenario.next_tx(LABEL);
     let mut rel = scenario.take_shared<Release>();
     assert_eq!(object::id(&rel), release_id);
@@ -92,13 +81,11 @@ fun genre_lifecycle_on_published_shared_release() {
     ts::return_immutable(electronic);
     ts::return_shared(rel);
 
-    // --- Tx 4 (STRANGER): reads are open to anyone ---
     scenario.next_tx(STRANGER);
     let rel = scenario.take_shared<Release>();
     assert_eq!(*rg::genres(&rel), vector[electronic_id, hiphop_id]);
     ts::return_shared(rel);
 
-    // --- Tx 5 (LABEL): remove the primary, then clear the rest ---
     scenario.next_tx(LABEL);
     let mut rel = scenario.take_shared<Release>();
     rg::remove_genre(&mut rel, &cap, electronic_id);
@@ -116,7 +103,6 @@ fun genre_lifecycle_on_published_shared_release() {
     assert_eq!(rg::release_genres_cleared_fields(&cleared[0]), release_id);
     ts::return_shared(rel);
 
-    // --- Tx 6 (STRANGER): the clear is visible too ---
     scenario.next_tx(STRANGER);
     let rel = scenario.take_shared<Release>();
     assert!(!rg::has_genres(&rel));
@@ -200,7 +186,6 @@ fun wrong_cap_is_rejected_on_clear_of_nothing() {
     abort
 }
 
-/// Clear authorizes before removing an attached list.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun wrong_cap_is_rejected_on_clear_of_present_list() {
     let mut scenario = ts::begin(CREATOR);

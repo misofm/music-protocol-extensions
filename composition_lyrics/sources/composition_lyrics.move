@@ -1,14 +1,9 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Language-specific lyrics attached to a composition, one entry per ISO
-/// 639-1 language code. The payload convention is UTF-8 text compressed into
-/// one self-contained Zstandard frame without an external dictionary. Move
-/// stores opaque bytes: it does not decode, inspect frame headers, validate
-/// text, or attest to the lyrics or their language.
-///
-/// Writes require the composition's matching admin cap; reads are
-/// permissionless. The set event carries the compressed bytes as stored.
+/// Lyrics per ISO 639-1 language. Payload convention: UTF-8 text compressed into one
+/// self-contained Zstandard frame without an external dictionary. Move stores opaque bytes and
+/// does not decode, validate, or attest to the lyrics or their language.
 module composition_lyrics::composition_lyrics;
 
 // === Imports ===
@@ -21,11 +16,8 @@ use miso_music::composition::{Composition, CompositionAdminCap};
 
 // === Errors ===
 
-/// No lyrics are attached for this language.
 const ENoLyrics: u64 = 0;
-/// The lyrics payload is empty.
 const EEmptyLyrics: u64 = 1;
-/// The compressed lyrics exceed `MAX_LYRICS_LENGTH` bytes.
 const ELyricsTooLong: u64 = 2;
 
 // === Constants ===
@@ -35,20 +27,16 @@ const MAX_LYRICS_LENGTH: u64 = 32768;
 
 // === Structs ===
 
-/// Dynamic-field key: one compressed payload (`vector<u8>`) per language.
 public struct ExtensionKey(LanguageCode) has copy, drop, store;
 
 // === Events ===
 
-/// Emitted when a language's lyrics are set or replaced with different bytes,
-/// with the compressed bytes as stored.
 public struct CompositionLyricsSetEvent has copy, drop {
     composition_id: ID,
     language: String,
     lyrics: vector<u8>,
 }
 
-/// Emitted when a language's lyrics are removed.
 public struct CompositionLyricsClearedEvent has copy, drop {
     composition_id: ID,
     language: String,
@@ -56,9 +44,7 @@ public struct CompositionLyricsClearedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Adds or replaces one language, preserving the supplied bytes exactly.
-/// Aborts `EEmptyLyrics` or `ELyricsTooLong` before cap authorization; frame
-/// validity is left to clients. Setting the stored bytes neither writes nor emits.
+/// Setting the bytes already stored neither writes nor emits.
 public fun set_lyrics<CompositionShare>(
     self: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
@@ -81,8 +67,7 @@ public fun set_lyrics<CompositionShare>(
     emit(CompositionLyricsSetEvent { composition_id, language: language.code(), lyrics });
 }
 
-/// Removes only this language. Authorizes first; an absent entry is a silent
-/// no-op.
+/// An absent entry is a no-op, but the cap is still checked.
 public fun clear_lyrics<CompositionShare>(
     self: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
@@ -102,7 +87,6 @@ public fun clear_lyrics<CompositionShare>(
 
 // === View Functions ===
 
-/// Whether lyrics are attached for this language.
 public fun has_lyrics<CompositionShare>(
     self: &Composition<CompositionShare>,
     language: LanguageCode,
@@ -110,8 +94,6 @@ public fun has_lyrics<CompositionShare>(
     df::exists(self.uid(), ExtensionKey(language))
 }
 
-/// Borrows the compressed bytes. Aborts `ENoLyrics` when this language has
-/// no entry.
 public fun lyrics<CompositionShare>(
     self: &Composition<CompositionShare>,
     language: LanguageCode,
@@ -120,7 +102,6 @@ public fun lyrics<CompositionShare>(
     df::borrow(self.uid(), ExtensionKey(language))
 }
 
-/// Maximum stored payload size per language, in bytes.
 public fun max_lyrics_length(): u64 { MAX_LYRICS_LENGTH }
 
 // === Test Functions ===

@@ -1,10 +1,8 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Add/remove/designate mechanics, guard order, cascades, record lifetime,
-/// and event payloads for `recording_credits` against an unshared recording.
-/// Every write that would leave the record unchanged aborts, so the no-op rule
-/// is covered by the abort tests.
+/// Every write that would leave the record unchanged aborts, so the no-op rule is covered by the
+/// abort tests.
 #[test_only]
 module recording_credits::credits_tests;
 
@@ -63,7 +61,6 @@ fun other_long_string(len: u64): String {
     bytes.to_string()
 }
 
-/// Asserts one credit-added event's full payload against the credit added.
 fun assert_added(
     e: &credits::RecordingCreditAddedEvent,
     recording_id: ID,
@@ -308,12 +305,9 @@ fun remove_credit_emits_the_removed_party() {
     ts.end();
 }
 
-/// Removing a credited primary or featured artist ends that designation and
-/// emits the matching artist-removed event before the credit removal —
-/// billing changes are business-visible, so the cascade is not left for the
-/// indexer to infer. The test framework exposes events per type, so the
-/// intra-call order is fixed by `remove_credit` and asserted here through
-/// exact per-type counts and the per-call event delta.
+/// Billing changes are business-visible, so the cascade emits its own events rather than leaving
+/// them for the indexer to infer. Events are exposed per type, so the order fixed by
+/// `remove_credit` is asserted through exact per-type counts and per-call event deltas.
 #[test]
 fun remove_credit_cascade_emits_artist_removals_before_the_credit_removal() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -639,9 +633,6 @@ fun remove_featured_artist_rejects_when_no_credits_record() {
     abort
 }
 
-/// Wrong-parent guarantee: credits live on the recording's own UID, not in
-/// any shared/global table keyed by party ID, so a party credited on one
-/// recording is invisible from another recording entirely.
 #[test]
 fun credits_are_scoped_to_their_own_recording() {
     let mut ts = test_scenario::begin(ARTIST);
@@ -722,7 +713,6 @@ fun remove_and_readd_preserves_order() {
     let three = vocalist(b"Three");
     let four = producer(b"Four");
 
-    // Removing the only credit detaches the record; the re-add creates it anew.
     credits::add_credit(&mut rec, &cap, &p1, one);
     credits::remove_credit(&mut rec, &cap, id1);
     assert!(!credits::has_credits(&rec));
@@ -747,8 +737,6 @@ fun remove_and_readd_preserves_order() {
     assert_eq!(credits::credits(&rec).get_idx(&id4), 2);
     assert_eq!(credits::credits(&rec).get_idx(&id2), 3);
 
-    // The ordered add/remove stream, with each full credit, replays that
-    // order and content.
     assert_eq!(credits::credits(&rec)[&id1], one_again);
     assert_eq!(credits::credits(&rec)[&id2], two_again);
     assert_eq!(credits::credits(&rec)[&id3], three);

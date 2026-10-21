@@ -1,10 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Set/read/replace/clear mechanics and the validation aborts against a bare
-/// `Recording`. Nothing here crosses a transaction boundary, so
-/// `tx_context::dummy()` suffices; the published, shared shape is covered in
-/// `recording_version_e2e_tests`.
 #[test_only]
 module recording_version::recording_version_tests;
 
@@ -30,7 +26,6 @@ fun new_rec(
     recording::new_for_testing(object::id_from_address(@0xC0FFEE), ctx)
 }
 
-/// A string of `n` ASCII bytes.
 fun ascii_of_length(n: u64): String {
     let mut bytes = vector[];
     n.do!(|_| bytes.push_back(b"A"[0]));
@@ -54,7 +49,6 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(event_rec_id, rec_id);
     assert_eq!(version, b"Live".to_string());
 
-    // Replacement in place — a recording has one version name, not a history.
     rv::set_version(&mut rec, &cap, b"Radio Edit".to_string());
     assert_eq!(*rv::version(&rec), b"Radio Edit".to_string());
     let set_events = events_by_type<RecordingVersionSetEvent>();
@@ -68,7 +62,6 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(cleared.length(), 1);
     assert_eq!(rv::recording_version_cleared_fields(&cleared[0]), rec_id);
 
-    // Re-attachment after a clear starts fresh.
     rv::set_version(&mut rec, &cap, b"Acoustic".to_string());
     assert_eq!(*rv::version(&rec), b"Acoustic".to_string());
     assert_eq!(events_by_type<RecordingVersionSetEvent>().length(), 3);
@@ -161,8 +154,6 @@ fun cleared_event_carries_only_the_recording() {
     destroy(cap);
 }
 
-/// The bound is inclusive: exactly `MAX_VERSION_LENGTH` bytes is accepted,
-/// and a single byte is enough to be non-empty.
 #[test]
 fun length_bounds_are_inclusive() {
     let ctx = &mut tx_context::dummy();
@@ -178,8 +169,6 @@ fun length_bounds_are_inclusive() {
     destroy(cap);
 }
 
-/// The bound is on bytes, not characters: 100 three-byte characters are
-/// exactly the bound and one more is over it.
 #[test]
 fun multibyte_version_at_the_byte_bound_is_accepted() {
     let ctx = &mut tx_context::dummy();
@@ -217,8 +206,6 @@ fun views_are_silent() {
     destroy(cap);
 }
 
-/// Version names live on their own recording's UID and in their own
-/// shared event stream, identified by recording ID.
 #[test]
 fun versions_are_per_recording() {
     let ctx = &mut tx_context::dummy();

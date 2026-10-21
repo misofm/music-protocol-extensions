@@ -1,11 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Boundary, lifecycle and event tests for the description extension, in
-/// single-transaction `tx_context::dummy()` style: each case holds its own
-/// `Release`/`ReleaseAdminCap` pair locally. The production shape — a
-/// published, shared `Release` operated on by distinct senders — is covered
-/// in `release_description_e2e_tests`.
 #[test_only]
 module release_description::release_description_tests;
 
@@ -26,13 +21,10 @@ fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     release::new_for_testing(vector[release::consent_for_testing(rec_id, target_id)], ctx)
 }
 
-/// `n` bytes of the given ASCII byte.
 fun repeated(byte: u8, n: u64): String {
     vector::tabulate!(n, |_| byte).to_string()
 }
 
-/// Asserts the set event's fields and its exact BCS layout: the release id,
-/// then the full description.
 fun assert_set_event(
     event: &rd::ReleaseDescriptionSetEvent,
     release_id: ID,
@@ -48,7 +40,6 @@ fun assert_set_event(
     assert!(bytes.into_remainder_bytes().is_empty());
 }
 
-/// Asserts the cleared event's field and its exact 32-byte BCS layout.
 fun assert_cleared_event(event: &rd::ReleaseDescriptionClearedEvent, release_id: ID) {
     assert_eq!(rd::release_description_cleared_fields(event), release_id);
 
@@ -74,7 +65,6 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(set_events.length(), 1);
     assert_set_event(&set_events[0], release_id, first);
 
-    // A release may rewrite what it says about itself.
     rd::set_description(&mut rel, &cap, second);
     assert_eq!(*rd::description(&rel), second);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
@@ -87,12 +77,10 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(cleared_events.length(), 1);
     assert_cleared_event(&cleared_events[0], release_id);
 
-    // Clear is idempotent and silent when nothing is attached.
     rd::clear_description(&mut rel, &cap);
     assert!(!rd::has_description(&rel));
     assert_eq!(event::events_by_type<rd::ReleaseDescriptionClearedEvent>().length(), 1);
 
-    // A fresh set after clearing emits again.
     rd::set_description(&mut rel, &cap, first);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 3);
@@ -102,7 +90,6 @@ fun set_read_replace_clear_lifecycle() {
     destroy(cap);
 }
 
-/// Stored exactly as given: line breaks, spacing, case and multi-byte UTF-8.
 #[test]
 fun prose_is_preserved_verbatim() {
     let ctx = &mut tx_context::dummy();
@@ -151,7 +138,6 @@ fun descriptions_are_per_release() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// 8192 bytes is the inclusive bound; the set event carries it all.
 #[test]
 fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     let ctx = &mut tx_context::dummy();
@@ -176,8 +162,6 @@ fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     destroy(cap);
 }
 
-/// The bound is on bytes, not characters: 2048 four-byte characters fill it
-/// exactly, while 2049 are rejected.
 #[test]
 fun bound_is_bytes_not_characters() {
     let ctx = &mut tx_context::dummy();
@@ -204,7 +188,6 @@ fun one_multibyte_character_past_the_byte_bound_aborts() {
     destroy(cap);
 }
 
-/// Setting the value already stored neither writes nor emits.
 #[test]
 fun equal_set_is_a_silent_no_op() {
     let ctx = &mut tx_context::dummy();
@@ -255,7 +238,6 @@ fun description_aborts_when_unset() {
     destroy(cap);
 }
 
-/// Saying nothing is done by not attaching, not by attaching emptiness.
 #[test, expected_failure(abort_code = rd::EEmptyDescription)]
 fun empty_description_aborts() {
     let ctx = &mut tx_context::dummy();
@@ -269,7 +251,6 @@ fun empty_description_aborts() {
 fun over_max_length_aborts() {
     let ctx = &mut tx_context::dummy();
     let (mut rel, cap) = mk_release(ctx);
-    // 8193 bytes — one past the bound.
     rd::set_description(&mut rel, &cap, repeated(65, 8193));
     destroy(rel);
     destroy(cap);
@@ -321,7 +302,6 @@ fun another_releases_cap_is_rejected_on_clear_of_nothing() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// Clear authorizes before removing an attached description.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun another_releases_cap_is_rejected_on_clear_of_present_description() {
     let ctx = &mut tx_context::dummy();

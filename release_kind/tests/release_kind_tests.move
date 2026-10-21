@@ -1,11 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Boundary, abort-path and event tests for the kind extension, in
-/// single-transaction `tx_context::dummy()` style: each case holds its own
-/// `Release`/`ReleaseAdminCap` pair locally. The production shape — a
-/// published, shared `Release` operated on by distinct senders — is covered
-/// in `release_kind_e2e_tests`.
 #[test_only]
 module release_kind::release_kind_tests;
 
@@ -25,8 +20,6 @@ fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     release::new_for_testing(vector[release::consent_for_testing(rec_id, target_id)], ctx)
 }
 
-/// Asserts the set event's fields and its exact BCS layout:
-/// `release_id` (32) then the kind as a ULEB128-prefixed byte vector.
 fun assert_set_event(event: &rk::ReleaseKindSetEvent, release_id: ID, kind: vector<u8>) {
     let (event_release_id, event_kind) = rk::release_kind_set_fields(event);
     assert_eq!(event_release_id, release_id);
@@ -38,7 +31,6 @@ fun assert_set_event(event: &rk::ReleaseKindSetEvent, release_id: ID, kind: vect
     assert!(bytes.into_remainder_bytes().is_empty());
 }
 
-/// Asserts the cleared event's field and its exact 32-byte BCS layout.
 fun assert_cleared_event(event: &rk::ReleaseKindClearedEvent, release_id: ID) {
     assert_eq!(rk::release_kind_cleared_fields(event), release_id);
 
@@ -62,7 +54,6 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(set_events.length(), 1);
     assert_set_event(&set_events[0], release_id, b"Album");
 
-    // A release may change its mind about what it is.
     rk::set_kind(&mut rel, &cap, b"Extended Play".to_string());
     assert_eq!(*rk::kind(&rel), b"Extended Play".to_string());
     let set_events = event::events_by_type<rk::ReleaseKindSetEvent>();
@@ -75,12 +66,10 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(cleared_events.length(), 1);
     assert_cleared_event(&cleared_events[0], release_id);
 
-    // Clear is idempotent and silent when nothing is attached.
     rk::clear_kind(&mut rel, &cap);
     assert!(!rk::has_kind(&rel));
     assert_eq!(event::events_by_type<rk::ReleaseKindClearedEvent>().length(), 1);
 
-    // A fresh set after clearing emits again.
     rk::set_kind(&mut rel, &cap, b"Re-set".to_string());
     let set_events = event::events_by_type<rk::ReleaseKindSetEvent>();
     assert_eq!(set_events.length(), 3);
@@ -90,7 +79,6 @@ fun set_read_replace_clear_lifecycle() {
     destroy(cap);
 }
 
-/// Self-descriptions an enum would have excluded are ordinary here.
 #[test]
 fun accepts_self_descriptions_no_fixed_vocabulary_would_have() {
     let ctx = &mut tx_context::dummy();
@@ -108,7 +96,6 @@ fun accepts_self_descriptions_no_fixed_vocabulary_would_have() {
     });
 }
 
-/// Stored exactly as given: "EP" and "ep" are two distinct values.
 #[test]
 fun case_is_preserved_verbatim() {
     let ctx = &mut tx_context::dummy();
@@ -181,8 +168,6 @@ fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     destroy(cap);
 }
 
-/// The bound is on bytes, not characters: eight 4-byte emoji fill it exactly,
-/// while a ninth is rejected even though it is only nine characters.
 #[test]
 fun bound_is_bytes_not_characters() {
     let ctx = &mut tx_context::dummy();
@@ -229,7 +214,6 @@ fun verbatim_whitespace_and_nul_bytes() {
     destroy(cap);
 }
 
-/// Setting the value already stored neither writes nor emits.
 #[test]
 fun equal_set_is_a_silent_no_op() {
     let ctx = &mut tx_context::dummy();
@@ -279,7 +263,6 @@ fun kind_aborts_when_unset() {
     destroy(cap);
 }
 
-/// Saying nothing is done by not attaching, not by attaching emptiness.
 #[test, expected_failure(abort_code = rk::EEmptyKind)]
 fun empty_kind_aborts() {
     let ctx = &mut tx_context::dummy();
@@ -345,7 +328,6 @@ fun another_releases_cap_is_rejected_on_clear_of_nothing() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// Clear authorizes before removing an attached kind.
 #[test, expected_failure(abort_code = release::EUnauthorized)]
 fun another_releases_cap_is_rejected_on_clear_of_present_kind() {
     let ctx = &mut tx_context::dummy();

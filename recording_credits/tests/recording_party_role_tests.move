@@ -1,8 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Pure value tests for `recording_party_role`: constructors, the `level()`
-/// reader, instrument validation, and the BCS wire contract.
 #[test_only]
 module recording_credits::recording_party_role_tests;
 
@@ -23,9 +21,7 @@ fun lead(): Option<rpr::RecordingPartyRoleLevel> {
     option::some(rpr::new_lead_role_level())
 }
 
-/// Every role that carries an optional level, constructed with the same
-/// level: the BCS variant index is the declaration order (a wire contract)
-/// and the level reads back.
+/// The BCS variant index is the declaration order (a wire contract) and the level reads back.
 #[test]
 fun leveled_roles_encode_their_index_and_report_their_level() {
     let roles = vector[
@@ -68,9 +64,6 @@ fun leveled_roles_encode_their_index_and_report_their_level() {
     assert_eq!(levels, vector::tabulate!(roles.length(), |_| lead()));
 }
 
-/// `ArtistsAndRepertoire` and `Copyist` are clerical/business roles that
-/// carry no level at all — `level()` must return `none()`, not an empty
-/// `Some`, and not abort; they encode as a bare variant index.
 #[test]
 fun clerical_roles_have_no_level() {
     let ar = rpr::new_artists_and_repertoire_role();
@@ -92,7 +85,6 @@ fun instrumentalist_role_encodes_instrument_name_and_level() {
     assert_eq!(to_bytes(&without_level), vector[14, 6, 71, 117, 105, 116, 97, 114, 0]);
 }
 
-/// Every level's variant index, and the absent level's tag, are stable.
 #[test]
 fun level_bcs_variant_indices_are_stable() {
     let levels = vector[

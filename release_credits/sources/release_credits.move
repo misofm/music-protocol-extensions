@@ -1,14 +1,9 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Top-line billing for a release: one `Credit<ReleasePartyRole>` per
-/// credited `Party`, kept in a single record stored as a dynamic field on the
-/// release's UID and written through its cap-gated `uid_mut`. The record exists
-/// exactly while at least one credit is held. Credits are display metadata and
-/// are not read by the economics.
-///
-/// A release credit carries exactly one role: a party is billed as either a
-/// `Primary` or a `Featured` artist on the release.
+/// Top-line billing. The record exists exactly while at least one credit is held. Credits are
+/// display metadata and are not read by the economics. A credit carries exactly one role, so a
+/// party is billed as either a `Primary` or a `Featured` artist.
 module release_credits::release_credits;
 
 // === Imports ===
@@ -24,38 +19,28 @@ use release_credits::release_party_role::ReleasePartyRole;
 
 // === Errors ===
 
-/// Release already holds `MAX_CREDITS` credits.
 const EMaxCreditsExceeded: u64 = 0;
-/// Party already has a credit on this release.
 const EDuplicateParty: u64 = 1;
-/// No credits record is attached to this release.
 const ENoCredits: u64 = 2;
-/// Party is not credited on the release.
 const EPartyNotFound: u64 = 3;
-/// A release credit must carry exactly one role.
 const EInvalidCreditRoleCount: u64 = 4;
 
 // === Constants ===
 
-/// Number of roles a release credit must carry: Primary or Featured.
 const CREDIT_ROLE_COUNT: u64 = 1;
-/// Maximum number of credits allowed on a release.
 const MAX_CREDITS: u64 = 50;
 
 // === Structs ===
 
-/// The per-release attribution record, stored under `ExtensionKey()`.
 public struct ReleaseCredits has store {
-    /// Party ID to credit (display name + role), in insertion order.
+    /// Keyed by party ID, in insertion order.
     credits: VecMap<ID, Credit<ReleasePartyRole>>,
 }
 
-/// Dynamic-field key: one canonical credits record per release.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
-/// Emitted when a party is credited, with its display name and one role.
 public struct ReleaseCreditAddedEvent has copy, drop {
     release_id: ID,
     party_id: ID,
@@ -63,7 +48,6 @@ public struct ReleaseCreditAddedEvent has copy, drop {
     role: ReleasePartyRole,
 }
 
-/// Emitted when a party's credit is removed.
 public struct ReleaseCreditRemovedEvent has copy, drop {
     release_id: ID,
     party_id: ID,
@@ -71,9 +55,7 @@ public struct ReleaseCreditRemovedEvent has copy, drop {
 
 // === Public Functions ===
 
-/// Credits a party, creating the record on first use. A credit carries exactly
-/// one role and a party holds at most one credit. At capacity, even a duplicate
-/// party aborts `EMaxCreditsExceeded`.
+/// At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
 public fun add_credit(
     self: &mut Release,
     cap: &ReleaseAdminCap,
@@ -98,7 +80,6 @@ public fun add_credit(
     emit(ReleaseCreditAddedEvent { release_id, party_id, display_name, role });
 }
 
-/// Removes a party's credit, detaching the record when it was the last one.
 public fun remove_credit(self: &mut Release, cap: &ReleaseAdminCap, party_id: ID) {
     let release_id = object::id(self);
     let uid = self.uid_mut(cap);
@@ -116,12 +97,10 @@ public fun remove_credit(self: &mut Release, cap: &ReleaseAdminCap, party_id: ID
 
 // === View Functions ===
 
-/// Whether at least one credit is attached to this release.
 public fun has_credits(self: &Release): bool {
     df::exists(self.uid(), ExtensionKey())
 }
 
-/// The party-to-credit map. Aborts `ENoCredits` when none is attached.
 public fun credits(self: &Release): &VecMap<ID, Credit<ReleasePartyRole>> {
     assert!(has_credits(self), ENoCredits);
     let record: &ReleaseCredits = df::borrow(self.uid(), ExtensionKey());

@@ -1,10 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Set/read/replace/instrumental/clear mechanics and the validation aborts
-/// against a bare `Recording`. Nothing here crosses a transaction boundary,
-/// so `tx_context::dummy()` suffices; the published, shared shape is covered
-/// in `recording_language_e2e_tests`.
 #[test_only]
 module recording_language::recording_language_tests;
 
@@ -46,7 +42,6 @@ fun strings(codes: vector<vector<u8>>): vector<String> {
     codes.map!(|code| code.to_string())
 }
 
-/// The stored codes, as strings, for comparison against event payloads.
 fun stored_codes(rec: &Recording<TestShare>): vector<String> {
     rl::languages(rec).map_ref!(|language| language.code())
 }
@@ -82,7 +77,6 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(cleared.length(), 1);
     assert_eq!(rl::recording_languages_cleared_fields(&cleared[0]), rec_id);
 
-    // Re-attachment after a clear starts fresh.
     rl::set_languages(&mut rec, &cap, langs(vector[b"ja"]));
     assert_eq!(stored_codes(&rec), strings(vector[b"ja"]));
     assert_eq!(events_by_type<RecordingLanguagesSetEvent>().length(), 3);
@@ -101,7 +95,6 @@ fun equal_set_neither_writes_nor_emits() {
     assert_eq!(stored_codes(&rec), strings(vector[b"en", b"fr"]));
     assert_eq!(events_by_type<RecordingLanguagesSetEvent>().length(), 1);
 
-    // An equal instrumental claim is silent too.
     rl::set_languages(&mut rec, &cap, vector[]);
     rl::set_languages(&mut rec, &cap, vector[]);
     assert_eq!(events_by_type<RecordingLanguagesSetEvent>().length(), 2);
@@ -128,7 +121,6 @@ fun clear_when_absent_is_silent() {
     destroy(cap);
 }
 
-/// Order is the caller's and must survive the round trip.
 #[test]
 fun order_is_preserved() {
     let ctx = &mut tx_context::dummy();
@@ -144,8 +136,6 @@ fun order_is_preserved() {
     destroy(cap);
 }
 
-/// The same codes in a different order are a different value: the write
-/// lands and emits a set event with the new order.
 #[test]
 fun reordered_languages_count_as_a_change() {
     let ctx = &mut tx_context::dummy();
@@ -163,8 +153,6 @@ fun reordered_languages_count_as_a_change() {
     destroy(cap);
 }
 
-/// The three states stay distinct: instrumental is an attached empty list,
-/// absence is nothing attached, and neither is a sung recording.
 #[test]
 fun instrumental_is_distinct_from_absent_and_from_sung() {
     let ctx = &mut tx_context::dummy();
@@ -185,17 +173,14 @@ fun instrumental_is_distinct_from_absent_and_from_sung() {
     assert!(languages.is_empty());
     assert_eq!(to_bytes(&set_events[0]).length(), 33);
 
-    // Attached with a language: sung, and a change from instrumental.
     rl::set_languages(&mut rec, &cap, langs(vector[b"en"]));
     assert_eq!(stored_codes(&rec), strings(vector[b"en"]));
     assert_eq!(events_by_type<RecordingLanguagesSetEvent>().length(), 2);
 
-    // Back to instrumental is a change too.
     rl::set_languages(&mut rec, &cap, vector[]);
     assert!(rl::languages(&rec).is_empty());
     assert_eq!(events_by_type<RecordingLanguagesSetEvent>().length(), 3);
 
-    // Clearing an instrumental claim withdraws it rather than keeping it.
     rl::clear_languages(&mut rec, &cap);
     assert!(!rl::has_languages(&rec));
     let cleared = events_by_type<RecordingLanguagesClearedEvent>();
@@ -227,8 +212,6 @@ fun set_event_carries_the_recording_and_the_new_value() {
     destroy(cap);
 }
 
-/// The bound is inclusive: exactly `MAX_LANGUAGES` is accepted and produces
-/// the largest set payload.
 #[test]
 fun exactly_max_languages_is_accepted() {
     let ctx = &mut tx_context::dummy();
@@ -263,8 +246,6 @@ fun views_are_silent() {
     destroy(cap);
 }
 
-/// Language records live on their own recording's UID and in their own
-/// shared event stream, identified by recording ID.
 #[test]
 fun languages_are_per_recording() {
     let ctx = &mut tx_context::dummy();

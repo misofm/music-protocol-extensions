@@ -1,12 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Boundary, lifecycle and event-payload tests: validation (empty,
-/// over-length, exactly at the bound, bytes versus characters), verbatim
-/// storage, no-op rules, exact BCS sizes, and per-composition and
-/// per-share-type isolation. Each test builds its own composition and cap in
-/// one synthetic transaction; the production-shaped flows on a published,
-/// shared composition live in `composition_title_e2e_tests`.
 #[test_only]
 module composition_title::composition_title_tests;
 
@@ -28,7 +22,6 @@ fun mk_composition(
     composition::new_for_testing<TestShare>(ctx)
 }
 
-/// An ASCII title of exactly `length` bytes.
 fun title_of_length(length: u64): String {
     vector::tabulate!(length, |_| 65u8).to_string()
 }
@@ -44,14 +37,12 @@ fun set_read_replace_clear_lifecycle() {
     assert!(ct::has_title(&comp));
     assert_eq!(*ct::title(&comp), b"Blue in Green".to_string());
 
-    // Corrections are the point of a mutable title.
     ct::set_title(&mut comp, &cap, b"Blue In Green".to_string());
     assert_eq!(*ct::title(&comp), b"Blue In Green".to_string());
 
     ct::clear_title(&mut comp, &cap);
     assert!(!ct::has_title(&comp));
 
-    // Clear is idempotent; a later write starts over.
     ct::clear_title(&mut comp, &cap);
     assert!(!ct::has_title(&comp));
     ct::set_title(&mut comp, &cap, b"Flamenco Sketches".to_string());
@@ -63,8 +54,6 @@ fun set_read_replace_clear_lifecycle() {
 
 public struct UnrelatedKey() has copy, drop, store;
 
-/// One field under one key; other extensions' fields on the same composition
-/// are untouched by its creation and removal.
 #[test]
 fun unrelated_dynamic_field_survives_title_lifecycle() {
     let ctx = &mut tx_context::dummy();
@@ -81,7 +70,6 @@ fun unrelated_dynamic_field_survives_title_lifecycle() {
     destroy(cap);
 }
 
-/// Stored exactly as given: spacing and case are the composition's own.
 #[test]
 fun title_is_preserved_verbatim() {
     let ctx = &mut tx_context::dummy();
@@ -109,8 +97,6 @@ fun exactly_max_length_is_accepted() {
     destroy(cap);
 }
 
-/// The bound is on bytes, not characters: 100 three-byte characters are
-/// exactly the bound and 101 are over it.
 #[test]
 fun multibyte_text_is_bounded_by_bytes() {
     let ctx = &mut tx_context::dummy();
@@ -159,7 +145,6 @@ fun titles_are_per_composition() {
     assert!(!ct::has_title(&a));
     assert_eq!(*ct::title(&b), b"Second".to_string());
 
-    // Every event carries the composition's identity.
     let sets = event::events_by_type<ct::CompositionTitleSetEvent>();
     assert_eq!(sets.length(), 2);
     let (id, title) = ct::composition_title_set_fields(&sets[0]);
@@ -175,7 +160,6 @@ fun titles_are_per_composition() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// Different composition IDs retain independent titles and events carry IDs.
 #[test]
 fun compositions_have_separate_state_and_identified_events() {
     let ctx = &mut tx_context::dummy();
@@ -196,8 +180,6 @@ fun compositions_have_separate_state_and_identified_events() {
     destroy(comp); destroy(cap); destroy(other); destroy(other_cap);
 }
 
-/// A first set and a changing replacement each emit the value now attached;
-/// an equal replacement is a no-op and emits nothing.
 #[test]
 fun set_emits_each_transition() {
     let ctx = &mut tx_context::dummy();
@@ -264,7 +246,6 @@ fun clear_emits_only_when_something_was_removed() {
     destroy(cap);
 }
 
-/// Views do not publish events.
 #[test]
 fun views_are_silent() {
     let ctx = &mut tx_context::dummy();
@@ -293,7 +274,6 @@ fun payloads_have_exact_bcs_sizes() {
     let sets = event::events_by_type<ct::CompositionTitleSetEvent>();
     assert_eq!(to_bytes(&sets[0]).length(), 32 + 1 + 7);
 
-    // A full-size initial set and a full-size replacement are the same shape.
     let max = title_of_length(300);
     ct::set_title(&mut comp, &cap, max);
     let mut different = b"B".to_string();
@@ -317,7 +297,6 @@ fun payloads_have_exact_bcs_sizes() {
     destroy(cap);
 }
 
-/// The emitted value is byte-for-byte the stored one.
 #[test]
 fun events_preserve_whitespace_case_and_utf8() {
     let ctx = &mut tx_context::dummy();
@@ -357,7 +336,6 @@ fun cleared_title_aborts_on_read() {
     destroy(cap);
 }
 
-/// Naming nothing is done by not attaching, not by attaching emptiness.
 #[test, expected_failure(abort_code = ct::EEmptyTitle)]
 fun empty_title_aborts_on_add() {
     let ctx = &mut tx_context::dummy();
@@ -381,7 +359,6 @@ fun empty_title_aborts_on_replace() {
 fun over_max_length_aborts_on_add() {
     let ctx = &mut tx_context::dummy();
     let (mut comp, cap) = mk_composition(ctx);
-    // 301 bytes — one past the bound.
     ct::set_title(&mut comp, &cap, title_of_length(301));
     destroy(comp);
     destroy(cap);

@@ -1,11 +1,8 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Add/read/remove/clear mechanics and the validation aborts against a bare
-/// `Recording`. A scenario is used only because `genre::Genre` objects are
-/// frozen and must be taken back via `take_immutable_by_id`; nothing here
-/// changes hands between senders. The published, shared shape is covered in
-/// `recording_genre_e2e_tests`.
+/// A scenario is used only because `genre::Genre` objects are frozen and must be taken back via
+/// `take_immutable_by_id`.
 #[test_only]
 module recording_genre::recording_genre_tests;
 
@@ -38,8 +35,6 @@ fun new_rec(
     recording::new_for_testing(object::id_from_address(@0xC0FFEE), ctx)
 }
 
-/// Stands up the vocabulary and creates one frozen genre per name, each in
-/// its own transaction, returning their derived ids.
 fun create_genres(scenario: &mut Scenario, names: vector<vector<u8>>): vector<ID> {
     g::init_for_testing(scenario.ctx());
     names.map!(|name| {
@@ -94,14 +89,12 @@ fun add_remove_clear_lifecycle_with_events() {
     let (mut rec, cap) = new_rec(scenario.ctx());
     let rec_id = object::id(&rec);
 
-    // First add creates the field and establishes the primary.
     rg::add_genre(&mut rec, &cap, &genres[0]);
     assert_eq!(*rg::genres(&rec), vector[a]);
     let added = events_by_type<RecordingGenreAddedEvent>();
     assert_eq!(added.length(), 1);
     assert_added(&added[0], rec_id, a);
 
-    // Appends preserve order.
     rg::add_genre(&mut rec, &cap, &genres[1]);
     rg::add_genre(&mut rec, &cap, &genres[2]);
     assert_eq!(*rg::genres(&rec), vector[a, b, c]);
@@ -110,21 +103,18 @@ fun add_remove_clear_lifecycle_with_events() {
     assert_added(&added[1], rec_id, b);
     assert_added(&added[2], rec_id, c);
 
-    // Secondary removal keeps the primary and survivor order.
     rg::remove_genre(&mut rec, &cap, b);
     assert_eq!(*rg::genres(&rec), vector[a, c]);
     let removed = events_by_type<RecordingGenreRemovedEvent>();
     assert_eq!(removed.length(), 1);
     assert_removed(&removed[0], rec_id, b);
 
-    // Primary removal promotes the next entry.
     rg::remove_genre(&mut rec, &cap, a);
     assert_eq!(*rg::genres(&rec), vector[c]);
     let removed = events_by_type<RecordingGenreRemovedEvent>();
     assert_eq!(removed.length(), 2);
     assert_removed(&removed[1], rec_id, a);
 
-    // Last removal drops the field and emits only the Removed event.
     rg::remove_genre(&mut rec, &cap, c);
     assert!(!rg::has_genres(&rec));
     let removed = events_by_type<RecordingGenreRemovedEvent>();
@@ -132,7 +122,6 @@ fun add_remove_clear_lifecycle_with_events() {
     assert_removed(&removed[2], rec_id, c);
     assert_eq!(events_by_type<RecordingGenresClearedEvent>().length(), 0);
 
-    // Re-attachment starts a fresh ordered list; an explicit clear drops it.
     rg::add_genre(&mut rec, &cap, &genres[2]);
     rg::add_genre(&mut rec, &cap, &genres[0]);
     assert_eq!(*rg::genres(&rec), vector[c, a]);
@@ -151,8 +140,6 @@ fun add_remove_clear_lifecycle_with_events() {
     scenario.end();
 }
 
-/// Exactly `MAX_GENRES` (6) entries are accepted, and removal from a full
-/// list keeps primary and survivor order.
 #[test]
 fun exactly_max_genres_is_accepted() {
     let mut scenario = ts::begin(CREATOR);
@@ -169,7 +156,6 @@ fun exactly_max_genres_is_accepted() {
     rg::remove_genre(&mut rec, &cap, ids[4]);
     assert_eq!(*rg::genres(&rec), vector[ids[0], ids[1], ids[2], ids[3], ids[5]]);
 
-    // Back at capacity after re-adding the removed genre at the end.
     rg::add_genre(&mut rec, &cap, &genres[4]);
     assert_eq!(*rg::genres(&rec), vector[ids[0], ids[1], ids[2], ids[3], ids[5], ids[4]]);
 
@@ -256,8 +242,6 @@ fun views_are_silent() {
     scenario.end();
 }
 
-/// Genre lists live on their own recording's UID and in their own
-/// shared event stream, identified by recording ID.
 #[test]
 fun genres_are_per_recording() {
     let mut scenario = ts::begin(CREATOR);
@@ -402,8 +386,6 @@ fun remove_genre_aborts_when_nothing_attached() {
     destroy(cap);
 }
 
-/// Once the last genre is removed the field is gone, so removing it again
-/// aborts the same way as on a recording that was never classified.
 #[test, expected_failure(abort_code = rg::ENoGenres)]
 fun remove_genre_twice_aborts() {
     let mut scenario = ts::begin(CREATOR);

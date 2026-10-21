@@ -1,9 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Unit coverage for `release_cover_art`'s abort surface, resolution rule,
-/// no-op rule, record lifetime, and event payloads. Wrong-cap aborts and the
-/// published-and-shared flow live in `cover_art_e2e_tests`.
 #[test_only]
 module release_cover_art::cover_art_tests;
 
@@ -23,8 +20,7 @@ use release_cover_art::release_cover_art::{
     ReleaseTrackCoverArtClearedEvent,
 };
 
-// A 3-track release: flat tracklist indices 0, 1, 2. Recording ids are
-// synthetic — this package's logic never inspects them.
+// Recording ids are synthetic: this package never inspects them.
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let rel_id = object::id_from_address(@0xB0B);
     let tracks = vector[
@@ -35,7 +31,6 @@ fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     release::new_for_testing(tracks, ctx)
 }
 
-/// Event fields, compared one at a time.
 fun assert_set_event(
     e: &ReleaseCoverArtSetEvent,
     release_id: ID,
@@ -85,7 +80,6 @@ fun album_cover_set_read_clear() {
     assert!(release_cover_art::has_cover_art(&rel));
     assert!(release_cover_art::cover(&rel).is_some());
 
-    // Clearing the only value detaches the record.
     release_cover_art::clear_cover(&mut rel, &cap);
     assert!(!release_cover_art::has_cover_art(&rel));
 
@@ -103,11 +97,9 @@ fun track_cover_override_resolves_over_album() {
     let replacement = fixtures::plain(300);
     release_cover_art::set_cover(&mut rel, &cap, album);
 
-    // No override yet: every track resolves to the album cover.
     assert_eq!(release_cover_art::track_cover(&rel, 0), option::some(album));
     assert_eq!(release_cover_art::track_cover(&rel, 2), option::some(album));
 
-    // Set an override on track 1.
     release_cover_art::set_track_cover(&mut rel, &cap, 1, override);
     assert_eq!(release_cover_art::track_cover(&rel, 0), option::some(album));
     assert_eq!(release_cover_art::track_cover(&rel, 1), option::some(override));
@@ -124,11 +116,9 @@ fun track_cover_override_resolves_over_album() {
     assert_eq!(release_cover_art::track_cover(&rel, 2), option::none());
     release_cover_art::set_cover(&mut rel, &cap, replacement);
 
-    // Clear it; track 1 falls back to the album cover.
     release_cover_art::clear_track_cover(&mut rel, &cap, 1);
     assert_eq!(release_cover_art::track_cover(&rel, 1), option::some(replacement));
 
-    // With the album cover cleared and no override left, the record detaches.
     release_cover_art::clear_cover(&mut rel, &cap);
     assert!(!release_cover_art::has_cover_art(&rel));
 
@@ -138,7 +128,6 @@ fun track_cover_override_resolves_over_album() {
 
 // === Bounds ===
 
-/// The last index is in range; only past it aborts.
 #[test]
 fun set_track_cover_at_last_index() {
     let ctx = &mut tx_context::dummy();
@@ -168,9 +157,8 @@ fun set_track_cover_rejects_out_of_bounds_index() {
     abort
 }
 
-// `track_cover`'s own bounds check (the view path) is a separate line from
-// `set_track_cover`'s — exercised with nothing attached at all, so the bounds
-// check must fire before the (absent) attachment would otherwise.
+// Exercised with nothing attached, so the view's bounds check must fire before the attachment
+// check.
 #[test, expected_failure(abort_code = release_cover_art::ETrackIndexOutOfBounds)]
 fun track_cover_view_rejects_out_of_bounds_index() {
     let ctx = &mut tx_context::dummy();
@@ -365,7 +353,6 @@ fun track_cover_view_without_attachment_aborts() {
 
 // === Override view and record lifetime ===
 
-/// The raw slot shows only the override, never the inherited album cover.
 #[test]
 fun track_cover_override_returns_the_raw_slot() {
     let ctx = &mut tx_context::dummy();

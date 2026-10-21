@@ -1,10 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Scenario coverage of `recording_version` against the production shape: a
-/// `Recording` is published and shared first, and the extension operates on
-/// it later, across real transaction boundaries and distinct senders. Reads
-/// are open to anyone; writes require the admin cap.
 #[test_only]
 module recording_version::recording_version_e2e_tests;
 
@@ -27,7 +23,6 @@ const STRANGER: address = @0x51;
 
 public struct TestShare() has drop;
 
-/// Creates and publishes (shares) a recording as the current sender.
 fun publish_recording(ts: &mut Scenario): (ID, RecordingAdminCap<TestShare>) {
     let (comp, comp_cap) = composition::new_for_testing<TestShare>(ts.ctx());
     let (rec, cap) = recording::new_for_testing<TestShare>(object::id(&comp), ts.ctx());
@@ -42,10 +37,8 @@ fun publish_recording(ts: &mut Scenario): (ID, RecordingAdminCap<TestShare>) {
 fun admin_names_a_published_shared_recording_and_a_stranger_reads_it() {
     let mut ts = ts::begin(ADMIN);
 
-    // === Tx 1 (ADMIN): create and publish the recording — this shares it ===
     let (rec_id, rec_cap) = publish_recording(&mut ts);
 
-    // === Tx 2 (ADMIN): take the shared recording, attach a version name ===
     ts.next_tx(ADMIN);
     let mut rec = ts.take_shared<Recording<TestShare>>();
     assert!(!rv::has_version(&rec));
@@ -60,14 +53,12 @@ fun admin_names_a_published_shared_recording_and_a_stranger_reads_it() {
     assert_eq!(to_bytes(&events[0]).length(), 37);
     ts::return_shared(rec);
 
-    // === Tx 3 (STRANGER): reads are open to anyone, no cap required ===
     ts.next_tx(STRANGER);
     let rec = ts.take_shared<Recording<TestShare>>();
     assert!(rv::has_version(&rec));
     assert_eq!(*rv::version(&rec), b"Live".to_string());
     ts::return_shared(rec);
 
-    // === Tx 4 (ADMIN): equal set is silent; replace; then clear ===
     ts.next_tx(ADMIN);
     let mut rec = ts.take_shared<Recording<TestShare>>();
     rv::set_version(&mut rec, &rec_cap, b"Live".to_string());
@@ -85,7 +76,6 @@ fun admin_names_a_published_shared_recording_and_a_stranger_reads_it() {
     assert_eq!(to_bytes(&cleared[0]).length(), 32);
     ts::return_shared(rec);
 
-    // === Tx 5 (STRANGER): removal is visible to any reader ===
     ts.next_tx(STRANGER);
     let rec = ts.take_shared<Recording<TestShare>>();
     assert!(!rv::has_version(&rec));
@@ -95,8 +85,6 @@ fun admin_names_a_published_shared_recording_and_a_stranger_reads_it() {
     ts.end();
 }
 
-/// Reading after an explicit clear aborts exactly like a recording that was
-/// never named — absence is absence, regardless of history.
 #[test, expected_failure(abort_code = rv::ENoVersion)]
 fun reading_after_clear_aborts_for_any_reader() {
     let mut ts = ts::begin(ADMIN);
@@ -117,7 +105,6 @@ fun reading_after_clear_aborts_for_any_reader() {
     ts.end();
 }
 
-/// Validation applies against the production shape too.
 #[test, expected_failure(abort_code = rv::EEmptyVersion)]
 fun empty_version_aborts_against_a_shared_recording() {
     let mut ts = ts::begin(ADMIN);

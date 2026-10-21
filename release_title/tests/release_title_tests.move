@@ -1,11 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Boundary, abort-path and event tests for the title extension, in
-/// single-transaction `tx_context::dummy()` style: each case holds its own
-/// `Release`/`ReleaseAdminCap` pair locally. The production shape — a
-/// published, shared `Release` operated on by distinct senders — is covered
-/// in `release_title_e2e_tests`.
 #[test_only]
 module release_title::release_title_tests;
 
@@ -26,13 +21,10 @@ fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     release::new_for_testing(vector[release::consent_for_testing(rec_id, target_id)], ctx)
 }
 
-/// `n` bytes of the given ASCII byte.
 fun repeated(byte: u8, n: u64): String {
     vector::tabulate!(n, |_| byte).to_string()
 }
 
-/// Asserts the set event's fields and its exact BCS layout:
-/// `release_id` (32) then the title as a ULEB128-prefixed byte vector.
 fun assert_set_event(event: &rt::ReleaseTitleSetEvent, release_id: ID, title: &String) {
     let (event_release_id, event_title) = rt::release_title_set_fields(event);
     assert_eq!(event_release_id, release_id);
@@ -44,7 +36,6 @@ fun assert_set_event(event: &rt::ReleaseTitleSetEvent, release_id: ID, title: &S
     assert!(bytes.into_remainder_bytes().is_empty());
 }
 
-/// Asserts the cleared event's field and its exact 32-byte BCS layout.
 fun assert_cleared_event(event: &rt::ReleaseTitleClearedEvent, release_id: ID) {
     assert_eq!(rt::release_title_cleared_fields(event), release_id);
 
@@ -70,7 +61,6 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(set_events.length(), 1);
     assert_set_event(&set_events[0], release_id, &first);
 
-    // A release may be retitled.
     rt::set_title(&mut rel, &cap, second);
     assert_eq!(*rt::title(&rel), second);
     let set_events = event::events_by_type<rt::ReleaseTitleSetEvent>();
@@ -83,12 +73,10 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(cleared_events.length(), 1);
     assert_cleared_event(&cleared_events[0], release_id);
 
-    // Clear is idempotent and silent when nothing is attached.
     rt::clear_title(&mut rel, &cap);
     assert!(!rt::has_title(&rel));
     assert_eq!(event::events_by_type<rt::ReleaseTitleClearedEvent>().length(), 1);
 
-    // A fresh set after clearing emits again.
     rt::set_title(&mut rel, &cap, first);
     let set_events = event::events_by_type<rt::ReleaseTitleSetEvent>();
     assert_eq!(set_events.length(), 3);
@@ -98,8 +86,6 @@ fun set_read_replace_clear_lifecycle() {
     destroy(cap);
 }
 
-/// Stored exactly as given: case, whitespace, punctuation and multi-byte
-/// UTF-8, with no normalisation.
 #[test]
 fun title_is_preserved_verbatim() {
     let ctx = &mut tx_context::dummy();
@@ -116,7 +102,6 @@ fun title_is_preserved_verbatim() {
     destroy(cap);
 }
 
-/// "Album" and "album" are two distinct titles.
 #[test]
 fun case_is_preserved_verbatim() {
     let ctx = &mut tx_context::dummy();
@@ -186,8 +171,6 @@ fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     destroy(cap);
 }
 
-/// The bound is on bytes, not characters: 75 four-byte characters fill it
-/// exactly, while 76 are rejected.
 #[test]
 fun bound_is_bytes_not_characters() {
     let ctx = &mut tx_context::dummy();
@@ -214,7 +197,6 @@ fun one_multibyte_character_past_the_byte_bound_aborts() {
     destroy(cap);
 }
 
-/// Setting the value already stored neither writes nor emits.
 #[test]
 fun equal_set_is_a_silent_no_op() {
     let ctx = &mut tx_context::dummy();
@@ -265,7 +247,6 @@ fun title_aborts_when_unset() {
     destroy(cap);
 }
 
-/// Saying nothing is done by not attaching, not by attaching emptiness.
 #[test, expected_failure(abort_code = rt::EEmptyTitle)]
 fun empty_title_aborts() {
     let ctx = &mut tx_context::dummy();
@@ -279,7 +260,6 @@ fun empty_title_aborts() {
 fun over_max_length_aborts() {
     let ctx = &mut tx_context::dummy();
     let (mut rel, cap) = mk_release(ctx);
-    // 301 bytes — one past the bound.
     rt::set_title(&mut rel, &cap, repeated(65, 301));
     destroy(rel);
     destroy(cap);

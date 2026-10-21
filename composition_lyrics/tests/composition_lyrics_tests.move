@@ -1,7 +1,6 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Lifecycle, boundary, authorization, and event tests for the lyrics extension.
 #[test_only]
 module composition_lyrics::composition_lyrics_tests;
 
@@ -23,8 +22,6 @@ fun new_composition(
     composition::new_for_testing<TestShare>(ctx)
 }
 
-/// Asserts a set event's fields and its exact BCS layout: `composition_id`
-/// (32), the two-byte language code (3), then the ULEB128-prefixed lyrics.
 fun assert_set_event(
     e: &cl::CompositionLyricsSetEvent,
     composition_id: ID,
@@ -43,7 +40,6 @@ fun assert_set_event(
     assert!(bytes.into_remainder_bytes().is_empty());
 }
 
-/// Asserts a cleared event's fields and its exact 35-byte BCS layout.
 fun assert_cleared_event(
     e: &cl::CompositionLyricsClearedEvent,
     composition_id: ID,
@@ -96,7 +92,6 @@ fun languages_are_independent_and_events_replay_transitions() {
     assert_eq!(clears.length(), 1);
     assert_cleared_event(&clears[0], id, b"en");
 
-    // Re-adding after a clear emits again.
     cl::set_lyrics(&mut comp, &cap, en, first);
     let sets = event::events_by_type<cl::CompositionLyricsSetEvent>();
     assert_eq!(sets.length(), 4);
@@ -107,7 +102,6 @@ fun languages_are_independent_and_events_replay_transitions() {
     destroy(cap);
 }
 
-/// Setting the bytes already stored neither emits nor changes the entry.
 #[test]
 fun equal_set_is_a_silent_no_op() {
     let ctx = &mut tx_context::dummy();

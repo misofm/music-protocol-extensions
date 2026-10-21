@@ -1,10 +1,8 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Boundary, error-code and event tests for `release_genre`. A single CREATOR
-/// sender suffices: every write is gated by a locally held `ReleaseAdminCap`,
-/// not by sender identity. Wrong-cap cases against a published, shared
-/// release live in `release_genre_e2e_tests`.
+/// A single CREATOR sender suffices: every write is gated by a locally held `ReleaseAdminCap`,
+/// not by sender identity.
 #[test_only]
 module release_genre::release_genre_tests;
 
@@ -26,7 +24,6 @@ public struct UnrelatedKey() has copy, drop, store;
 
 // === Helpers ===
 
-/// Creates a genre in the shared registry and returns its derived id.
 fun create_genre(scenario: &Scenario, name: vector<u8>): ID {
     let mut registry = scenario.take_shared<GenreRegistry>();
     let id = g::derive_address(&registry, name.to_string()).to_id();
@@ -35,7 +32,6 @@ fun create_genre(scenario: &Scenario, name: vector<u8>): ID {
     id
 }
 
-/// Creates the given genres, one transaction each, and returns their ids.
 fun create_genres(scenario: &mut Scenario, names: vector<vector<u8>>): vector<ID> {
     names.map!(|name| {
         scenario.next_tx(CREATOR);
@@ -53,7 +49,6 @@ fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     release::new_for_testing(tracks, ctx)
 }
 
-/// Asserts an added event's fields and its exact 64-byte BCS layout.
 fun assert_added_event(event: &rg::ReleaseGenreAddedEvent, release_id: ID, genre_id: ID) {
     let (event_release_id, event_genre_id) = rg::release_genre_added_fields(event);
     assert_eq!(event_release_id, release_id);
@@ -64,7 +59,6 @@ fun assert_added_event(event: &rg::ReleaseGenreAddedEvent, release_id: ID, genre
     assert!(bytes.into_remainder_bytes().is_empty());
 }
 
-/// Asserts a removed event's fields and its exact 64-byte BCS layout.
 fun assert_removed_event(event: &rg::ReleaseGenreRemovedEvent, release_id: ID, genre_id: ID) {
     let (event_release_id, event_genre_id) = rg::release_genre_removed_fields(event);
     assert_eq!(event_release_id, release_id);
@@ -75,7 +69,6 @@ fun assert_removed_event(event: &rg::ReleaseGenreRemovedEvent, release_id: ID, g
     assert!(bytes.into_remainder_bytes().is_empty());
 }
 
-/// Asserts a cleared event's field and its exact 32-byte BCS layout.
 fun assert_cleared_event(event: &rg::ReleaseGenresClearedEvent, release_id: ID) {
     assert_eq!(rg::release_genres_cleared_fields(event), release_id);
     let mut bytes = bcs::new(bcs::to_bytes(event));
@@ -147,7 +140,6 @@ fun event_replay_tracks_order_and_field_lifecycle() {
     projected.push_back(c_id);
     assert_eq!(*rg::genres(&rel), projected);
 
-    // Removing the last genre emits only Removed and drops the field.
     rg::remove_genre(&mut rel, &cap, c_id);
     let removed = event::events_by_type<rg::ReleaseGenreRemovedEvent>();
     assert_eq!(removed.length(), 2);
