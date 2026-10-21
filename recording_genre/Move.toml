@@ -4,10 +4,6 @@ edition = "2024"
 license = "FSL-1.1-ALv2"
 authors = ["Miso Labs, Inc. (build@miso.fm)"]
 
-# One concern, one package: which genres classify a recording, primary first.
-# `genre` supplies the canonical vocabulary — every stored id is proven by a
-# `&Genre` at write time — so this package validates only order, count, and
-# duplicates.
 [dependencies]
 genre = { git = "https://github.com/misofm/genre.git", rev = "90baae2919f7272f6d4bbb245b643f7dba5dc0ba" }
 musicos = { git = "https://github.com/misofm/musicos.git", rev = "24570431c1c02118c2b558d4ac1c30b39ca4cb2f" }

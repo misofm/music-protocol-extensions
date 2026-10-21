@@ -2,27 +2,25 @@
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
 /// End-to-end scenarios under `sui::test_scenario`: real transaction
-/// boundaries, distinct senders, the admin cap held as an owned object and
-/// re-taken from the sender's inventory, and the composition genuinely
-/// published and shared — the production shape, where `uid_mut` stays open
-/// after publish while the embedded fields are frozen.
-///
-/// A composition is `key`-only with no `drop`, so an `Initialized` one cannot
-/// outlive its creating transaction: "before publish" means earlier in the
-/// same transaction, which is what the first flow exercises.
+/// boundaries, distinct senders, the admin cap held as an owned object, and
+/// the composition published and shared. A composition cannot outlive its
+/// creating transaction unpublished, so "before publish" means earlier in the
+/// same transaction.
 #[test_only]
 module composition_title::composition_title_e2e_tests;
 
-use composition_title::composition_title as ct;
-use musicos::composition::{Self, Composition, CompositionAdminCap};
+// === Imports ===
+
 use std::unit_test::assert_eq;
 use sui::event;
 use sui::test_scenario::{Self, Scenario};
-
-public struct TestShare() has drop;
+use musicos::composition::{Self, Composition, CompositionAdminCap};
+use composition_title::composition_title as ct;
 
 const WRITER: address = @0xA0;
 const STRANGER: address = @0x51;
+
+public struct TestShare() has drop;
 
 /// Publishes and shares a composition in the current transaction, sending
 /// its admin cap to the sender so later transactions take it from inventory,
@@ -35,7 +33,7 @@ fun publish_composition(scenario: &mut Scenario, sender: address): ID {
     comp_id
 }
 
-/// WRITER names the composition while it is still `Initialized`, in the same
+/// WRITER names the composition before publishing it, in the same
 /// transaction that publishes and shares it; the title survives publication,
 /// a stranger reads it, and WRITER corrects it later against the shared object.
 #[test]
@@ -52,7 +50,7 @@ fun title_set_before_publish_survives_publication() {
 
     let sets = event::events_by_type<ct::CompositionTitleSetEvent>();
     assert_eq!(sets.length(), 1);
-    let (event_id, title) = ct::set_event_fields(&sets[0]);
+    let (event_id, title) = ct::composition_title_set_fields(&sets[0]);
     assert_eq!(event_id, comp_id);
     assert_eq!(title, b"So What".to_string());
 
@@ -105,7 +103,7 @@ fun title_lifecycle_on_a_published_and_shared_composition() {
 
     let sets = event::events_by_type<ct::CompositionTitleSetEvent>();
     assert_eq!(sets.length(), 1);
-    let (event_id, title) = ct::set_event_fields(&sets[0]);
+    let (event_id, title) = ct::composition_title_set_fields(&sets[0]);
     assert_eq!(event_id, comp_id);
     assert_eq!(title, b"Freddie Freeloader".to_string());
 
@@ -129,12 +127,12 @@ fun title_lifecycle_on_a_published_and_shared_composition() {
 
     let sets = event::events_by_type<ct::CompositionTitleSetEvent>();
     assert_eq!(sets.length(), 1);
-    let (event_id, title) = ct::set_event_fields(&sets[0]);
+    let (event_id, title) = ct::composition_title_set_fields(&sets[0]);
     assert_eq!(event_id, comp_id);
     assert_eq!(title, b"Freddie the Freeloader".to_string());
     let clears = event::events_by_type<ct::CompositionTitleClearedEvent>();
     assert_eq!(clears.length(), 1);
-    assert_eq!(ct::cleared_event_fields(&clears[0]), comp_id);
+    assert_eq!(ct::composition_title_cleared_fields(&clears[0]), comp_id);
 
     // --- Tx 6 (STRANGER): the clear is visible too ---
     ts.next_tx(STRANGER);

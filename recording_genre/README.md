@@ -19,26 +19,27 @@ has none.
   the primary; the rest keep the caller's order.
 - Capacity: `MAX_GENRES` = 6 (the primary plus up to five more).
 - Non-empty by construction: removing the last genre drops the field, so
-  `genres(rec)[0]` is the primary whenever `genres(rec)` is non-empty.
+  `has_genres(rec)` means at least one genre and `genres(rec)[0]` is the
+  primary.
 
 ## API
 
 Writes require the recording's `&RecordingAdminCap<RecordingShare>` and go
-through `recording::uid_mut(cap)`; the share type ties the cap to its one recording. Views
-are permissionless.
+through `recording::uid_mut(cap)`; the share type ties the cap to its one
+recording. Views are permissionless.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `add_genre(rec, cap, &Genre)` | Appends a genre; the first add creates the field and makes that genre the primary | `EDuplicateGenre` (40) if already assigned, then `EMaxGenres` (41) at 6 |
-| `remove_genre(rec, cap, genre_id)` | Removes a genre by id; the next genre becomes primary if the primary was removed; the last removal drops the field | `EGenreNotPresent` (42) if not assigned, including when nothing is attached |
+| `add_genre(rec, cap, &Genre)` | Appends a genre; the first add creates the field and makes that genre the primary | `EDuplicateGenre` (0) if already assigned, then `EMaxGenresExceeded` (1) at 6 |
+| `remove_genre(rec, cap, genre_id)` | Removes a genre by id; the next genre becomes primary if the primary was removed; the last removal drops the field | `ENoGenres` (2) when nothing is attached, `EGenreNotFound` (3) if not assigned |
 | `clear_genres(rec, cap)` | Removes the whole list; silent when absent | none |
-| `genres(rec)` | The genre ids in order, primary first; empty when nothing is attached | none |
+| `has_genres(rec)` | Whether at least one genre is attached | none |
+| `genres(rec)` | `&vector<ID>` of genre ids in order, primary first | `ENoGenres` (2) when nothing is attached |
 
 Every add takes the `&Genre` object, so only ids that resolve to a real entry
 in the shared vocabulary can enter the list. Reordering, including changing
 the primary, is `clear_genres` followed by `add_genre` in the desired order
-within one programmable transaction block. Emptiness and the primary are
-computed client-side from `genres()`.
+within one programmable transaction block. The primary is `genres(rec)[0]`.
 
 ## Events
 
@@ -58,14 +59,16 @@ resolve client-side from the frozen `Genre` objects.
 
 | Code | Constant | Condition |
 |---|---|---|
-| 40 | `EDuplicateGenre` | `add_genre` with a genre already assigned |
-| 41 | `EMaxGenres` | `add_genre` when the recording already holds 6 genres |
-| 42 | `EGenreNotPresent` | `remove_genre` with an id not assigned |
+| 0 | `EDuplicateGenre` | `add_genre` with a genre already assigned |
+| 1 | `EMaxGenresExceeded` | `add_genre` when the recording already holds 6 genres |
+| 2 | `ENoGenres` | `remove_genre` or `genres` with nothing attached |
+| 3 | `EGenreNotFound` | `remove_genre` with an id not assigned |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Recording<RecordingShare>` and its type-bound `RecordingAdminCap<RecordingShare>`.
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Recording<RecordingShare>`
+  and its type-bound `RecordingAdminCap<RecordingShare>`.
 - [`genre`](https://github.com/misofm/genre) at
   `90baae2919f7272f6d4bbb245b643f7dba5dc0ba` — the canonical shared genre
   vocabulary.

@@ -18,10 +18,10 @@ cap-gated `release::uid_mut`; views are permissionless.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_title(release, cap, title: String)` | Sets or replaces the title, verbatim. Setting the value already stored neither writes nor emits. | `EEmptyTitle` (2), then `ETitleTooLong` (3) past 300 bytes — both before cap authorization; then wrong cap (`release::EUnauthorized`, 0) |
+| `set_title(release, cap, title: String)` | Sets or replaces the title, verbatim. Setting the value already stored neither writes nor emits. | `EEmptyTitle` (1), then `ETitleTooLong` (2) past 300 bytes — both before cap authorization; then wrong cap (`release::EUnauthorized`, 0) |
 | `clear_title(release, cap)` | Removes the title; an absent title is a silent no-op | wrong cap (0), even when nothing is attached |
 | `has_title(release): bool` | Whether a title is attached | — |
-| `title(release): &String` | The title | `ENoTitle` (1) when absent |
+| `title(release): &String` | The title | `ENoTitle` (0) when absent |
 
 The 300-byte bound is on bytes, not characters.
 
@@ -42,15 +42,15 @@ event only when a title was actually removed. Views emit nothing.
 
 | Code | Constant | Location | Condition |
 |---|---|---|---|
-| 1 | `ENoTitle` | `release_title::release_title` | `title` with nothing attached |
-| 2 | `EEmptyTitle` | `release_title::release_title` | `set_title` with an empty string |
-| 3 | `ETitleTooLong` | `release_title::release_title` | `set_title` with more than 300 bytes |
+| 0 | `ENoTitle` | `release_title::release_title` | `title` with nothing attached |
+| 1 | `EEmptyTitle` | `release_title::release_title` | `set_title` with an empty string |
+| 2 | `ETitleTooLong` | `release_title::release_title` | `set_title` with more than 300 bytes |
 | 0 | `EUnauthorized` | `musicos::release` | any write with a cap for a different release |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Release`, `ReleaseAdminCap`,
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release`, `ReleaseAdminCap`,
   and cap-gated `uid_mut`.
 
 ## Publishing

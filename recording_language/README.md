@@ -16,15 +16,15 @@ vector is an explicit instrumental claim; absence means no claim has been made.
 ## API
 
 Writes require the recording's `&RecordingAdminCap<RecordingShare>` and go
-through `recording::uid_mut(cap)`; the share type ties the cap to its one recording. Views
-are permissionless.
+through `recording::uid_mut(cap)`; the share type ties the cap to its one
+recording. Views are permissionless.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_languages(rec, cap, languages)` | Sets or replaces the list; empty asserts instrumental; setting the list already held neither writes nor emits | `ETooManyLanguages` (2) past 10, then `EDuplicateLanguage` (3) on a repeat |
+| `set_languages(rec, cap, languages)` | Sets or replaces the list; empty asserts instrumental; setting the list already held neither writes nor emits | `EMaxLanguagesExceeded` (2) past 10, then `EDuplicateLanguage` (3) on a repeat |
 | `clear_languages(rec, cap)` | Removes the record, including an instrumental claim; silent when absent | none |
 | `has_languages(rec)` | Whether a record is attached | none |
-| `languages(rec)` | `&vector<LanguageCode>` in the order given; empty means instrumental | `ENoLanguages` (1) when absent |
+| `languages(rec)` | `&vector<LanguageCode>` in the order given; empty means instrumental | `ENoLanguages` (0) when absent |
 
 Validation runs before the cap check, so an invalid replacement leaves the
 stored value untouched. Instrumental is `has_languages(rec) &&
@@ -40,20 +40,22 @@ Both events include the recording object ID.
 | `RecordingLanguagesClearedEvent` | `recording_id: ID` | 32 |
 
 `languages` holds the ordered two-letter codes as strings. An equal set and an
-absent clear emit nothing, so every event is a real state transition.
+absent clear emit nothing, so every event is a real state transition. The same
+codes in a different order are a different value and emit a set event.
 
 ## Errors
 
 | Code | Constant | Condition |
 |---|---|---|
 | 1 | `ENoLanguages` | `languages` with nothing attached |
-| 2 | `ETooManyLanguages` | `set_languages` with more than 10 codes |
+| 2 | `EMaxLanguagesExceeded` | `set_languages` with more than 10 codes |
 | 3 | `EDuplicateLanguage` | `set_languages` with a repeated code |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Recording<RecordingShare>` and its type-bound `RecordingAdminCap<RecordingShare>`.
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Recording<RecordingShare>`
+  and its type-bound `RecordingAdminCap<RecordingShare>`.
 - [`language_code`](https://github.com/unconfirmedlabs/language_code) at
   `61542357f3d2ff989d120185046def7cf6c8bdcb` — ISO 639-1 codes valid by
   construction.

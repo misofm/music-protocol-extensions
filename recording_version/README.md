@@ -18,15 +18,15 @@ alone.
 ## API
 
 Writes require the recording's `&RecordingAdminCap<RecordingShare>` and go
-through `recording::uid_mut(cap)`; the share type ties the cap to its one recording. Views
-are permissionless.
+through `recording::uid_mut(cap)`; the share type ties the cap to its one
+recording. Views are permissionless.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_version(rec, cap, version)` | Sets or replaces the version name; setting the value already held neither writes nor emits | `EEmptyVersion` (2) on an empty string, `EVersionTooLong` (3) past 300 bytes |
+| `set_version(rec, cap, version)` | Sets or replaces the version name; setting the value already held neither writes nor emits | `EEmptyVersion` (1) on an empty string, `EVersionTooLong` (2) past 300 bytes |
 | `clear_version(rec, cap)` | Removes the version name; silent when absent | none |
 | `has_version(rec)` | Whether a version name is attached | none |
-| `version(rec)` | `&String` | `ENoVersion` (1) when absent |
+| `version(rec)` | `&String` | `ENoVersion` (0) when absent |
 
 Validation runs before the cap check, so an invalid replacement leaves the
 stored value untouched. Equality is exact: case and whitespace are content.
@@ -48,14 +48,15 @@ event is a real state transition.
 
 | Code | Constant | Condition |
 |---|---|---|
-| 1 | `ENoVersion` | `version` with nothing attached |
-| 2 | `EEmptyVersion` | `set_version` with an empty string |
-| 3 | `EVersionTooLong` | `set_version` with more than 300 bytes |
+| 0 | `ENoVersion` | `version` with nothing attached |
+| 1 | `EEmptyVersion` | `set_version` with an empty string |
+| 2 | `EVersionTooLong` | `set_version` with more than 300 bytes |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Recording<RecordingShare>` and its type-bound `RecordingAdminCap<RecordingShare>`.
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Recording<RecordingShare>`
+  and its type-bound `RecordingAdminCap<RecordingShare>`.
 
 ## Publishing
 

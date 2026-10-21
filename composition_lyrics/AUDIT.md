@@ -1,87 +1,33 @@
-> Historical audit record: the dated findings below describe earlier reviewed
-> generations and their pinned dependencies. The current unpublished migration
-> targets musicos `0b3eb07c9cb1af29c877b66cddfdcc9ef32fc721`;
-> `sui move test --lint --warnings-are-errors` passed 13/13 tests on
-> 2026-09-29. See `Move.toml`, `README.md`, and tests for the current API.
+# Security review — `composition_lyrics`
 
-> Historical audit below predates the 2026-09-15 payload revision. Current event contracts and size bounds are documented in [EVENT_PAYLOADS.md](../EVENT_PAYLOADS.md). Storage, authority, and mutation behavior remain unchanged.
+Pre-publication qualification, 2026-10-20. See `Move.toml`, `README.md`, and
+the tests for the current API.
 
-# Implementation review — composition_lyrics
+## Dependency provenance
 
-Reviewed locally on 2026-09-15. This is an implementation review and test record,
-not an independent security audit or a publication record.
+`Move.toml` pins `musicos` at `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` and
+`language_code` at `61542357f3d2ff989d120185046def7cf6c8bdcb`.
 
-## Scope and trust model
+## Threat model
 
-- `musicos` is pinned to `e56c4cbc0d9673f6422e365364b128d0813341ac`.
-- `language_code` is pinned to `61542357f3d2ff989d120185046def7cf6c8bdcb`.
-- Set and clear require `CompositionAdminCap<CompositionShare>` and call the
-  pinned core's `uid_mut`. Authorization is type-based, including absent clears.
-  Core production construction consumes the share TreasuryCap. The extension
-  inherits that uniqueness assumption and adds no cap-ID comparison. The test
-  helper can construct states not available through production construction.
-- The admin has permanent authority over the composition's dynamic fields.
-  This module's key cannot be constructed outside its defining module, but
-  the extension does not promise protection from the core's administrative UID
-  access. Cap addresses in events provide provenance, not another authority check.
-- Each `ExtensionKey(LanguageCode)` names one independent byte vector. Replacing
-  or clearing it leaves other language entries untouched.
-- The 32 KiB limit bounds stored bytes per entry. It does not bound decompressed
-  size, verify a frame, or validate lyrics. Empty/malformed payload acceptance
-  is intentional. Client decoding must enforce output and memory limits.
-- Events contain exact compressed snapshots and explicit prior presence. Equal
-  replacements write silently; absent clears and views do not emit. Snapshot events add
-  storage in transaction history. No payments, blob renewals, capability custody,
-  external dictionary, or network calls occur in the module.
+- Set and clear go through `Composition::uid_mut`, which requires the
+  `CompositionAdminCap` of the composition's share type; a cap for another
+  composition does not type-check. Absent clears authorize too.
+- Each `ExtensionKey(LanguageCode)` names one independent byte vector, and the
+  key cannot be constructed outside this module. Replacing or clearing one
+  language leaves the others untouched.
+- Payloads are non-empty and at most 32,768 stored bytes; both bounds are
+  checked before authorization. The bound does not limit decompressed size or
+  validate the frame, so client decoders must enforce output and memory limits.
+- Events carry the composition and the two-byte language code only (35 BCS
+  bytes); the body stays in storage. Equal sets and absent clears are silent.
+- No funds, custody, or external calls are involved.
 
-## Validation
+## Evidence
 
-Using `sui 1.78.1-722ac4fcf484` and the generated Testnet lock graph:
-
-- `sui move build --warnings-are-errors --lint`: passed.
-- `sui move test --coverage --warnings-are-errors --lint`: 9/9 passed.
-- `sui move coverage summary`: 100.00% module coverage.
-- `python3 tests/check_cap_types.py`: set and clear each reject a cap with a
-  different share type at compile time (`EC04007`, invalid `cap` argument).
-
-Tests exercise published/shared compositions across senders and transactions,
-independent languages, share-type isolation, exact opaque byte preservation,
-event payloads for add/different replacement, silent equal replacement, clear/re-add, empty versus
-absent entries, missing reads, and 32,768/32,769-byte boundaries. Full-size
-replacement events are exercised as well as full-size storage.
-
-Validation is local; no Mainnet build, live gas measurement, browser decoder
-integration, or deployment was performed. No blocking issue was identified in
-this module within the inherited core trust model above.
-
-## 2026-09-24 — new generation against musicos `6dff4de`
-
-Reviewed for a fresh immutable publication; `Published.toml` remains the
-record of the prior deployment. Changes in this generation:
-
-- `musicos` re-pinned to `6dff4deca5ced186989c064e152c92a06384750c`
-  (`Composition` carries no title; `publish` takes no `Clock`).
-  `language_code` stays at `61542357f3d2ff989d120185046def7cf6c8bdcb`.
-- Error constants converted from `#[error]` strings to numeric `u64`:
-  `ENoLyrics` (1) and `ELyricsTooLong` (2, formerly
-  `EMaxLyricsLengthExceeded`).
-- Events slimmed to what an event-only indexer needs:
-  `CompositionLyricsSetEvent<CompositionShare> { composition_id, language:
-  String }` and `CompositionLyricsClearedEvent<CompositionShare> {
-  composition_id, language: String }`, 35 BCS bytes each. The admin cap id
-  and the prior-presence flag were dropped; the compressed body was already
-  excluded.
-- Setting the bytes already stored is now a true no-op: no write, no event.
-- Guard order changed: the 32,768-byte bound is checked before cap
-  authorization; absent clears remain silent after authorization.
-
-Evidence: with Sui 1.79.0, default and Mainnet builds and tests pass with no
-warnings, 11/11 on each environment, covering independent languages, the
-published/shared lifecycle across senders, share-type isolation, opaque byte
-preservation, empty versus absent entries, the 32,768/32,769-byte boundary on
-add and replace, equal-set and absent-clear silence, silent views, and exact
-event BCS layouts. `tests/check_cap_types.py` is unchanged and still expects
-`sui` on `PATH`.
-
-Event `composition_id` fields are typed `ID` rather than `address`, and emit
-sites pass the object id directly; BCS layout and sizes are unchanged.
+With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
+passes 12/12 tests with no warnings and 100.00% coverage. Tests cover the
+published/shared lifecycle across senders, independent languages, opaque byte
+preservation, empty-payload rejection, the 32,768/32,769-byte boundary on add
+and replace, equal-set and absent-clear silence, per-composition isolation,
+missing reads, and exact event BCS layouts.

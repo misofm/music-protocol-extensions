@@ -15,9 +15,9 @@ this release's primary.
 - Value: a bare `vector<ID>` of `genre::Genre` object ids under that key.
   Index 0 is the primary; the rest are unranked.
 - Capacity: `MAX_GENRES` = 6 (the primary plus up to five more).
-- Reclamation: removing the last genre drops the field. The field's existence
-  and "there is a primary" are the same fact — the list is non-empty by
-  construction.
+- Non-empty by construction: removing the last genre drops the field, so
+  `has_genres(release)` means at least one genre and `genres(release)[0]` is
+  the primary.
 
 ## API
 
@@ -28,13 +28,14 @@ permissionless.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `add_genre(release, cap, &Genre)` | Appends a genre; the first ever added becomes the primary | wrong cap (0); then `EDuplicateGenre` (40) if already assigned; then `EMaxGenres` (41) at 6 genres |
-| `remove_genre(release, cap, genre_id: ID)` | Removes a genre by id; if it was the primary, the next entry is promoted; removing the last one drops the field | wrong cap (0); then `EGenreNotPresent` (42) when the id is not assigned, including when nothing is attached |
+| `add_genre(release, cap, &Genre)` | Appends a genre; the first ever added becomes the primary | wrong cap (0); then `EDuplicateGenre` (0) if already assigned; then `EMaxGenresExceeded` (1) at 6 genres |
+| `remove_genre(release, cap, genre_id: ID)` | Removes a genre by id; if it was the primary, the next entry is promoted; removing the last one drops the field | wrong cap (0); then `ENoGenres` (2) when nothing is attached; then `EGenreNotFound` (3) when the id is not assigned |
 | `clear_genres(release, cap)` | Removes the entire genre list; an absent list is a silent no-op | wrong cap (0), even when nothing is attached |
-| `genres(release): vector<ID>` | The release's genre ids, in order, primary first (empty when none) | — |
+| `has_genres(release): bool` | Whether at least one genre is attached | — |
+| `genres(release): &vector<ID>` | The release's genre ids, in order, primary first | `ENoGenres` (2) when nothing is attached |
 
-Emptiness is `genres(release).is_empty()` and the primary is
-`genres(release)[0]`; neither is exposed as a separate function. Reordering,
+The primary is `genres(release)[0]`; it is not exposed as a separate
+function. Reordering,
 including changing the primary, is `clear_genres` followed by `add_genre` in
 the desired order within one programmable transaction block.
 
@@ -59,15 +60,16 @@ from the frozen `Genre` objects, or derived offline with
 
 | Code | Constant | Location | Condition |
 |---|---|---|---|
-| 40 | `EDuplicateGenre` | `release_genre::release_genre` | `add_genre` with a genre already assigned |
-| 41 | `EMaxGenres` | `release_genre::release_genre` | `add_genre` when the release already holds 6 genres |
-| 42 | `EGenreNotPresent` | `release_genre::release_genre` | `remove_genre` with an id not currently assigned |
+| 0 | `EDuplicateGenre` | `release_genre::release_genre` | `add_genre` with a genre already assigned |
+| 1 | `EMaxGenresExceeded` | `release_genre::release_genre` | `add_genre` when the release already holds 6 genres |
+| 2 | `ENoGenres` | `release_genre::release_genre` | `remove_genre` or `genres` with nothing attached |
+| 3 | `EGenreNotFound` | `release_genre::release_genre` | `remove_genre` with an id not currently assigned |
 | 0 | `EUnauthorized` | `musicos::release` | any write with a cap for a different release |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Release`, `ReleaseAdminCap`,
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release`, `ReleaseAdminCap`,
   and cap-gated `uid_mut`.
 - [`genre`](https://github.com/misofm/genre) at
   `90baae2919f7272f6d4bbb245b643f7dba5dc0ba` — the canonical shared genre

@@ -1,18 +1,17 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// Pure value tests for `recording_party_role`: role/level constructors and
-/// the `level()` reader touch no objects, capabilities, or shared state —
-/// there is no ownership mechanics for `test_scenario` transaction
-/// boundaries to prove here (the module under test does not even take a
-/// `TxContext`), so these stay plain single-transaction value assertions.
+/// Pure value tests for `recording_party_role`: constructors, the `level()`
+/// reader, instrument validation, and the BCS wire contract.
 #[test_only]
 module recording_credits::recording_party_role_tests;
 
-use recording_credits::recording_party_role as rpr;
+// === Imports ===
+
 use std::string::String;
 use std::unit_test::assert_eq;
 use sui::bcs::to_bytes;
+use recording_credits::recording_party_role as rpr;
 
 fun long_string(len: u64): String {
     let mut bytes = vector[];
@@ -30,16 +29,34 @@ fun lead(): Option<rpr::RecordingPartyRoleLevel> {
 #[test]
 fun leveled_roles_encode_their_index_and_report_their_level() {
     let roles = vector[
-        rpr::new_actor_role(lead()), rpr::new_arranger_role(lead()), rpr::new_band_leader_role(lead()),
-        rpr::new_choir_role(lead()), rpr::new_choir_master_role(lead()), rpr::new_concert_master_role(lead()),
-        rpr::new_conductor_role(lead()), rpr::new_contractor_role(lead()), rpr::new_dj_role(lead()),
-        rpr::new_editor_role(lead()), rpr::new_engineer_role(lead()), rpr::new_ensemble_role(lead()),
-        rpr::new_mastering_engineer_role(lead()), rpr::new_mixing_engineer_role(lead()),
-        rpr::new_music_director_role(lead()), rpr::new_music_supervisor_role(lead()), rpr::new_narrator_role(lead()),
-        rpr::new_orchestra_role(lead()), rpr::new_orchestrator_role(lead()), rpr::new_performer_role(lead()),
-        rpr::new_producer_role(lead()), rpr::new_programmer_role(lead()), rpr::new_recording_engineer_role(lead()),
-        rpr::new_remixing_engineer_role(lead()), rpr::new_soloist_role(lead()), rpr::new_sound_designer_role(lead()),
-        rpr::new_speaker_role(lead()), rpr::new_vocalist_role(lead()),
+        rpr::new_actor_role(lead()),
+        rpr::new_arranger_role(lead()),
+        rpr::new_band_leader_role(lead()),
+        rpr::new_choir_role(lead()),
+        rpr::new_choir_master_role(lead()),
+        rpr::new_concert_master_role(lead()),
+        rpr::new_conductor_role(lead()),
+        rpr::new_contractor_role(lead()),
+        rpr::new_dj_role(lead()),
+        rpr::new_editor_role(lead()),
+        rpr::new_engineer_role(lead()),
+        rpr::new_ensemble_role(lead()),
+        rpr::new_mastering_engineer_role(lead()),
+        rpr::new_mixing_engineer_role(lead()),
+        rpr::new_music_director_role(lead()),
+        rpr::new_music_supervisor_role(lead()),
+        rpr::new_narrator_role(lead()),
+        rpr::new_orchestra_role(lead()),
+        rpr::new_orchestrator_role(lead()),
+        rpr::new_performer_role(lead()),
+        rpr::new_producer_role(lead()),
+        rpr::new_programmer_role(lead()),
+        rpr::new_recording_engineer_role(lead()),
+        rpr::new_remixing_engineer_role(lead()),
+        rpr::new_soloist_role(lead()),
+        rpr::new_sound_designer_role(lead()),
+        rpr::new_speaker_role(lead()),
+        rpr::new_vocalist_role(lead()),
     ];
     // Declaration indices, skipping the clerical 2, 9 and instrumentalist 14.
     let indices = vector[0, 1, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20,
@@ -91,7 +108,8 @@ fun level_bcs_variant_indices_are_stable() {
     ];
     levels.length().do!(|i| {
         assert_eq!(to_bytes(&levels[i]), vector[(i as u8)]);
-        assert_eq!(to_bytes(&rpr::new_producer_role(option::some(levels[i]))), vector[23, 1, (i as u8)]);
+        let producer = rpr::new_producer_role(option::some(levels[i]));
+        assert_eq!(to_bytes(&producer), vector[23, 1, (i as u8)]);
     });
     assert_eq!(to_bytes(&rpr::new_producer_role(option::none())), vector[23, 0]);
 }
@@ -136,13 +154,13 @@ fun role_levels_round_trip() {
     );
 }
 
-#[test, expected_failure(abort_code = rpr::EEmptyString)]
+#[test, expected_failure(abort_code = rpr::EEmptyInstrument)]
 fun new_instrumentalist_role_rejects_empty_name() {
     let _ = rpr::new_instrumentalist_role(b"".to_string(), option::none());
     abort
 }
 
-#[test, expected_failure(abort_code = rpr::EMaxInstrumentLengthExceeded)]
+#[test, expected_failure(abort_code = rpr::EInstrumentTooLong)]
 fun new_instrumentalist_role_rejects_too_long_name() {
     let name = long_string(101);
     let _ = rpr::new_instrumentalist_role(name, option::none());

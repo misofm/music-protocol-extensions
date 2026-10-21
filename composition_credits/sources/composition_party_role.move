@@ -2,14 +2,9 @@
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
 /// The roles a party can hold on a composition: the writing and adaptation
-/// contributions to the underlying musical work.
-///
-/// `CompositionPartyRole` is a closed enum constructed only through the
-/// `new_*_role` functions. Unlike recording roles there is no seniority axis:
-/// a writer either contributed in a capacity or did not. The vocabulary is
-/// fixed to these canonical variants and is musicos's own; any overlap with
-/// an external standard (e.g. DDEX) is coincidental. Consumers read a role
-/// from its BCS variant index, in declaration order.
+/// contributions to the underlying musical work. `CompositionPartyRole` is a
+/// closed enum built only through the `new_*_role` functions; consumers read a
+/// role from its BCS variant index, in declaration order.
 module composition_credits::composition_party_role;
 
 // === Enums ===

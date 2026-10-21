@@ -15,7 +15,9 @@ ExtensionKey(LanguageCode) -> vector<u8>
 `LanguageCode` is the validated ISO 639-1 type from `language_code`. The
 module-owned wrapper supplies the namespace and the language selects one
 entry. Each language is added, replaced, or removed independently; there is
-no preferred-language ordering or on-chain language index. Regional and
+no preferred-language ordering or on-chain language index. Clients list the
+attached languages off-chain by listing the composition's dynamic fields
+(for example `suix_getDynamicFields`) and filtering for this `ExtensionKey`. Regional and
 script variants are not represented by this key. Timing belongs to a
 recording rather than this composition text.
 
@@ -25,14 +27,13 @@ level is a client choice. Clients preserve whitespace, line breaks,
 punctuation, and text exactly.
 
 Move treats the payload as opaque bytes. It does not check zstd headers,
-decompress, validate UTF-8, judge lyrics, or verify their language. Empty and
-malformed byte vectors can be stored. Clients must bound decoder memory and
+decompress, validate UTF-8, judge lyrics, or verify their language. Empty
+payloads are rejected; malformed byte vectors can be stored. Clients must bound decoder memory and
 output, handle decoding failures, and interpret the resulting text.
 
 The maximum is **32,768 stored bytes per language**: a compressed storage
-bound, not a limit on decoded text. Absence means no entry has been supplied;
-an attached empty payload is distinct and does not imply an instrumental
-composition.
+bound, not a limit on decoded text. Absence means no entry has been supplied
+and does not imply an instrumental composition.
 
 ## API
 
@@ -41,10 +42,10 @@ and go through the cap-gated `composition::uid_mut`; views are permissionless.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_lyrics(composition, cap, language, bytes)` | Adds or replaces one language's entry, bytes preserved exactly. Setting the bytes already stored neither writes nor emits. | `ELyricsTooLong` (2) past 32,768 bytes, before cap authorization |
+| `set_lyrics(composition, cap, language, bytes)` | Adds or replaces one language's entry, bytes preserved exactly. Setting the bytes already stored neither writes nor emits. | `EEmptyLyrics` (1) for empty bytes, `ELyricsTooLong` (2) past 32,768 bytes, both before cap authorization |
 | `clear_lyrics(composition, cap, language)` | Removes one language's entry; an absent entry is a silent no-op | — |
 | `has_lyrics(composition, language): bool` | Whether an entry exists for this language | — |
-| `lyrics(composition, language): &vector<u8>` | Borrows the stored bytes | `ENoLyrics` (1) when absent |
+| `lyrics(composition, language): &vector<u8>` | Borrows the stored bytes | `ENoLyrics` (0) when absent |
 | `max_lyrics_length(): u64` | The compressed-byte limit (32,768) | — |
 
 Core authorizes by type: the cap's `CompositionShare` must match the
@@ -52,8 +53,8 @@ composition's, so a cap for another composition does not type-check.
 
 ## Events
 
-Both events carry only what an event-only indexer would otherwise have to look up: the composition and the language
-key. The compressed body stays in the dynamic field.
+Both events carry only what an event-only indexer would otherwise have to
+look up: the composition and the language key. The compressed body stays in the dynamic field.
 
 | Event | Fields | BCS size |
 |---|---|---|
@@ -69,13 +70,14 @@ languages currently attached.
 
 | Code | Constant | Location | Condition |
 |---|---|---|---|
-| 1 | `ENoLyrics` | `composition_lyrics::composition_lyrics` | `lyrics` with no entry for the language |
+| 0 | `ENoLyrics` | `composition_lyrics::composition_lyrics` | `lyrics` with no entry for the language |
+| 1 | `EEmptyLyrics` | `composition_lyrics::composition_lyrics` | `set_lyrics` with an empty payload |
 | 2 | `ELyricsTooLong` | `composition_lyrics::composition_lyrics` | `set_lyrics` with more than 32,768 bytes |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Composition`,
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Composition`,
   `CompositionAdminCap`, and cap-gated `uid_mut`.
 - [`language_code`](https://github.com/unconfirmedlabs/language_code) at
   `61542357f3d2ff989d120185046def7cf6c8bdcb` — the validated ISO 639-1 key.

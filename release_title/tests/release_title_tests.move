@@ -9,13 +9,15 @@
 #[test_only]
 module release_title::release_title_tests;
 
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::test_helpers;
-use release_title::release_title as rt;
+// === Imports ===
+
 use std::string::String;
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs;
 use sui::event;
+use musicos::release::{Self, Release, ReleaseAdminCap};
+use musicos::test_helpers;
+use release_title::release_title as rt;
 
 /// A one-track release; a title is never derived from the tracklist.
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
@@ -32,7 +34,7 @@ fun repeated(byte: u8, n: u64): String {
 /// Asserts the set event's fields and its exact BCS layout:
 /// `release_id` (32) then the title as a ULEB128-prefixed byte vector.
 fun assert_set_event(event: &rt::ReleaseTitleSetEvent, release_id: ID, title: &String) {
-    let (event_release_id, event_title) = rt::title_set_event_fields(event);
+    let (event_release_id, event_title) = rt::release_title_set_fields(event);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_title, *title);
 
@@ -44,7 +46,7 @@ fun assert_set_event(event: &rt::ReleaseTitleSetEvent, release_id: ID, title: &S
 
 /// Asserts the cleared event's field and its exact 32-byte BCS layout.
 fun assert_cleared_event(event: &rt::ReleaseTitleClearedEvent, release_id: ID) {
-    assert_eq!(rt::title_cleared_event_fields(event), release_id);
+    assert_eq!(rt::release_title_cleared_fields(event), release_id);
 
     let mut bytes = bcs::new(bcs::to_bytes(event));
     assert_eq!(bytes.peel_address().to_id(), release_id);

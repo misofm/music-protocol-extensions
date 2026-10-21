@@ -1,7 +1,7 @@
 # `composition_credits`
 
 Writing credits for a `musicos::composition::Composition`:
-one `Credit<CompositionPartyRole>` (display name plus 1-5 roles) per credited
+one `Credit<CompositionPartyRole>` (display name plus one or more roles) per credited
 `partyos` `Party`, kept in a single `CompositionCredits` record stored as a
 dynamic field on the composition and written through its cap-gated `uid_mut`.
 Attribution is display-oriented and varies across platforms, so it lives here
@@ -14,33 +14,33 @@ the same `Composition`.
 - Key: `ExtensionKey()` — a unit struct local to this package.
 - Value: one `CompositionCredits { credits: VecMap<ID, Credit<CompositionPartyRole>> }`,
   party ID to credit in insertion order. The record is created on the first
-  `add_credit` and retained, empty, after the last `remove_credit`.
+  `add_credit` and removed with the last `remove_credit`, so `has_credits`
+  is true exactly when at least one credit is held.
 
-Invariants enforced on write: a credit carries 1-5 roles
-(`MAX_ROLES_PER_CREDIT`; `credit::new` guarantees at least one), a party holds
-at most one credit, and a composition holds at most 50 credits
-(`MAX_CREDITS`). `composition_party_role` is a closed enum of six canonical
-variants built only through `new_*_role`; a role is read from its BCS variant
-index. Roles outside this vocabulary will arrive in a future package
-generation.
+Invariants enforced on write: a party holds at most one credit, and a
+composition holds at most 50 credits (`MAX_CREDITS`). `credit::new` requires
+at least one role and rejects duplicate roles, so a credit carries one to six
+of the six `CompositionPartyRole` variants. `composition_party_role` is a
+closed enum built only through `new_*_role`; a role is read from its BCS
+variant index.
 
 ## API
 
 Writes require the composition's `&CompositionAdminCap` and
 go through `composition::uid_mut(cap)`, which requires the cap of the composition's share type.
-Views are permissionless. Guard order is argument validation, then the cap,
-then stored state.
+Views are permissionless. Guard order is the cap, then stored state, with
+capacity checked before duplicates.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `add_credit(comp, cap, party, credit)` | Credits a party, creating the record on first use | `EExceedsMaxRoles` (30), `EMaxCreditsExceeded` (32), `EPartyAlreadyCredited` (40) |
-| `remove_credit(comp, cap, party_id)` | Removes a party's credit; the empty record stays attached | `ENoCredits` (50), `EPartyNotCredited` (52) |
-| `has_credits(comp)` | Whether a record is attached | none |
-| `credits(comp)` | The `&VecMap<ID, Credit<CompositionPartyRole>>` | `ENoCredits` (50) when absent |
+| `add_credit(comp, cap, party, credit)` | Credits a party, creating the record on first use | `EMaxCreditsExceeded` (0), `EDuplicateParty` (1) |
+| `remove_credit(comp, cap, party_id)` | Removes a party's credit; removing the last one detaches the record | `ENoCredits` (2), `EPartyNotFound` (3) |
+| `has_credits(comp)` | Whether at least one credit is attached | none |
+| `credits(comp)` | The `&VecMap<ID, Credit<CompositionPartyRole>>` | `ENoCredits` (2) when absent |
 | `composition_party_role::new_*_role()` | Role constructors: Adapter, Arranger, Composer, Lyricist, Songwriter, Translator | none |
 
 At capacity, a duplicate party reports `EMaxCreditsExceeded` rather than
-`EPartyAlreadyCredited`. No write is a silent no-op: re-crediting a party
+`EDuplicateParty`. No write is a silent no-op: re-crediting a party
 (even with an identical credit) and removing an uncredited party both abort.
 
 ## Events
@@ -50,7 +50,7 @@ that keys the entry, and — on add — the roles exactly as stored.
 
 | Event | Fields | BCS bytes |
 |---|---|---|
-| `CompositionCreditAddedEvent` | `composition_id: ID`, `party_id: ID`, `roles: vector<CompositionPartyRole>` | 66 (one role) – 70 (five) |
+| `CompositionCreditAddedEvent` | `composition_id: ID`, `party_id: ID`, `roles: vector<CompositionPartyRole>` | 66 (one role) – 71 (six) |
 | `CompositionCreditRemovedEvent` | `composition_id: ID`, `party_id: ID` | 64 |
 
 `roles` is the credit's role vector in stored order; every
@@ -64,16 +64,15 @@ do not carry the admin cap (derived from the composition), counts or indices
 
 | Code | Constant | Condition |
 |---|---|---|
-| 30 | `EExceedsMaxRoles` | More than five roles |
-| 32 | `EMaxCreditsExceeded` | Fifty credits already held |
-| 40 | `EPartyAlreadyCredited` | Party already credited |
-| 50 | `ENoCredits` | No record attached |
-| 52 | `EPartyNotCredited` | Party not credited |
+| 0 | `EMaxCreditsExceeded` | Fifty credits already held |
+| 1 | `EDuplicateParty` | Party already credited |
+| 2 | `ENoCredits` | No record attached |
+| 3 | `EPartyNotFound` | Party not credited |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Composition`
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Composition`
   and `CompositionAdminCap`.
 - [`partyos`](https://github.com/misofm/partyos) at
   `88c2e40353dbee8d8f98272069b4d836b02b12ae` — `Party`, the credited identity.

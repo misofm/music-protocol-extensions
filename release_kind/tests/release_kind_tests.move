@@ -9,12 +9,14 @@
 #[test_only]
 module release_kind::release_kind_tests;
 
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::test_helpers;
-use release_kind::release_kind as rk;
+// === Imports ===
+
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs;
 use sui::event;
+use musicos::release::{Self, Release, ReleaseAdminCap};
+use musicos::test_helpers;
+use release_kind::release_kind as rk;
 
 /// A one-track release; a kind is never derived from the tracklist.
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
@@ -26,7 +28,7 @@ fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
 /// Asserts the set event's fields and its exact BCS layout:
 /// `release_id` (32) then the kind as a ULEB128-prefixed byte vector.
 fun assert_set_event(event: &rk::ReleaseKindSetEvent, release_id: ID, kind: vector<u8>) {
-    let (event_release_id, event_kind) = rk::kind_set_event_fields(event);
+    let (event_release_id, event_kind) = rk::release_kind_set_fields(event);
     assert_eq!(event_release_id, release_id);
     assert_eq!(*event_kind.as_bytes(), kind);
 
@@ -38,7 +40,7 @@ fun assert_set_event(event: &rk::ReleaseKindSetEvent, release_id: ID, kind: vect
 
 /// Asserts the cleared event's field and its exact 32-byte BCS layout.
 fun assert_cleared_event(event: &rk::ReleaseKindClearedEvent, release_id: ID) {
-    assert_eq!(rk::kind_cleared_event_fields(event), release_id);
+    assert_eq!(rk::release_kind_cleared_fields(event), release_id);
 
     let mut bytes = bcs::new(bcs::to_bytes(event));
     assert_eq!(bytes.peel_address().to_id(), release_id);
@@ -339,6 +341,17 @@ fun another_releases_cap_is_rejected_on_clear_of_nothing() {
     let ctx = &mut tx_context::dummy();
     let (mut a, a_cap) = mk_release(ctx);
     let (b, b_cap) = mk_release(ctx);
+    rk::clear_kind(&mut a, &b_cap);
+    destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
+}
+
+/// Clear authorizes before removing an attached kind.
+#[test, expected_failure(abort_code = release::EUnauthorized)]
+fun another_releases_cap_is_rejected_on_clear_of_present_kind() {
+    let ctx = &mut tx_context::dummy();
+    let (mut a, a_cap) = mk_release(ctx);
+    let (b, b_cap) = mk_release(ctx);
+    rk::set_kind(&mut a, &a_cap, b"Album".to_string());
     rk::clear_kind(&mut a, &b_cap);
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }

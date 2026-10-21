@@ -8,6 +8,12 @@
 #[test_only]
 module recording_language::recording_language_e2e_tests;
 
+// === Imports ===
+
+use std::unit_test::{assert_eq, destroy};
+use sui::bcs::to_bytes;
+use sui::event::events_by_type;
+use sui::test_scenario::{Self as ts, Scenario};
 use language_code::language_code::{Self, LanguageCode};
 use musicos::composition;
 use musicos::recording::{Self, Recording, RecordingAdminCap};
@@ -16,10 +22,6 @@ use recording_language::recording_language::{
     RecordingLanguagesSetEvent,
     RecordingLanguagesClearedEvent,
 };
-use std::unit_test::{assert_eq, destroy};
-use sui::bcs::to_bytes;
-use sui::event::events_by_type;
-use sui::test_scenario::{Self as ts, Scenario};
 
 const ADMIN: address = @0xAD;
 const STRANGER: address = @0x51;
@@ -57,7 +59,7 @@ fun admin_sets_languages_on_a_published_shared_recording_and_a_stranger_reads_it
 
     let events = events_by_type<RecordingLanguagesSetEvent>();
     assert_eq!(events.length(), 1);
-    let (event_id, languages) = rl::set_event_fields(&events[0]);
+    let (event_id, languages) = rl::recording_languages_set_fields(&events[0]);
     assert_eq!(event_id, rec_id);
     assert_eq!(languages, vector[b"en".to_string(), b"fr".to_string()]);
     assert_eq!(to_bytes(&events[0]).length(), 39);
@@ -84,7 +86,7 @@ fun admin_sets_languages_on_a_published_shared_recording_and_a_stranger_reads_it
     assert!(rl::languages(&rec).is_empty());
     let events = events_by_type<RecordingLanguagesSetEvent>();
     assert_eq!(events.length(), 1);
-    let (_, languages) = rl::set_event_fields(&events[0]);
+    let (_, languages) = rl::recording_languages_set_fields(&events[0]);
     assert!(languages.is_empty());
     assert_eq!(to_bytes(&events[0]).length(), 33);
 
@@ -92,7 +94,7 @@ fun admin_sets_languages_on_a_published_shared_recording_and_a_stranger_reads_it
     assert!(!rl::has_languages(&rec));
     let cleared = events_by_type<RecordingLanguagesClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(rl::cleared_event_fields(&cleared[0]), rec_id);
+    assert_eq!(rl::recording_languages_cleared_fields(&cleared[0]), rec_id);
     assert_eq!(to_bytes(&cleared[0]).length(), 32);
     ts::return_shared(rec);
 

@@ -10,12 +10,14 @@
 #[test_only]
 module release_description::release_description_e2e_tests;
 
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::test_helpers;
-use release_description::release_description as rd;
+// === Imports ===
+
 use std::unit_test::{assert_eq, destroy};
 use sui::event;
 use sui::test_scenario::{Self, Scenario};
+use musicos::release::{Self, Release, ReleaseAdminCap};
+use musicos::test_helpers;
+use release_description::release_description as rd;
 
 const LABEL: address = @0xAD;
 const STRANGER: address = @0x51;
@@ -59,9 +61,7 @@ fun description_lifecycle_on_a_published_and_shared_release() {
 
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 1);
-    let (event_id, event_description) = rd::description_set_event_fields(&set_events[0]);
-    assert_eq!(event_id, rel_id);
-    assert_eq!(event_description, b"Recorded live in one room.".to_string());
+    assert_eq!(rd::release_description_set_fields(&set_events[0]), rel_id);
 
     // --- Tx 4 (STRANGER): reads back the same prose a transaction later ---
     ts.next_tx(STRANGER);
@@ -79,12 +79,10 @@ fun description_lifecycle_on_a_published_and_shared_release() {
 
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 1);
-    let (event_id, event_description) = rd::description_set_event_fields(&set_events[0]);
-    assert_eq!(event_id, rel_id);
-    assert_eq!(event_description, b"Recorded live in one room, in two days.".to_string());
+    assert_eq!(rd::release_description_set_fields(&set_events[0]), rel_id);
     let cleared_events = event::events_by_type<rd::ReleaseDescriptionClearedEvent>();
     assert_eq!(cleared_events.length(), 1);
-    assert_eq!(rd::description_cleared_event_fields(&cleared_events[0]), rel_id);
+    assert_eq!(rd::release_description_cleared_fields(&cleared_events[0]), rel_id);
 
     // --- Tx 6 (STRANGER): the clear is visible too ---
     ts.next_tx(STRANGER);

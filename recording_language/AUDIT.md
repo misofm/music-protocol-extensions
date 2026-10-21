@@ -1,86 +1,32 @@
 # Security review — `recording_language`
 
-Reviewed 2026-09-11 for rich primitive language mutation events. Verdict: no
-exploitable findings in the reviewed source.
+Pre-publication qualification, 2026-10-20. See `Move.toml`, `README.md`, and
+the tests for the current API.
 
 ## Dependency provenance
 
-`Move.toml` pins `musicos` at
-`4cb3c926b1f9bb5103f3f7194e4e1e34b6c87840` and `language_code` at
-`61542357f3d2ff989d120185046def7cf6c8bdcb`. Both lock graphs resolve `bps` at
-`4ca1972a67d35c972ca567de7b08315e3778e52b` without duplicate aliases.
+`Move.toml` pins `musicos` at `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` and
+`language_code` at `61542357f3d2ff989d120185046def7cf6c8bdcb`.
 
-## Threat model and findings
+## Threat model
 
-Writes require `RecordingAdminCap<RecordingShare>` for the matching
-`RecordingShare` type; the composition-share type is phantom. `uid_mut` is
-type-only and ignores the cap value, so there is no runtime cap-value
-authentication: a different cap value with the same `RecordingShare` type is
-observationally accepted, while a mismatched `RecordingShare` cannot compile.
-The external value type validates ISO language codes; this extension bounds the
-vector at ten entries and rejects duplicates, checking the count before
-duplicates. An attached empty vector explicitly means instrumental, while
-dynamic-field absence means unspecified. Module-owned keys protect the schema.
-No economic, Vault, Action, or Plugin surface exists.
-
-Set events are generic over both recording-share and composition-share types
-and carry actual object addresses plus ordered raw two-byte code snapshots.
-They include the prior vector only when a value was present, the post-write
-vector, transition counts/flags, and the maximum bound. Clear events carry the
-removed raw vector and its prior count/flag; a present empty value emits, while
-an absent value is silent. The cap's `uid_mut` use remains type-only.
+Set and clear go through `Recording::uid_mut`, which requires the
+`RecordingAdminCap` of the recording's share type, including the equal-set
+and absent-clear paths. `LanguageCode` is valid ISO 639-1 by construction;
+this package bounds the list at ten codes and rejects repeats, both before
+authorization, so an invalid replacement leaves the stored value untouched.
+An attached empty list is an explicit instrumental claim and stays distinct
+from absence; `languages` aborts `ENoLanguages` (0) rather than defaulting.
+The module-owned key prevents cross-extension collisions. No funds, custody,
+or external calls are involved. Set events are 33 to 63 BCS bytes; clear
+events are 32.
 
 ## Evidence
 
-With Sui `1.79.0`, strict Testnet and Mainnet warnings-as-errors builds and
-tests pass: 15/15 on each network. The production module reports 100.00%
-coverage across published/shared operation, validation, bounds, duplicates,
-instrumental semantics, absence, removal, phantom event streams, and exact
-primitive event fields.
-
-## 2026-09-24 — regeneration against musicos `6dff4de`
-
-Re-reviewed for republication against `musicos` at
-`6dff4deca5ced186989c064e152c92a06384750c`, where `Recording` takes a single
-`RecordingShare` parameter and `publish` no longer takes a Clock.
-`language_code` remains at `61542357f3d2ff989d120185046def7cf6c8bdcb`.
-Verdict unchanged: no exploitable findings.
-
-Changes in this generation:
-
-- `unset_languages` renamed `clear_languages`. The `set_instrumental` and
-  `is_instrumental` wrappers were dropped: an instrumental claim is
-  `set_languages(rec, cap, vector[])` and reads as `has_languages(rec) &&
-  languages(rec).is_empty()`. `languages` now returns `&vector<LanguageCode>`.
-- Events are now `<phantom RecordingShare>` only and slimmed to the recording
-  address plus, on set, the new ordered codes as `vector<String>` (`33 + 3n`
-  BCS bytes, 33 to 63, down from 125 to 185; clear is 32, down from 106 to
-  136). Dropped: composition id, admin cap address, prior-value snapshots,
-  counts, instrumental flags, and the `max_languages` bound.
-- An equal set now neither writes nor emits; previously it rewrote the field
-  silently. Absent clears remain silent.
-- Guard order is argument validation (count, then duplicates), then the cap
-  check, then stored-state comparison; an invalid replacement aborts before
-  touching storage.
-
-Storage key, value type, the ten-code bound, duplicate rejection, and the
-instrumental-versus-absent distinction are unchanged.
-
-Evidence: with Sui `1.79.0`, strict Testnet and Mainnet lint and
-warnings-as-errors builds pass clean and all 19 tests pass on each network;
-the production module reports 100.00% coverage.
-
-Event `recording_id` fields are typed `ID` rather than `address`, and emit
-sites pass the object id directly; BCS layout and sizes are unchanged.
-
-
-## 2026-09-29 — concrete MusicOS recording migration
-
-The package now pins MusicOS `0b3eb07c9cb1af29c877b66cddfdcc9ef32fc721`. `Recording` and
-`RecordingAdminCap` are concrete types, and the cap identifies one recording at
-runtime. Each write calls `recording::uid_mut(cap)` before reading or changing
-extension state, including an equal set or absent clear. Events are concrete
-types with `recording_id` for per-object filtering. Scenario tests construct a
-composition with `composition::new(ctx)`, then a recording with
-`recording::new(&composition, ctx)`, and publish both. The package tests verify
-that a foreign cap aborts. Earlier entries describe historical revisions.
+With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
+passes 20/20 tests with no warnings and 100.00% coverage. Tests cover the
+published/shared lifecycle with a stranger reader, caller order (a reordered
+list is a change and emits), instrumental versus absent, equal-set and
+absent-clear silence, the ten-code bound and its precedence over duplicates,
+invalid replacements leaving storage intact, per-recording isolation, and
+exact event BCS layouts.

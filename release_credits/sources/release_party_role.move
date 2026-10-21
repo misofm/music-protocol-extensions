@@ -4,11 +4,9 @@
 /// The roles a party can hold on a release: top-line billing as a `Primary`
 /// or `Featured` artist on the commercial packaging of recordings.
 ///
-/// `ReleasePartyRole` is a closed enum constructed only through the
-/// `new_*_role` functions. Release billing is a small, fixed vocabulary:
-/// there is no level axis. The vocabulary is musicos's own; any overlap with
-/// an external standard (e.g. DDEX) is coincidental. Consumers read a role
-/// from its BCS variant index: `Primary = 0`, `Featured = 1`.
+/// `ReleasePartyRole` is a closed enum built only through the `new_*_role`
+/// functions, with no level axis. Consumers read a role from its BCS variant
+/// index: `Primary = 0`, `Featured = 1`.
 module release_credits::release_party_role;
 
 // === Enums ===

@@ -1,38 +1,35 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// The genre(s) a musicos `Release` is classified under as a released
-/// product, stored as a dynamic field on the release's UID and written
-/// through its cap-gated `uid_mut`.
+/// The genres a musicos `Release` is classified under as a released product,
+/// stored as a dynamic field on the release's UID and written through its
+/// cap-gated `uid_mut`. A recording's own genre lives in `recording_genre`;
+/// clients resolve a track's genre from the recording first and fall back to
+/// this release's primary.
 ///
-/// A recording's own intrinsic genre lives in `recording_genre`; this package
-/// holds the different, product-level claim (a compilation can be "Jazz" on
-/// the shelf even when its tracks are not). Clients resolve a track's genre
-/// from the recording first and fall back to this release's primary.
-///
-/// Genres are one ordered list of `genre::Genre` ids, primary first; the rest
-/// are unranked. The value is a bare `vector<ID>`, non-empty by construction:
-/// removing the last genre drops the field, so "the field exists" and "there
-/// is a primary" are the same fact. Every add takes `&Genre`, so only an id
-/// the shared vocabulary created can enter the list. Reordering, including
-/// changing the primary, is `clear_genres` followed by `add_genre` in the
-/// desired order within one programmable transaction block. Emptiness and
-/// the primary are computed client-side from `genres()`.
+/// The value is a `vector<ID>` of `genre::Genre` ids, index 0 the primary,
+/// capped at `MAX_GENRES`. Every add takes `&Genre`, so only real vocabulary
+/// entries can enter. The field exists exactly when at least one genre is
+/// attached. Reordering is `clear_genres` then `add_genre` in one PTB.
 module release_genre::release_genre;
 
-use genre::genre::Genre;
-use musicos::release::{Release, ReleaseAdminCap};
+// === Imports ===
+
 use sui::dynamic_field as df;
 use sui::event::emit;
+use genre::genre::Genre;
+use musicos::release::{Release, ReleaseAdminCap};
 
 // === Errors ===
 
 /// The genre is already assigned to this release.
-const EDuplicateGenre: u64 = 40;
+const EDuplicateGenre: u64 = 0;
 /// The release already carries `MAX_GENRES` genres.
-const EMaxGenres: u64 = 41;
+const EMaxGenresExceeded: u64 = 1;
+/// No genres are attached to this release.
+const ENoGenres: u64 = 2;
 /// The genre is not assigned to this release.
-const EGenreNotPresent: u64 = 42;
+const EGenreNotFound: u64 = 3;
 
 // === Constants ===
 
@@ -41,8 +38,7 @@ const MAX_GENRES: u64 = 6;
 
 // === Structs ===
 
-/// Dynamic-field key — one ordered genre list (`vector<ID>`) per release.
-/// Index 0 is the primary. Non-empty by construction.
+/// Dynamic-field key: one ordered `vector<ID>` of genres per release.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
@@ -70,7 +66,7 @@ public struct ReleaseGenresClearedEvent has copy, drop {
 
 /// Appends a genre to the release's list, creating the field on first use.
 /// After cap authorization, aborts `EDuplicateGenre` if the genre is already
-/// present, then `EMaxGenres` if the release is at capacity.
+/// present, then `EMaxGenresExceeded` if the release is at capacity.
 public fun add_genre(self: &mut Release, cap: &ReleaseAdminCap, genre: &Genre) {
     let release_id = object::id(self);
     let genre_id = object::id(genre);
@@ -78,7 +74,7 @@ public fun add_genre(self: &mut Release, cap: &ReleaseAdminCap, genre: &Genre) {
     if (df::exists(uid, ExtensionKey())) {
         let genres: &mut vector<ID> = df::borrow_mut(uid, ExtensionKey());
         assert!(!genres.contains(&genre_id), EDuplicateGenre);
-        assert!(genres.length() < MAX_GENRES, EMaxGenres);
+        assert!(genres.length() < MAX_GENRES, EMaxGenresExceeded);
         genres.push_back(genre_id);
     } else {
         df::add(uid, ExtensionKey(), vector[genre_id]);
@@ -86,17 +82,16 @@ public fun add_genre(self: &mut Release, cap: &ReleaseAdminCap, genre: &Genre) {
     emit(ReleaseGenreAddedEvent { release_id, genre_id });
 }
 
-/// Removes a genre by id. If it was the primary, the next entry becomes
-/// primary; removing the last genre drops the field. After cap
-/// authorization, aborts `EGenreNotPresent` if the genre is not assigned,
-/// including when the release has no genres at all.
+/// Removes a genre by id; if it was the primary, the next genre becomes
+/// primary. Removing the last genre drops the field. Aborts `ENoGenres` when
+/// nothing is attached and `EGenreNotFound` when the genre is not assigned.
 public fun remove_genre(self: &mut Release, cap: &ReleaseAdminCap, genre_id: ID) {
     let release_id = object::id(self);
     let uid = self.uid_mut(cap);
-    assert!(df::exists(uid, ExtensionKey()), EGenreNotPresent);
+    assert!(df::exists(uid, ExtensionKey()), ENoGenres);
     let genres: &mut vector<ID> = df::borrow_mut(uid, ExtensionKey());
     let (found, index) = genres.index_of(&genre_id);
-    assert!(found, EGenreNotPresent);
+    assert!(found, EGenreNotFound);
     genres.remove(index);
     if (genres.is_empty()) {
         let _: vector<ID> = df::remove(uid, ExtensionKey());
@@ -117,26 +112,31 @@ public fun clear_genres(self: &mut Release, cap: &ReleaseAdminCap) {
 
 // === View Functions ===
 
-/// The release's genre ids, in order, primary first. Empty when nothing is
-/// attached.
-public fun genres(self: &Release): vector<ID> {
-    let uid = self.uid();
-    if (df::exists(uid, ExtensionKey())) *df::borrow(uid, ExtensionKey()) else vector[]
+/// Whether at least one genre is attached to this release.
+public fun has_genres(self: &Release): bool {
+    df::exists(self.uid(), ExtensionKey())
+}
+
+/// The release's genre ids in order, primary first. Aborts `ENoGenres` when
+/// nothing is attached.
+public fun genres(self: &Release): &vector<ID> {
+    assert!(has_genres(self), ENoGenres);
+    df::borrow(self.uid(), ExtensionKey())
 }
 
 // === Test Functions ===
 
 #[test_only]
-public fun genre_added_event_fields(e: &ReleaseGenreAddedEvent): (ID, ID) {
+public fun release_genre_added_fields(e: &ReleaseGenreAddedEvent): (ID, ID) {
     (e.release_id, e.genre_id)
 }
 
 #[test_only]
-public fun genre_removed_event_fields(e: &ReleaseGenreRemovedEvent): (ID, ID) {
+public fun release_genre_removed_fields(e: &ReleaseGenreRemovedEvent): (ID, ID) {
     (e.release_id, e.genre_id)
 }
 
 #[test_only]
-public fun genres_cleared_event_fields(e: &ReleaseGenresClearedEvent): ID {
+public fun release_genres_cleared_fields(e: &ReleaseGenresClearedEvent): ID {
     e.release_id
 }

@@ -8,6 +8,12 @@
 #[test_only]
 module recording_genre::recording_genre_e2e_tests;
 
+// === Imports ===
+
+use std::unit_test::{assert_eq, destroy};
+use sui::bcs::to_bytes;
+use sui::event::events_by_type;
+use sui::test_scenario::{Self as ts, Scenario};
 use genre::genre::{Self as g, GenreRegistry, Genre};
 use musicos::composition;
 use musicos::recording::{Self, Recording, RecordingAdminCap};
@@ -17,10 +23,6 @@ use recording_genre::recording_genre::{
     RecordingGenreRemovedEvent,
     RecordingGenresClearedEvent,
 };
-use std::unit_test::{assert_eq, destroy};
-use sui::bcs::to_bytes;
-use sui::event::events_by_type;
-use sui::test_scenario::{Self as ts, Scenario};
 
 const ADMIN: address = @0xAD;
 const STRANGER: address = @0x51;
@@ -68,19 +70,19 @@ fun admin_classifies_a_published_shared_recording_and_a_stranger_reads_it() {
     let genre_a = ts.take_immutable_by_id<Genre>(a);
     let genre_b = ts.take_immutable_by_id<Genre>(b);
     let mut rec = ts.take_shared<Recording<TestShare>>();
-    assert!(rg::genres(&rec).is_empty());
+    assert!(!rg::has_genres(&rec));
 
     // Added in the desired final order — b is meant to be primary.
     rg::add_genre(&mut rec, &rec_cap, &genre_b);
     rg::add_genre(&mut rec, &rec_cap, &genre_a);
-    assert_eq!(rg::genres(&rec), vector[b, a]);
+    assert_eq!(*rg::genres(&rec), vector[b, a]);
 
     let added = events_by_type<RecordingGenreAddedEvent>();
     assert_eq!(added.length(), 2);
-    let (added_rec_0, added_genre_0) = rg::added_event_fields(&added[0]);
+    let (added_rec_0, added_genre_0) = rg::recording_genre_added_fields(&added[0]);
     assert_eq!(added_rec_0, rec_id);
     assert_eq!(added_genre_0, b);
-    let (added_rec_1, added_genre_1) = rg::added_event_fields(&added[1]);
+    let (added_rec_1, added_genre_1) = rg::recording_genre_added_fields(&added[1]);
     assert_eq!(added_rec_1, rec_id);
     assert_eq!(added_genre_1, a);
     assert_eq!(to_bytes(&added[1]).length(), 64);
@@ -89,33 +91,33 @@ fun admin_classifies_a_published_shared_recording_and_a_stranger_reads_it() {
     // === Tx (STRANGER): reads are open to anyone, no cap required ===
     ts.next_tx(STRANGER);
     let rec = ts.take_shared<Recording<TestShare>>();
-    assert_eq!(rg::genres(&rec), vector[b, a]);
+    assert_eq!(*rg::genres(&rec), vector[b, a]);
     ts::return_shared(rec);
 
     // === Tx (ADMIN): remove the primary, then clear the rest ===
     ts.next_tx(ADMIN);
     let mut rec = ts.take_shared<Recording<TestShare>>();
     rg::remove_genre(&mut rec, &rec_cap, b);
-    assert_eq!(rg::genres(&rec), vector[a]);
+    assert_eq!(*rg::genres(&rec), vector[a]);
     let removed = events_by_type<RecordingGenreRemovedEvent>();
     assert_eq!(removed.length(), 1);
-    let (removed_rec, removed_genre) = rg::removed_event_fields(&removed[0]);
+    let (removed_rec, removed_genre) = rg::recording_genre_removed_fields(&removed[0]);
     assert_eq!(removed_rec, rec_id);
     assert_eq!(removed_genre, b);
     assert_eq!(to_bytes(&removed[0]).length(), 64);
 
     rg::clear_genres(&mut rec, &rec_cap);
-    assert!(rg::genres(&rec).is_empty());
+    assert!(!rg::has_genres(&rec));
     let cleared = events_by_type<RecordingGenresClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(rg::cleared_event_fields(&cleared[0]), rec_id);
+    assert_eq!(rg::recording_genres_cleared_fields(&cleared[0]), rec_id);
     assert_eq!(to_bytes(&cleared[0]).length(), 32);
     ts::return_shared(rec);
 
     // === Tx (STRANGER): removal is visible to any reader ===
     ts.next_tx(STRANGER);
     let rec = ts.take_shared<Recording<TestShare>>();
-    assert!(rg::genres(&rec).is_empty());
+    assert!(!rg::has_genres(&rec));
     ts::return_shared(rec);
 
     ts::return_immutable(genre_a);
@@ -146,7 +148,7 @@ fun duplicate_genre_aborts_against_a_shared_recording() {
     ts.end();
 }
 
-#[test, expected_failure(abort_code = rg::EGenreNotPresent)]
+#[test, expected_failure(abort_code = rg::ENoGenres)]
 fun removing_an_absent_genre_aborts_against_a_shared_recording() {
     let mut ts = ts::begin(CREATOR);
     g::init_for_testing(ts.ctx());

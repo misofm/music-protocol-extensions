@@ -5,13 +5,15 @@
 #[test_only]
 module composition_lyrics::composition_lyrics_tests;
 
-use composition_lyrics::composition_lyrics as cl;
-use language_code::language_code as lc;
-use musicos::composition::{Self, Composition, CompositionAdminCap};
+// === Imports ===
+
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs;
 use sui::event;
 use sui::test_scenario;
+use language_code::language_code as lc;
+use musicos::composition::{Self, Composition, CompositionAdminCap};
+use composition_lyrics::composition_lyrics as cl;
 
 public struct TestShare() has drop;
 
@@ -28,7 +30,7 @@ fun assert_set_event(
     composition_id: ID,
     language: vector<u8>,
 ) {
-    let (event_id, event_language) = cl::set_event_fields(e);
+    let (event_id, event_language) = cl::composition_lyrics_set_fields(e);
     assert_eq!(event_id, composition_id);
     assert_eq!(event_language, language.to_string());
 
@@ -45,7 +47,7 @@ fun assert_cleared_event(
     composition_id: ID,
     language: vector<u8>,
 ) {
-    let (event_id, event_language) = cl::clear_event_fields(e);
+    let (event_id, event_language) = cl::composition_lyrics_cleared_fields(e);
     assert_eq!(event_id, composition_id);
     assert_eq!(event_language, language.to_string());
 
@@ -143,30 +145,22 @@ fun views_and_absent_clear_are_silent() {
     destroy(cap);
 }
 
-#[test]
-fun empty_payload_is_distinct_from_absence() {
+/// Empty input is rejected rather than stored; absence is the only "no lyrics".
+#[test, expected_failure(abort_code = cl::EEmptyLyrics)]
+fun empty_payload_aborts() {
     let ctx = &mut tx_context::dummy();
     let (mut comp, cap) = new_composition(ctx);
-    let en = lc::new(b"en".to_string());
-    let id = object::id(&comp);
-    cl::set_lyrics(&mut comp, &cap, en, vector[]);
-    assert!(cl::has_lyrics(&comp, en));
-    assert!(cl::lyrics(&comp, en).is_empty());
-    cl::set_lyrics(&mut comp, &cap, en, vector[]);
-    let sets = event::events_by_type<cl::CompositionLyricsSetEvent>();
-    assert_eq!(sets.length(), 1);
-    assert_set_event(&sets[0], id, b"en");
-    cl::clear_lyrics(&mut comp, &cap, en);
-    assert!(!cl::has_lyrics(&comp, en));
-    let clears = event::events_by_type<cl::CompositionLyricsClearedEvent>();
-    assert_eq!(clears.length(), 1);
-    assert_cleared_event(&clears[0], id, b"en");
-    destroy(comp);
-    destroy(cap);
+    cl::set_lyrics(&mut comp, &cap, lc::new(b"en".to_string()), vector[]);
+    abort
+}
+
+#[test]
+fun max_lyrics_length_is_32_kib() {
+    assert_eq!(cl::max_lyrics_length(), 32768);
 }
 
 /// The event size is fixed regardless of payload size: a full 32,768-byte
-/// body produces the same 35-byte events as an empty one.
+/// body produces the same 35-byte events as a one-byte one.
 #[test]
 fun maximum_payload_can_be_added_replaced_and_cleared() {
     let ctx = &mut tx_context::dummy();
@@ -196,7 +190,8 @@ fun maximum_payload_can_be_added_replaced_and_cleared() {
 fun oversized_payload_aborts_on_add() {
     let ctx = &mut tx_context::dummy();
     let (mut comp, cap) = new_composition(ctx);
-    cl::set_lyrics(&mut comp, &cap, lc::new(b"en".to_string()), vector::tabulate!(32769, |_| 0u8));
+    let lyrics = vector::tabulate!(cl::max_lyrics_length() + 1, |_| 0u8);
+    cl::set_lyrics(&mut comp, &cap, lc::new(b"en".to_string()), lyrics);
     abort
 }
 
@@ -205,7 +200,8 @@ fun oversized_payload_aborts_on_replace() {
     let ctx = &mut tx_context::dummy();
     let (mut comp, cap) = new_composition(ctx);
     cl::set_lyrics(&mut comp, &cap, lc::new(b"en".to_string()), vector[1]);
-    cl::set_lyrics(&mut comp, &cap, lc::new(b"en".to_string()), vector::tabulate!(32769, |_| 0u8));
+    let lyrics = vector::tabulate!(cl::max_lyrics_length() + 1, |_| 0u8);
+    cl::set_lyrics(&mut comp, &cap, lc::new(b"en".to_string()), lyrics);
     abort
 }
 
@@ -265,7 +261,6 @@ fun published_composition_supports_edits_and_permissionless_reads() {
     ts.end();
 }
 
-
 #[test]
 fun compositions_have_separate_lyrics_and_identified_events() {
     let ctx = &mut tx_context::dummy();
@@ -276,9 +271,9 @@ fun compositions_have_separate_lyrics_and_identified_events() {
     cl::set_lyrics(&mut other, &other_cap, en, vector[2]);
     let events = event::events_by_type<cl::CompositionLyricsSetEvent>();
     assert_eq!(events.length(), 2);
-    let (first_id, _) = cl::set_event_fields(&events[0]);
+    let (first_id, _) = cl::composition_lyrics_set_fields(&events[0]);
     assert_eq!(first_id, object::id(&comp));
-    let (second_id, _) = cl::set_event_fields(&events[1]);
+    let (second_id, _) = cl::composition_lyrics_set_fields(&events[1]);
     assert_eq!(second_id, object::id(&other));
     cl::clear_lyrics(&mut comp, &cap, en);
     assert_eq!(*cl::lyrics(&other, en), vector[2]);

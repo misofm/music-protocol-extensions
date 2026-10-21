@@ -1,33 +1,29 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// What a release says about itself — the paragraph under the title, written
-/// by whoever holds the release's admin cap, and believed.
-///
-/// A free string: editorial prose that nothing on-chain reads or derives
-/// from. One slot, not a set; per-track notes or translations would be
-/// different extensions. The 8 KB ceiling is storage hygiene, not an
-/// editorial opinion — set well above any description anyone is expected to
-/// write, since an immutable package can never raise it. Long-form writing
-/// belongs in a Walrus blob referenced by an extension.
-///
-/// Attaching nothing and attaching a description are distinct states, so an
-/// empty string is rejected rather than stored.
+/// What a release says about itself, the paragraph under the title, written by
+/// the holder of the release's admin cap. A free string that nothing on-chain
+/// reads, stored exactly as given in one slot. The 8 KB ceiling is storage
+/// hygiene; an empty string is rejected because absence already means "no
+/// description". Events carry only the release id; the prose is read from
+/// storage.
 module release_description::release_description;
 
-use musicos::release::{Release, ReleaseAdminCap};
+// === Imports ===
+
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
+use musicos::release::{Release, ReleaseAdminCap};
 
 // === Errors ===
 
 /// No description is attached to this release.
-const ENoDescription: u64 = 1;
-/// The description is empty. Saying nothing is done by not attaching.
-const EEmptyDescription: u64 = 2;
+const ENoDescription: u64 = 0;
+/// The description is empty.
+const EEmptyDescription: u64 = 1;
 /// The description exceeds `MAX_DESCRIPTION_LENGTH` bytes.
-const EDescriptionTooLong: u64 = 3;
+const EDescriptionTooLong: u64 = 2;
 
 // === Constants ===
 
@@ -37,16 +33,15 @@ const MAX_DESCRIPTION_LENGTH: u64 = 8192;
 
 // === Structs ===
 
-/// Dynamic-field key — one description (`String`) per release.
+/// Dynamic-field key: one description (`String`) per release.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
 /// Emitted when a release's description is set or replaced with a different
-/// value.
+/// value; the new text is read from storage.
 public struct ReleaseDescriptionSetEvent has copy, drop {
     release_id: ID,
-    description: String,
 }
 
 /// Emitted when an attached description is removed.
@@ -74,7 +69,7 @@ public fun set_description(self: &mut Release, cap: &ReleaseAdminCap, descriptio
     } else {
         df::add(uid, ExtensionKey(), description);
     };
-    emit(ReleaseDescriptionSetEvent { release_id, description });
+    emit(ReleaseDescriptionSetEvent { release_id });
 }
 
 /// Removes the description, if any. Authorizes first; an absent description
@@ -105,11 +100,11 @@ public fun description(self: &Release): &String {
 // === Test Functions ===
 
 #[test_only]
-public fun description_set_event_fields(e: &ReleaseDescriptionSetEvent): (ID, String) {
-    (e.release_id, e.description)
+public fun release_description_set_fields(e: &ReleaseDescriptionSetEvent): ID {
+    e.release_id
 }
 
 #[test_only]
-public fun description_cleared_event_fields(e: &ReleaseDescriptionClearedEvent): ID {
+public fun release_description_cleared_fields(e: &ReleaseDescriptionClearedEvent): ID {
     e.release_id
 }

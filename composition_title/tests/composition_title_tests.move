@@ -10,13 +10,15 @@
 #[test_only]
 module composition_title::composition_title_tests;
 
-use composition_title::composition_title as ct;
-use musicos::composition::{Self, Composition, CompositionAdminCap};
+// === Imports ===
+
 use std::string::String;
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs::to_bytes;
 use sui::dynamic_field as df;
 use sui::event;
+use musicos::composition::{Self, Composition, CompositionAdminCap};
+use composition_title::composition_title as ct;
 
 public struct TestShare() has drop;
 
@@ -160,19 +162,18 @@ fun titles_are_per_composition() {
     // Every event carries the composition's identity.
     let sets = event::events_by_type<ct::CompositionTitleSetEvent>();
     assert_eq!(sets.length(), 2);
-    let (id, title) = ct::set_event_fields(&sets[0]);
+    let (id, title) = ct::composition_title_set_fields(&sets[0]);
     assert_eq!(id, a_id);
     assert_eq!(title, b"First".to_string());
-    let (id, title) = ct::set_event_fields(&sets[1]);
+    let (id, title) = ct::composition_title_set_fields(&sets[1]);
     assert_eq!(id, b_id);
     assert_eq!(title, b"Second".to_string());
     let clears = event::events_by_type<ct::CompositionTitleClearedEvent>();
     assert_eq!(clears.length(), 1);
-    assert_eq!(ct::cleared_event_fields(&clears[0]), a_id);
+    assert_eq!(ct::composition_title_cleared_fields(&clears[0]), a_id);
 
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
-
 
 /// Different composition IDs retain independent titles and events carry IDs.
 #[test]
@@ -186,9 +187,9 @@ fun compositions_have_separate_state_and_identified_events() {
     ct::set_title(&mut other, &other_cap, b"Theirs".to_string());
     let sets = event::events_by_type<ct::CompositionTitleSetEvent>();
     assert_eq!(sets.length(), 2);
-    let (first_id, _) = ct::set_event_fields(&sets[0]);
+    let (first_id, _) = ct::composition_title_set_fields(&sets[0]);
     assert_eq!(first_id, comp_id);
-    let (second_id, _) = ct::set_event_fields(&sets[1]);
+    let (second_id, _) = ct::composition_title_set_fields(&sets[1]);
     assert_eq!(second_id, other_id);
     ct::clear_title(&mut comp, &cap);
     assert_eq!(*ct::title(&other), b"Theirs".to_string());
@@ -210,10 +211,10 @@ fun set_emits_each_transition() {
     let events = event::events_by_type<ct::CompositionTitleSetEvent>();
     assert_eq!(events.length(), 2);
     assert_eq!(event::num_events(), 2);
-    let (id, first) = ct::set_event_fields(&events[0]);
+    let (id, first) = ct::composition_title_set_fields(&events[0]);
     assert_eq!(id, comp_id);
     assert_eq!(first, b"First draft".to_string());
-    let (id, second) = ct::set_event_fields(&events[1]);
+    let (id, second) = ct::composition_title_set_fields(&events[1]);
     assert_eq!(id, comp_id);
     assert_eq!(second, b"Second draft".to_string());
     assert_eq!(*ct::title(&comp), b"Second draft".to_string());
@@ -256,7 +257,7 @@ fun clear_emits_only_when_something_was_removed() {
 
     let events = event::events_by_type<ct::CompositionTitleClearedEvent>();
     assert_eq!(events.length(), 1);
-    assert_eq!(ct::cleared_event_fields(&events[0]), comp_id);
+    assert_eq!(ct::composition_title_cleared_fields(&events[0]), comp_id);
     assert_eq!(event::num_events(), 2);
 
     destroy(comp);
@@ -300,9 +301,9 @@ fun payloads_have_exact_bcs_sizes() {
     ct::set_title(&mut comp, &cap, different);
     let sets = event::events_by_type<ct::CompositionTitleSetEvent>();
     assert_eq!(sets.length(), 3);
-    let (_, title) = ct::set_event_fields(&sets[1]);
+    let (_, title) = ct::composition_title_set_fields(&sets[1]);
     assert_eq!(title, max);
-    let (_, title) = ct::set_event_fields(&sets[2]);
+    let (_, title) = ct::composition_title_set_fields(&sets[2]);
     assert_eq!(title, different);
     assert_eq!(to_bytes(&sets[1]).length(), 334);
     assert_eq!(to_bytes(&sets[2]).length(), 334);
@@ -327,8 +328,8 @@ fun events_preserve_whitespace_case_and_utf8() {
     ct::set_title(&mut comp, &cap, first);
     ct::set_title(&mut comp, &cap, second);
     let sets = event::events_by_type<ct::CompositionTitleSetEvent>();
-    let (_, after_first) = ct::set_event_fields(&sets[0]);
-    let (_, after_second) = ct::set_event_fields(&sets[1]);
+    let (_, after_first) = ct::composition_title_set_fields(&sets[0]);
+    let (_, after_second) = ct::composition_title_set_fields(&sets[1]);
     assert_eq!(*after_first.as_bytes(), b"  MiXeD  spacing  ");
     assert_eq!(*after_second.as_bytes(), *second.as_bytes());
 

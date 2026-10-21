@@ -1,60 +1,50 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// A composition's preferred title, written by whoever holds the composition's
-/// admin cap, and believed.
+/// A composition's preferred title, written by the holder of the composition's
+/// admin cap and stored exactly as given under this module's key. It can be set
+/// before publication and corrected after it; nothing on-chain reads it.
 ///
-/// Core stores what a composition *is* and carries no title: a title has more
-/// than one correct rendering (translations, alternate titles, corrections),
-/// which makes it presentation, and presentation lives in the mutable
-/// extension layer. Nothing on-chain reads the value; it is stored exactly as
-/// given under this module's key, settable before publication and correctable
-/// after it. Reads are permissionless.
-///
-/// Guard order: argument-only validation (emptiness, the byte bound) runs
-/// before the cap is consulted; anything that reads stored state runs after
-/// `uid_mut`. A write that would leave the stored value unchanged — an equal
-/// set, or a clear of nothing — is a no-op after the cap check: no write, no
-/// event. Every emitted event is therefore a transition.
+/// Argument validation runs before the cap is consulted; stored-state checks
+/// run after `uid_mut`. An equal set or a clear of nothing writes and emits
+/// nothing, so every event is a transition.
 module composition_title::composition_title;
 
-use musicos::composition::{Composition, CompositionAdminCap};
+// === Imports ===
+
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
+use musicos::composition::{Composition, CompositionAdminCap};
 
 // === Errors ===
 
 /// No title is attached to this composition.
-const ENoTitle: u64 = 1;
+const ENoTitle: u64 = 0;
 /// The title is empty. Naming nothing is done by not attaching.
-const EEmptyTitle: u64 = 2;
+const EEmptyTitle: u64 = 1;
 /// The title exceeds `MAX_TITLE_LENGTH` bytes.
-const ETitleTooLong: u64 = 3;
+const ETitleTooLong: u64 = 2;
 
 // === Constants ===
 
-/// Maximum length of a title, in bytes — the bound core enforced while the
-/// title was embedded. Bytes, not characters: a multi-byte title fits fewer.
+/// Maximum length of a title, in bytes; a multi-byte title fits fewer characters.
 const MAX_TITLE_LENGTH: u64 = 300;
 
 // === Structs ===
 
-/// Dynamic-field key — one `String` title per composition.
+/// Dynamic-field key: one `String` title per composition.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
-/// Emitted when a title is added or replaced with a different value. Carries
-/// the composition and the value now attached; the admin cap is derivable
-/// from the composition id and prior state is the indexer's own projection.
+/// Emitted when a title is added or replaced with a different value.
 public struct CompositionTitleSetEvent has copy, drop {
     composition_id: ID,
     title: String,
 }
 
-/// Emitted when an attached title is removed. Absent clears emit nothing, so
-/// a clear always removes the indexer's currently projected value.
+/// Emitted when an attached title is removed.
 public struct CompositionTitleClearedEvent has copy, drop {
     composition_id: ID,
 }
@@ -64,7 +54,7 @@ public struct CompositionTitleClearedEvent has copy, drop {
 /// Sets (or replaces) the title, stored exactly as given. Aborts `EEmptyTitle`
 /// for an empty string, then `ETitleTooLong` above `MAX_TITLE_LENGTH` bytes,
 /// both before the cap is consulted. Setting the title already attached is a
-/// no-op after the cap check. Works in any lifecycle state.
+/// no-op after the cap check.
 public fun set_title<CompositionShare>(
     self: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
@@ -106,8 +96,7 @@ public fun has_title<CompositionShare>(self: &Composition<CompositionShare>): bo
     df::exists(self.uid(), ExtensionKey())
 }
 
-/// The composition's title. Aborts `ENoTitle` if nothing is attached —
-/// absence is a distinct state and never collapses into an empty string.
+/// The composition's title. Aborts `ENoTitle` if nothing is attached.
 public fun title<CompositionShare>(self: &Composition<CompositionShare>): &String {
     assert!(has_title(self), ENoTitle);
     df::borrow(self.uid(), ExtensionKey())
@@ -116,15 +105,11 @@ public fun title<CompositionShare>(self: &Composition<CompositionShare>): &Strin
 // === Test Functions ===
 
 #[test_only]
-public fun set_event_fields(
-    e: &CompositionTitleSetEvent,
-): (ID, String) {
+public fun composition_title_set_fields(e: &CompositionTitleSetEvent): (ID, String) {
     (e.composition_id, e.title)
 }
 
 #[test_only]
-public fun cleared_event_fields(
-    e: &CompositionTitleClearedEvent,
-): ID {
+public fun composition_title_cleared_fields(e: &CompositionTitleClearedEvent): ID {
     e.composition_id
 }

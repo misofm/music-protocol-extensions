@@ -1,16 +1,15 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// `CompositionPartyRole` is a closed enum with no `key`/`store` object, no
-/// capability, and no shared state — every constructor is a pure function.
-/// `test_scenario` machinery has nothing to exercise here, so this module
-/// stays in single-transaction style.
+/// BCS wire contract for `CompositionPartyRole`.
 #[test_only]
 module composition_credits::composition_party_role_tests;
 
-use composition_credits::composition_party_role as cpr;
+// === Imports ===
+
 use std::unit_test::assert_eq;
 use sui::bcs::to_bytes;
+use composition_credits::composition_party_role as cpr;
 
 /// The BCS variant index is how a consumer reads a role from an event or the
 /// stored credit, so the declaration order is a wire contract.

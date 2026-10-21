@@ -9,13 +9,15 @@
 #[test_only]
 module release_genre::release_genre_e2e_tests;
 
+// === Imports ===
+
+use std::unit_test::{assert_eq, destroy};
+use sui::event;
+use sui::test_scenario::{Self as ts, Scenario};
 use genre::genre::{Self as g, GenreRegistry, Genre};
 use musicos::release::{Self, Release, ReleaseAdminCap};
 use musicos::test_helpers;
 use release_genre::release_genre as rg;
-use std::unit_test::{assert_eq, destroy};
-use sui::event;
-use sui::test_scenario::{Self as ts, Scenario};
 
 const CREATOR: address = @0xC0;
 const LABEL: address = @0xAD;
@@ -72,17 +74,17 @@ fun genre_lifecycle_on_published_shared_release() {
     let hiphop = scenario.take_immutable_by_id<Genre>(hiphop_id);
     let electronic = scenario.take_immutable_by_id<Genre>(electronic_id);
 
-    assert!(rg::genres(&rel).is_empty());
+    assert!(!rg::has_genres(&rel));
     rg::add_genre(&mut rel, &cap, &electronic);
     rg::add_genre(&mut rel, &cap, &hiphop);
-    assert_eq!(rg::genres(&rel), vector[electronic_id, hiphop_id]);
+    assert_eq!(*rg::genres(&rel), vector[electronic_id, hiphop_id]);
 
     let added = event::events_by_type<rg::ReleaseGenreAddedEvent>();
     assert_eq!(added.length(), 2);
-    let (a0_release_id, a0_genre_id) = rg::genre_added_event_fields(&added[0]);
+    let (a0_release_id, a0_genre_id) = rg::release_genre_added_fields(&added[0]);
     assert_eq!(a0_release_id, release_id);
     assert_eq!(a0_genre_id, electronic_id);
-    let (a1_release_id, a1_genre_id) = rg::genre_added_event_fields(&added[1]);
+    let (a1_release_id, a1_genre_id) = rg::release_genre_added_fields(&added[1]);
     assert_eq!(a1_release_id, release_id);
     assert_eq!(a1_genre_id, hiphop_id);
 
@@ -93,31 +95,31 @@ fun genre_lifecycle_on_published_shared_release() {
     // --- Tx 4 (STRANGER): reads are open to anyone ---
     scenario.next_tx(STRANGER);
     let rel = scenario.take_shared<Release>();
-    assert_eq!(rg::genres(&rel), vector[electronic_id, hiphop_id]);
+    assert_eq!(*rg::genres(&rel), vector[electronic_id, hiphop_id]);
     ts::return_shared(rel);
 
     // --- Tx 5 (LABEL): remove the primary, then clear the rest ---
     scenario.next_tx(LABEL);
     let mut rel = scenario.take_shared<Release>();
     rg::remove_genre(&mut rel, &cap, electronic_id);
-    assert_eq!(rg::genres(&rel), vector[hiphop_id]);
+    assert_eq!(*rg::genres(&rel), vector[hiphop_id]);
     let removed = event::events_by_type<rg::ReleaseGenreRemovedEvent>();
     assert_eq!(removed.length(), 1);
-    let (removed_release_id, removed_genre_id) = rg::genre_removed_event_fields(&removed[0]);
+    let (removed_release_id, removed_genre_id) = rg::release_genre_removed_fields(&removed[0]);
     assert_eq!(removed_release_id, release_id);
     assert_eq!(removed_genre_id, electronic_id);
 
     rg::clear_genres(&mut rel, &cap);
-    assert!(rg::genres(&rel).is_empty());
+    assert!(!rg::has_genres(&rel));
     let cleared = event::events_by_type<rg::ReleaseGenresClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(rg::genres_cleared_event_fields(&cleared[0]), release_id);
+    assert_eq!(rg::release_genres_cleared_fields(&cleared[0]), release_id);
     ts::return_shared(rel);
 
     // --- Tx 6 (STRANGER): the clear is visible too ---
     scenario.next_tx(STRANGER);
     let rel = scenario.take_shared<Release>();
-    assert!(rg::genres(&rel).is_empty());
+    assert!(!rg::has_genres(&rel));
     ts::return_shared(rel);
 
     destroy(cap);
@@ -192,6 +194,31 @@ fun wrong_cap_is_rejected_on_clear_of_nothing() {
     scenario.next_tx(STRANGER);
     let (cap_b, _release_id_b) = publish_and_share_release(&mut scenario);
 
+    scenario.next_tx(STRANGER);
+    let mut rel_a = scenario.take_shared_by_id<Release>(release_id_a);
+    rg::clear_genres(&mut rel_a, &cap_b);
+    abort
+}
+
+/// Clear authorizes before removing an attached list.
+#[test, expected_failure(abort_code = release::EUnauthorized)]
+fun wrong_cap_is_rejected_on_clear_of_present_list() {
+    let mut scenario = ts::begin(CREATOR);
+    g::init_for_testing(scenario.ctx());
+    scenario.next_tx(CREATOR);
+    let genre_id = create_genre(&scenario, b"HIP_HOP");
+
+    scenario.next_tx(LABEL);
+    let (cap_a, release_id_a) = publish_and_share_release(&mut scenario);
+    scenario.next_tx(LABEL);
+    let mut rel_a = scenario.take_shared_by_id<Release>(release_id_a);
+    let genre = scenario.take_immutable_by_id<Genre>(genre_id);
+    rg::add_genre(&mut rel_a, &cap_a, &genre);
+    ts::return_immutable(genre);
+    ts::return_shared(rel_a);
+
+    scenario.next_tx(STRANGER);
+    let (cap_b, _release_id_b) = publish_and_share_release(&mut scenario);
     scenario.next_tx(STRANGER);
     let mut rel_a = scenario.take_shared_by_id<Release>(release_id_a);
     rg::clear_genres(&mut rel_a, &cap_b);

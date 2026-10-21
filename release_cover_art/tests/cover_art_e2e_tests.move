@@ -2,15 +2,18 @@
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
 /// End-to-end scenarios for `release_cover_art` under `sui::test_scenario`:
-/// the release is created and published (shared) in one admin transaction —
-/// core's create-and-publish is atomic in production — then the extension
-/// operates on the shared object via `take_shared` across later
-/// transactions. Distinct senders prove the cap gate: the admin's own cap
-/// succeeds, a stranger holding an unrelated release's cap aborts, and public
-/// reads are open to anyone.
+/// the release is published (shared) in one admin transaction, then operated
+/// on via `take_shared` across later transactions. Distinct senders prove the
+/// cap gate and that reads are open to anyone.
 #[test_only]
 module release_cover_art::cover_art_e2e_tests;
 
+// === Imports ===
+
+use std::unit_test::{assert_eq, destroy};
+use sui::bcs::to_bytes;
+use sui::event::events_by_type;
+use sui::test_scenario::{Self as ts, Scenario};
 use cover_art::cover_art as cover;
 use musicos::release::{Self, Release, ReleaseAdminCap, ReleaseConsent};
 use release_cover_art::cover_art_fixtures as fixtures;
@@ -21,10 +24,6 @@ use release_cover_art::release_cover_art::{
     ReleaseTrackCoverArtSetEvent,
     ReleaseTrackCoverArtClearedEvent,
 };
-use std::unit_test::{assert_eq, destroy};
-use sui::bcs::to_bytes;
-use sui::event::events_by_type;
-use sui::test_scenario::{Self as ts, Scenario};
 
 // ADMIN holds the release admin cap and performs every cap-gated write.
 // READER owns nothing and proves the views are open to anyone. STRANGER
@@ -66,7 +65,8 @@ fun assert_set_event(
     still_blob_id: u256,
     animated_blob_id: Option<u256>,
 ) {
-    let (event_release_id, event_still, event_animated) = release_cover_art::set_event_fields(e);
+    let (event_release_id, event_still, event_animated) =
+        release_cover_art::release_cover_art_set_fields(e);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_still, still_blob_id);
     assert_eq!(event_animated, animated_blob_id);
@@ -80,7 +80,7 @@ fun assert_track_set_event(
     animated_blob_id: Option<u256>,
 ) {
     let (event_release_id, event_index, event_still, event_animated) =
-        release_cover_art::track_set_event_fields(e);
+        release_cover_art::release_track_cover_art_set_fields(e);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_index, track_index);
     assert_eq!(event_still, still_blob_id);
@@ -92,7 +92,8 @@ fun assert_track_cleared_event(
     release_id: ID,
     track_index: u64,
 ) {
-    let (event_release_id, event_index) = release_cover_art::track_cleared_event_fields(e);
+    let (event_release_id, event_index) =
+        release_cover_art::release_track_cover_art_cleared_fields(e);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_index, track_index);
 }
@@ -154,20 +155,19 @@ fun cover_art_lifecycle_against_published_shared_release() {
     assert_eq!(to_bytes(&track_cleared[0]).length(), 40);
 
     release_cover_art::clear_cover(&mut rel, &rel_cap);
-    assert_eq!(release_cover_art::track_cover(&rel, 0), option::none());
+    assert!(!release_cover_art::has_cover_art(&rel));
 
     let cover_cleared = events_by_type<ReleaseCoverArtClearedEvent>();
     assert_eq!(cover_cleared.length(), 1);
-    assert_eq!(release_cover_art::cleared_event_fields(&cover_cleared[0]), rel_id);
+    let event_release_id = release_cover_art::release_cover_art_cleared_fields(&cover_cleared[0]);
+    assert_eq!(event_release_id, rel_id);
     assert_eq!(to_bytes(&cover_cleared[0]).length(), 32);
     ts::return_shared(rel);
 
-    // === Tx 5 (READER): the cleared state is visible to anyone ===
+    // === Tx 5 (READER): the record is gone once everything is cleared ===
     ts.next_tx(READER);
     let rel = ts.take_shared<Release>();
-    assert!(release_cover_art::has_cover_art(&rel));
-    assert!(release_cover_art::cover(&rel).is_none());
-    assert_eq!(release_cover_art::track_cover(&rel, 1), option::none());
+    assert!(!release_cover_art::has_cover_art(&rel));
     ts::return_shared(rel);
 
     destroy(rel_cap);
@@ -219,6 +219,38 @@ fun set_track_cover_with_strangers_cap_aborts() {
 fun clear_track_cover_with_strangers_cap_aborts_when_unattached() {
     let mut ts = ts::begin(ADMIN);
     let _admin_cap = setup_published_release(&mut ts);
+
+    ts.next_tx(STRANGER);
+    let (_other_rel, other_cap) = release::new_for_testing(mk_tracks(), ts.ctx());
+    let mut rel = ts.take_shared<Release>();
+    release_cover_art::clear_track_cover(&mut rel, &other_cap, 0);
+    abort
+}
+
+#[test, expected_failure(abort_code = release::EUnauthorized)]
+fun clear_cover_with_strangers_cap_aborts_when_attached() {
+    let mut ts = ts::begin(ADMIN);
+    let admin_cap = setup_published_release(&mut ts);
+    ts.next_tx(ADMIN);
+    let mut rel = ts.take_shared<Release>();
+    release_cover_art::set_cover(&mut rel, &admin_cap, fixtures::plain(100));
+    ts::return_shared(rel);
+
+    ts.next_tx(STRANGER);
+    let (_other_rel, other_cap) = release::new_for_testing(mk_tracks(), ts.ctx());
+    let mut rel = ts.take_shared<Release>();
+    release_cover_art::clear_cover(&mut rel, &other_cap);
+    abort
+}
+
+#[test, expected_failure(abort_code = release::EUnauthorized)]
+fun clear_track_cover_with_strangers_cap_aborts_when_attached() {
+    let mut ts = ts::begin(ADMIN);
+    let admin_cap = setup_published_release(&mut ts);
+    ts.next_tx(ADMIN);
+    let mut rel = ts.take_shared<Release>();
+    release_cover_art::set_track_cover(&mut rel, &admin_cap, 0, fixtures::plain(200));
+    ts::return_shared(rel);
 
     ts.next_tx(STRANGER);
     let (_other_rel, other_cap) = release::new_for_testing(mk_tracks(), ts.ctx());

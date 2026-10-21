@@ -3,53 +3,49 @@
 
 /// Credits for a recording: one `Credit<RecordingPartyRole>` per credited
 /// `Party` plus primary and featured artist designations, kept in a single
-/// record stored as a dynamic field on the recording's UID and written
-/// through its cap-gated `uid_mut`.
+/// record stored as a dynamic field on the recording's UID and written through
+/// its cap-gated `uid_mut`. The record exists exactly while at least one credit
+/// is held. Credits are display metadata and are not read by the economics.
 ///
-/// Attribution is display-oriented and varies across platforms, so it lives
-/// here rather than in immutable core, and it may be attached before or after
-/// publish. This is musicos's canonical credits standard; because it is an
-/// extension, other parties may publish their own against the same
-/// `Recording`. Credits are not read by the economics.
-///
-/// The primary and featured sets are disjoint subsets of the credited
-/// parties: removing a credit ends any designation the party held.
+/// The primary and featured sets are disjoint subsets of the credited parties:
+/// removing a credit ends any designation the party held.
 module recording_credits::recording_credits;
 
-use credit::credit::Credit;
-use musicos::recording::{Recording, RecordingAdminCap};
-use partyos::party::Party;
-use recording_credits::recording_party_role::RecordingPartyRole;
+// === Imports ===
+
 use sui::dynamic_field as df;
 use sui::event::emit;
 use sui::vec_map::{Self, VecMap};
 use sui::vec_set::{Self, VecSet};
+use credit::credit::Credit;
+use musicos::recording::{Recording, RecordingAdminCap};
+use partyos::party::Party;
+use recording_credits::recording_party_role::RecordingPartyRole;
 
 // === Errors ===
 
-// Constraint errors (30-39)
-/// Credit has too many roles.
-const EExceedsMaxRoles: u64 = 30;
-/// Recording has too many credits.
-const EMaxCreditsExceeded: u64 = 32;
-/// Recording has too many primary artists.
-const EMaxPrimaryArtistsExceeded: u64 = 34;
-/// Recording has too many featured artists.
-const EMaxFeaturedArtistsExceeded: u64 = 35;
-
-// Conflict errors (40-49)
+/// Credit has more than `MAX_ROLES_PER_CREDIT` roles.
+const EMaxRolesExceeded: u64 = 0;
+/// Recording already holds `MAX_CREDITS` credits.
+const EMaxCreditsExceeded: u64 = 1;
+/// Recording already has `MAX_PRIMARY_ARTISTS` primary artists.
+const EMaxPrimaryArtistsExceeded: u64 = 2;
+/// Recording already has `MAX_FEATURED_ARTISTS` featured artists.
+const EMaxFeaturedArtistsExceeded: u64 = 3;
 /// Party already has a credit on this recording.
-const EPartyAlreadyCredited: u64 = 40;
+const EDuplicateParty: u64 = 4;
 /// Party is already a primary artist.
-const EAlreadyPrimaryArtist: u64 = 41;
+const EAlreadyPrimaryArtist: u64 = 5;
 /// Party is already a featured artist.
-const EAlreadyFeaturedArtist: u64 = 42;
-
-// Reference errors (50-59)
+const EAlreadyFeaturedArtist: u64 = 6;
 /// No credits record is attached to this recording.
-const ENoCredits: u64 = 50;
+const ENoCredits: u64 = 7;
 /// Party is not credited on the recording.
-const EPartyNotCredited: u64 = 52;
+const EPartyNotFound: u64 = 8;
+/// Credited party is not a primary artist.
+const ENotPrimaryArtist: u64 = 9;
+/// Credited party is not a featured artist.
+const ENotFeaturedArtist: u64 = 10;
 
 // === Constants ===
 
@@ -64,9 +60,6 @@ const MAX_FEATURED_ARTISTS: u64 = 50;
 
 // === Structs ===
 
-/// Dynamic-field key — one canonical credits record per recording.
-public struct ExtensionKey() has copy, drop, store;
-
 /// The per-recording attribution record, stored under `ExtensionKey()`.
 public struct RecordingCredits has store {
     /// Party ID to credit (display name + roles), in insertion order.
@@ -76,6 +69,9 @@ public struct RecordingCredits has store {
     /// IDs of the featured artists. Always a subset of `credits`.
     featured_artist_ids: VecSet<ID>,
 }
+
+/// Dynamic-field key: one canonical credits record per recording.
+public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
@@ -123,142 +119,142 @@ public struct RecordingFeaturedArtistRemovedEvent has copy, drop {
 // === Public Functions ===
 
 /// Credits a party, creating the record on first use. A credit carries 1-10
-/// roles (`credit::new` guarantees at least one) and a party holds at most
-/// one credit; re-crediting a party aborts rather than silently passing. At
-/// capacity, even a duplicate party reports `EMaxCreditsExceeded`.
+/// roles and a party holds at most one credit. At capacity, even a duplicate
+/// party aborts `EMaxCreditsExceeded`.
 public fun add_credit<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party: &Party,
     credit: Credit<RecordingPartyRole>,
 ) {
-    assert!(credit.roles().length() <= MAX_ROLES_PER_CREDIT, EExceedsMaxRoles);
+    assert!(credit.roles().length() <= MAX_ROLES_PER_CREDIT, EMaxRolesExceeded);
 
     let recording_id = object::id(self);
     let party_id = object::id(party);
     let roles = *credit.roles();
-    let rc = borrow_mut_or_init(self.uid_mut(cap));
-    assert!(rc.credits.length() < MAX_CREDITS, EMaxCreditsExceeded);
-    assert!(!rc.credits.contains(&party_id), EPartyAlreadyCredited);
-    rc.credits.insert(party_id, credit);
+    let uid = self.uid_mut(cap);
+    if (!df::exists(uid, ExtensionKey())) {
+        df::add(
+            uid,
+            ExtensionKey(),
+            RecordingCredits {
+                credits: vec_map::empty(),
+                primary_artist_ids: vec_set::empty(),
+                featured_artist_ids: vec_set::empty(),
+            },
+        );
+    };
+    let record: &mut RecordingCredits = df::borrow_mut(uid, ExtensionKey());
+    assert!(record.credits.length() < MAX_CREDITS, EMaxCreditsExceeded);
+    assert!(!record.credits.contains(&party_id), EDuplicateParty);
+    record.credits.insert(party_id, credit);
 
-    emit(RecordingCreditAddedEvent {
-        recording_id,
-        party_id,
-        roles,
-    });
+    emit(RecordingCreditAddedEvent { recording_id, party_id, roles });
 }
 
-/// Removes a party's credit and, with it, any primary or featured
-/// designation. A cleared designation emits its artist-removed event first,
-/// then the credit removal is emitted, so the stream never shows a
-/// designated party who is uncredited. Aborts when no record is attached or
-/// the party is not credited. Removing the last credit keeps the empty record
-/// attached.
+/// Removes a party's credit and any designation it held. A cleared designation
+/// emits its artist-removed event before the credit-removed event. Removing the
+/// last credit detaches the record.
 public fun remove_credit<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party_id: ID,
 ) {
     let recording_id = object::id(self);
-    let rc = borrow_mut(self.uid_mut(cap));
-    assert!(rc.credits.contains(&party_id), EPartyNotCredited);
-    if (rc.primary_artist_ids.contains(&party_id)) {
-        rc.primary_artist_ids.remove(&party_id);
+    let uid = self.uid_mut(cap);
+    let record = borrow_mut(uid);
+    assert!(record.credits.contains(&party_id), EPartyNotFound);
+    if (record.primary_artist_ids.contains(&party_id)) {
+        record.primary_artist_ids.remove(&party_id);
         emit(RecordingPrimaryArtistRemovedEvent { recording_id, party_id });
     };
-    if (rc.featured_artist_ids.contains(&party_id)) {
-        rc.featured_artist_ids.remove(&party_id);
+    if (record.featured_artist_ids.contains(&party_id)) {
+        record.featured_artist_ids.remove(&party_id);
         emit(RecordingFeaturedArtistRemovedEvent { recording_id, party_id });
     };
-    let (_, _) = rc.credits.remove(&party_id);
+    record.credits.remove(&party_id);
+    if (record.credits.is_empty()) {
+        let RecordingCredits { .. } = df::remove(uid, ExtensionKey());
+    };
 
     emit(RecordingCreditRemovedEvent { recording_id, party_id });
 }
 
-/// Designates a credited party as a primary artist. Aborts if the party is
-/// uncredited, already primary or featured, or the primary set is full.
+/// Designates a credited party as a primary artist. Aborts if the primary set
+/// is full, the party is uncredited, or it is already primary or featured.
 public fun add_primary_artist<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
-    party: &Party,
+    party_id: ID,
 ) {
     let recording_id = object::id(self);
-    let party_id = object::id(party);
-    let rc = borrow_mut(self.uid_mut(cap));
-    assert!(rc.primary_artist_ids.length() < MAX_PRIMARY_ARTISTS, EMaxPrimaryArtistsExceeded);
-    assert!(rc.credits.contains(&party_id), EPartyNotCredited);
-    assert!(!rc.featured_artist_ids.contains(&party_id), EAlreadyFeaturedArtist);
-    assert!(!rc.primary_artist_ids.contains(&party_id), EAlreadyPrimaryArtist);
-    rc.primary_artist_ids.insert(party_id);
+    let record = borrow_mut(self.uid_mut(cap));
+    assert!(
+        record.primary_artist_ids.length() < MAX_PRIMARY_ARTISTS,
+        EMaxPrimaryArtistsExceeded,
+    );
+    assert!(record.credits.contains(&party_id), EPartyNotFound);
+    assert!(!record.featured_artist_ids.contains(&party_id), EAlreadyFeaturedArtist);
+    assert!(!record.primary_artist_ids.contains(&party_id), EAlreadyPrimaryArtist);
+    record.primary_artist_ids.insert(party_id);
 
-    emit(RecordingPrimaryArtistAddedEvent {
-        recording_id,
-        party_id,
-    });
+    emit(RecordingPrimaryArtistAddedEvent { recording_id, party_id });
 }
 
-/// Removes a party's primary designation, leaving the credit intact. Aborts
-/// `EPartyNotCredited` if the party is not a primary artist.
+/// Removes a party's primary designation, leaving the credit intact.
 public fun remove_primary_artist<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party_id: ID,
 ) {
     let recording_id = object::id(self);
-    let rc = borrow_mut(self.uid_mut(cap));
-    assert!(rc.primary_artist_ids.contains(&party_id), EPartyNotCredited);
-    rc.primary_artist_ids.remove(&party_id);
+    let record = borrow_mut(self.uid_mut(cap));
+    assert!(record.credits.contains(&party_id), EPartyNotFound);
+    assert!(record.primary_artist_ids.contains(&party_id), ENotPrimaryArtist);
+    record.primary_artist_ids.remove(&party_id);
 
-    emit(RecordingPrimaryArtistRemovedEvent {
-        recording_id,
-        party_id,
-    });
+    emit(RecordingPrimaryArtistRemovedEvent { recording_id, party_id });
 }
 
-/// Designates a credited party as a featured artist. Aborts if the party is
-/// uncredited, already primary or featured, or the featured set is full.
+/// Designates a credited party as a featured artist. Aborts if the featured
+/// set is full, the party is uncredited, or it is already primary or featured.
 public fun add_featured_artist<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
-    party: &Party,
+    party_id: ID,
 ) {
     let recording_id = object::id(self);
-    let party_id = object::id(party);
-    let rc = borrow_mut(self.uid_mut(cap));
-    assert!(rc.featured_artist_ids.length() < MAX_FEATURED_ARTISTS, EMaxFeaturedArtistsExceeded);
-    assert!(rc.credits.contains(&party_id), EPartyNotCredited);
-    assert!(!rc.primary_artist_ids.contains(&party_id), EAlreadyPrimaryArtist);
-    assert!(!rc.featured_artist_ids.contains(&party_id), EAlreadyFeaturedArtist);
-    rc.featured_artist_ids.insert(party_id);
+    let record = borrow_mut(self.uid_mut(cap));
+    assert!(
+        record.featured_artist_ids.length() < MAX_FEATURED_ARTISTS,
+        EMaxFeaturedArtistsExceeded,
+    );
+    assert!(record.credits.contains(&party_id), EPartyNotFound);
+    assert!(!record.primary_artist_ids.contains(&party_id), EAlreadyPrimaryArtist);
+    assert!(!record.featured_artist_ids.contains(&party_id), EAlreadyFeaturedArtist);
+    record.featured_artist_ids.insert(party_id);
 
-    emit(RecordingFeaturedArtistAddedEvent {
-        recording_id,
-        party_id,
-    });
+    emit(RecordingFeaturedArtistAddedEvent { recording_id, party_id });
 }
 
-/// Removes a party's featured designation, leaving the credit intact. Aborts
-/// `EPartyNotCredited` if the party is not a featured artist.
+/// Removes a party's featured designation, leaving the credit intact.
 public fun remove_featured_artist<RecordingShare>(
     self: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party_id: ID,
 ) {
     let recording_id = object::id(self);
-    let rc = borrow_mut(self.uid_mut(cap));
-    assert!(rc.featured_artist_ids.contains(&party_id), EPartyNotCredited);
-    rc.featured_artist_ids.remove(&party_id);
+    let record = borrow_mut(self.uid_mut(cap));
+    assert!(record.credits.contains(&party_id), EPartyNotFound);
+    assert!(record.featured_artist_ids.contains(&party_id), ENotFeaturedArtist);
+    record.featured_artist_ids.remove(&party_id);
 
-    emit(RecordingFeaturedArtistRemovedEvent {
-        recording_id,
-        party_id,
-    });
+    emit(RecordingFeaturedArtistRemovedEvent { recording_id, party_id });
 }
 
 // === View Functions ===
 
-/// Whether a credits record has been attached to this recording yet.
+/// Whether at least one credit is attached to this recording.
 public fun has_credits<RecordingShare>(self: &Recording<RecordingShare>): bool {
     df::exists(self.uid(), ExtensionKey())
 }
@@ -271,12 +267,16 @@ public fun credits<RecordingShare>(
 }
 
 /// The primary-artist IDs. Aborts `ENoCredits` when none is attached.
-public fun primary_artist_ids<RecordingShare>(self: &Recording<RecordingShare>): &VecSet<ID> {
+public fun primary_artist_ids<RecordingShare>(
+    self: &Recording<RecordingShare>,
+): &VecSet<ID> {
     &borrow(self.uid()).primary_artist_ids
 }
 
 /// The featured-artist IDs. Aborts `ENoCredits` when none is attached.
-public fun featured_artist_ids<RecordingShare>(self: &Recording<RecordingShare>): &VecSet<ID> {
+public fun featured_artist_ids<RecordingShare>(
+    self: &Recording<RecordingShare>,
+): &VecSet<ID> {
     &borrow(self.uid()).featured_artist_ids
 }
 
@@ -308,60 +308,39 @@ fun borrow_mut(uid: &mut UID): &mut RecordingCredits {
     df::borrow_mut(uid, ExtensionKey())
 }
 
-fun borrow_mut_or_init(uid: &mut UID): &mut RecordingCredits {
-    if (!df::exists(uid, ExtensionKey())) {
-        df::add(
-            uid,
-            ExtensionKey(),
-            RecordingCredits {
-                credits: vec_map::empty(),
-                primary_artist_ids: vec_set::empty(),
-                featured_artist_ids: vec_set::empty(),
-            },
-        );
-    };
-    df::borrow_mut(uid, ExtensionKey())
-}
-
 // === Test Functions ===
 
 #[test_only]
-public fun credit_added_event_fields(
+public fun recording_credit_added_fields(
     e: &RecordingCreditAddedEvent,
 ): (ID, ID, vector<RecordingPartyRole>) {
     (e.recording_id, e.party_id, e.roles)
 }
 
 #[test_only]
-public fun credit_removed_event_fields(
-    e: &RecordingCreditRemovedEvent,
-): (ID, ID) {
+public fun recording_credit_removed_fields(e: &RecordingCreditRemovedEvent): (ID, ID) {
     (e.recording_id, e.party_id)
 }
 
 #[test_only]
-public fun primary_artist_added_event_fields(
-    e: &RecordingPrimaryArtistAddedEvent,
-): (ID, ID) {
+public fun recording_primary_artist_added_fields(e: &RecordingPrimaryArtistAddedEvent): (ID, ID) {
     (e.recording_id, e.party_id)
 }
 
 #[test_only]
-public fun primary_artist_removed_event_fields(
+public fun recording_primary_artist_removed_fields(
     e: &RecordingPrimaryArtistRemovedEvent,
 ): (ID, ID) {
     (e.recording_id, e.party_id)
 }
 
 #[test_only]
-public fun featured_artist_added_event_fields(
-    e: &RecordingFeaturedArtistAddedEvent,
-): (ID, ID) {
+public fun recording_featured_artist_added_fields(e: &RecordingFeaturedArtistAddedEvent): (ID, ID) {
     (e.recording_id, e.party_id)
 }
 
 #[test_only]
-public fun featured_artist_removed_event_fields(
+public fun recording_featured_artist_removed_fields(
     e: &RecordingFeaturedArtistRemovedEvent,
 ): (ID, ID) {
     (e.recording_id, e.party_id)

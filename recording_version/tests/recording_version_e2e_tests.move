@@ -8,6 +8,12 @@
 #[test_only]
 module recording_version::recording_version_e2e_tests;
 
+// === Imports ===
+
+use std::unit_test::{assert_eq, destroy};
+use sui::bcs::to_bytes;
+use sui::event::events_by_type;
+use sui::test_scenario::{Self as ts, Scenario};
 use musicos::composition;
 use musicos::recording::{Self, Recording, RecordingAdminCap};
 use recording_version::recording_version::{
@@ -15,10 +21,6 @@ use recording_version::recording_version::{
     RecordingVersionSetEvent,
     RecordingVersionClearedEvent,
 };
-use std::unit_test::{assert_eq, destroy};
-use sui::bcs::to_bytes;
-use sui::event::events_by_type;
-use sui::test_scenario::{Self as ts, Scenario};
 
 const ADMIN: address = @0xAD;
 const STRANGER: address = @0x51;
@@ -52,7 +54,7 @@ fun admin_names_a_published_shared_recording_and_a_stranger_reads_it() {
 
     let events = events_by_type<RecordingVersionSetEvent>();
     assert_eq!(events.length(), 1);
-    let (event_id, version) = rv::set_event_fields(&events[0]);
+    let (event_id, version) = rv::recording_version_set_fields(&events[0]);
     assert_eq!(event_id, rec_id);
     assert_eq!(version, b"Live".to_string());
     assert_eq!(to_bytes(&events[0]).length(), 37);
@@ -79,7 +81,7 @@ fun admin_names_a_published_shared_recording_and_a_stranger_reads_it() {
     assert!(!rv::has_version(&rec));
     let cleared = events_by_type<RecordingVersionClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(rv::cleared_event_fields(&cleared[0]), rec_id);
+    assert_eq!(rv::recording_version_cleared_fields(&cleared[0]), rec_id);
     assert_eq!(to_bytes(&cleared[0]).length(), 32);
     ts::return_shared(rec);
 

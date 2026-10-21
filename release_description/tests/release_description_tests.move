@@ -9,13 +9,15 @@
 #[test_only]
 module release_description::release_description_tests;
 
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::test_helpers;
-use release_description::release_description as rd;
+// === Imports ===
+
 use std::string::String;
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs;
 use sui::event;
+use musicos::release::{Self, Release, ReleaseAdminCap};
+use musicos::test_helpers;
+use release_description::release_description as rd;
 
 /// A one-track release; a description is never derived from the tracklist.
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
@@ -29,26 +31,19 @@ fun repeated(byte: u8, n: u64): String {
     vector::tabulate!(n, |_| byte).to_string()
 }
 
-/// Asserts the set event's fields and its exact BCS layout:
-/// `release_id` (32) then the description as a ULEB128-prefixed byte vector.
-fun assert_set_event(
-    event: &rd::ReleaseDescriptionSetEvent,
-    release_id: ID,
-    description: &String,
-) {
-    let (event_release_id, event_description) = rd::description_set_event_fields(event);
-    assert_eq!(event_release_id, release_id);
-    assert_eq!(event_description, *description);
+/// Asserts the set event's field and its exact 32-byte BCS layout: the prose
+/// is never in the event.
+fun assert_set_event(event: &rd::ReleaseDescriptionSetEvent, release_id: ID) {
+    assert_eq!(rd::release_description_set_fields(event), release_id);
 
     let mut bytes = bcs::new(bcs::to_bytes(event));
     assert_eq!(bytes.peel_address().to_id(), release_id);
-    assert_eq!(bytes.peel_vec_u8(), *description.as_bytes());
     assert!(bytes.into_remainder_bytes().is_empty());
 }
 
 /// Asserts the cleared event's field and its exact 32-byte BCS layout.
 fun assert_cleared_event(event: &rd::ReleaseDescriptionClearedEvent, release_id: ID) {
-    assert_eq!(rd::description_cleared_event_fields(event), release_id);
+    assert_eq!(rd::release_description_cleared_fields(event), release_id);
 
     let mut bytes = bcs::new(bcs::to_bytes(event));
     assert_eq!(bytes.peel_address().to_id(), release_id);
@@ -70,14 +65,14 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(*rd::description(&rel), first);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 1);
-    assert_set_event(&set_events[0], release_id, &first);
+    assert_set_event(&set_events[0], release_id);
 
     // A release may rewrite what it says about itself.
     rd::set_description(&mut rel, &cap, second);
     assert_eq!(*rd::description(&rel), second);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 2);
-    assert_set_event(&set_events[1], release_id, &second);
+    assert_set_event(&set_events[1], release_id);
 
     rd::clear_description(&mut rel, &cap);
     assert!(!rd::has_description(&rel));
@@ -94,7 +89,7 @@ fun set_read_replace_clear_lifecycle() {
     rd::set_description(&mut rel, &cap, first);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 3);
-    assert_set_event(&set_events[2], release_id, &first);
+    assert_set_event(&set_events[2], release_id);
 
     destroy(rel);
     destroy(cap);
@@ -106,12 +101,14 @@ fun prose_is_preserved_verbatim() {
     let ctx = &mut tx_context::dummy();
     let (mut rel, cap) = mk_release(ctx);
     let release_id = object::id(&rel);
-    let text = b"  Side A was cut first.\n\nSide B came a year later,  \xc3\xa9t\xc3\xa9 \xe2\x9c\xbf.".to_string();
+    let text =
+        b"  Side A was cut first.\n\nSide B came a year later,  \xc3\xa9t\xc3\xa9 \xe2\x9c\xbf."
+            .to_string();
 
     rd::set_description(&mut rel, &cap, text);
     assert_eq!(*rd::description(&rel), text);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
-    assert_set_event(&set_events[0], release_id, &text);
+    assert_set_event(&set_events[0], release_id);
 
     destroy(rel);
     destroy(cap);
@@ -138,8 +135,8 @@ fun descriptions_are_per_release() {
 
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 2);
-    assert_set_event(&set_events[0], a_id, &a_text);
-    assert_set_event(&set_events[1], b_id, &b_text);
+    assert_set_event(&set_events[0], a_id);
+    assert_set_event(&set_events[1], b_id);
     let cleared_events = event::events_by_type<rd::ReleaseDescriptionClearedEvent>();
     assert_eq!(cleared_events.length(), 1);
     assert_cleared_event(&cleared_events[0], a_id);
@@ -147,8 +144,7 @@ fun descriptions_are_per_release() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// 8192 bytes is the inclusive bound; the set event is then exactly
-/// 32 (release id) + 2 (ULEB128 length) + 8192 = 8226 bytes.
+/// 8192 bytes is the inclusive bound; the set event stays 32 bytes.
 #[test]
 fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     let ctx = &mut tx_context::dummy();
@@ -160,8 +156,8 @@ fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     assert_eq!(rd::description(&rel).length(), 8192);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 1);
-    assert_eq!(bcs::to_bytes(&set_events[0]).length(), 8226);
-    assert_set_event(&set_events[0], release_id, &max);
+    assert_eq!(bcs::to_bytes(&set_events[0]).length(), 32);
+    assert_set_event(&set_events[0], release_id);
 
     rd::clear_description(&mut rel, &cap);
     let cleared_events = event::events_by_type<rd::ReleaseDescriptionClearedEvent>();
@@ -216,7 +212,7 @@ fun equal_set_is_a_silent_no_op() {
 
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 1);
-    assert_set_event(&set_events[0], release_id, &text);
+    assert_set_event(&set_events[0], release_id);
     assert_eq!(*rd::description(&rel), text);
 
     destroy(rel);
@@ -314,6 +310,17 @@ fun another_releases_cap_is_rejected_on_clear_of_nothing() {
     let ctx = &mut tx_context::dummy();
     let (mut a, a_cap) = mk_release(ctx);
     let (b, b_cap) = mk_release(ctx);
+    rd::clear_description(&mut a, &b_cap);
+    destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
+}
+
+/// Clear authorizes before removing an attached description.
+#[test, expected_failure(abort_code = release::EUnauthorized)]
+fun another_releases_cap_is_rejected_on_clear_of_present_description() {
+    let ctx = &mut tx_context::dummy();
+    let (mut a, a_cap) = mk_release(ctx);
+    let (b, b_cap) = mk_release(ctx);
+    rd::set_description(&mut a, &a_cap, b"Label-owned prose.".to_string());
     rd::clear_description(&mut a, &b_cap);
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }

@@ -1,89 +1,35 @@
 # Security review — `release_cover_art`
 
-> Historical audit record: the dated findings below describe earlier reviewed
-> generations and their pinned dependencies. The current unpublished migration
-> targets musicos `0b3eb07c9cb1af29c877b66cddfdcc9ef32fc721`;
-> `sui move test --lint --warnings-are-errors` passed 20/20 tests on
-> 2026-09-29. See `Move.toml`, `README.md`, and tests for the current API.
-
-Reviewed 2026-09-11 for immutable publication and rich event payloads. Verdict:
-no exploitable findings in the reviewed source.
+Pre-publication qualification, 2026-10-20. See `Move.toml`, `README.md`, and
+the tests for the current API.
 
 ## Dependency provenance
 
-The Testnet manifest pins `cover_art` at
-`603981fd563d10f3f89afe74851c1c4d3d50b0b4`, `musicos` at
-`4cb3c926b1f9bb5103f3f7194e4e1e34b6c87840`, and `per_track` at
-`cba820dec3e058a1c543d5e8595ba8aed32e9dc6`. The checked-in Mainnet lock
-graph pins those packages at `21fb2c04417fb0075d47f20c28149100e90af2cb`,
-`b3d5d4005fe36044d90e318f864dbc8b01de41da`, and
-`95b9830bda45fd82412c7653711ce9a2044a8be8`, respectively. Both graphs
-resolve `bps` at `4ca1972a67d35c972ca567de7b08315e3778e52b` and `ori` at
-`367ed5fe92a8b62da02c1116537cf08d111e0789`, with no duplicate aliases.
+`Move.toml` pins `musicos` at `24570431c1c02118c2b558d4ac1c30b39ca4cb2f`,
+`cover_art` at `948213d99f4e0a56064181d9318936beba95e138`,
+`release_track_data` at `8c17dfd96de046b34afe18e5a4890533c4ae321a`, and, in
+test mode only, `ori` at `367ed5fe92a8b62da02c1116537cf08d111e0789`.
 
-## Threat model and findings
+## Threat model
 
-All release-level and track-level writes require the matching
-`ReleaseAdminCap`. `PerTrack` fixes override-array length to the immutable
-tracklist and every indexed path checks bounds. Module-owned keying and private
-stored fields protect the schema. Cover references inherit their validation
-from the exact `cover_art` and `ori` dependencies. This is presentation data;
-it neither moves revenue nor authorizes another operation.
+All four mutations go through `Release::uid_mut`, which aborts
+`release::EUnauthorized` for a cap of another release, including on absent
+clears. Track indices are validated against the tracklist before
+authorization; the overrides are a `ReleaseTrackData` sized from the release
+when the record is first attached, and the tracklist is fixed, so they stay
+aligned. `cover_art::new` rejects encrypted blobs, so events carry only
+public blob IDs. The record is removed by the clear that leaves neither an
+album cover nor any override; that check scans the override slots (at most
+1,000) only on the clear path. The module-owned key prevents
+cross-extension collisions. No funds, custody, or external calls are
+involved. Events are 32 to 105 BCS bytes.
 
 ## Evidence
 
-With `/tmp/routed-stake-audit.zf2B9E/sui` (Sui 1.78.1-722ac4fcf484), isolated
-Testnet and Mainnet copies pass strict lint/warnings-as-errors builds and tests:
-19/19 on each network. Coverage runs on both copies report 97.02% for the
-production module; all public mutation/view functions are 100% covered, while
-the remaining uncovered lines are the encrypted sealed-DEK snapshot branches,
-which cannot be constructed from this package without adding the already
-transitive `ori` package to the manifest. The exercised tests cover the
-published/shared Release flow, wrong-cap attempts, album and track lifecycle,
-bounds, fallback, canonical absent/plaintext/animated snapshots, BCS field
-decoding, and event cardinality.
-
-## 2026-09-24 — regeneration against musicos `6dff4de`
-
-Re-reviewed for republication against `musicos` at
-`6dff4deca5ced186989c064e152c92a06384750c`, where `release::new` takes no
-title, `publish` takes no Clock, and `Track` carries no composition id.
-`cover_art` re-pinned to `948213d99f4e0a56064181d9318936beba95e138`
-(cover art must be unencrypted; the encrypted-fixture test was removed), `per_track`
-at `949e35651858a8fc5fc5c4949ceaa890a571d278` (re-pinned to the same musicos), and `ori` (test only) at
-`367ed5fe92a8b62da02c1116537cf08d111e0789`. Verdict on the reviewed source:
-no exploitable findings.
-
-Changes in this generation:
-
-- `unset_cover` → `clear_cover`, `unset_track_cover` → `clear_track_cover`.
-- Events renamed `Release{,Track}CoverArtUnsetEvent` →
-  `Release{,Track}CoverArtClearedEvent` and slimmed to the release address,
-  the track index on per-track events, and on set the still blob ID plus the
-  optional animated blob ID: 65/97, 32, 73/105, and 40 BCS bytes (down from
-  374, 310, 596, and 532 maximums). Dropped: admin cap address, track count,
-  field-existence flags, the track's recording and composition ids (joinable
-  via the `recording_ids` index of core's `ReleasePublishedEvent`, where
-  position is the index),
-  previous/current/album snapshots, encryption flags, sealed-DEK lengths and
-  digests, and the nested `CoverSnapshot`. On-chain `blake2b256` hashing of
-  sealed DEKs goes with them; a blob's confidentiality envelope is read from
-  the release.
-- Equal sets neither write nor emit (previously they rewrote silently);
-  clears with no record attached are silent instead of aborting
-  `ENoCoverArt`, which the views still raise.
-- Guard order: track-index validation → cap check via `uid_mut` →
-  stored-state. `clear_track_cover` therefore rejects an out-of-range index
-  even with nothing attached, and `borrow_mut_or_init` gates before its
-  existence check.
-
-Storage key, record shape, `PerTrack` alignment, the override-then-album
-resolution rule, and authorization are unchanged.
-
-Evidence: with Sui `1.79.0`, strict lint and warnings-as-errors builds pass and all 21 tests
-pass on Testnet and Mainnet (previously 20); the production module reports
-100.00% coverage (up from 97.02%: the encrypted-blob paths are now exercised
-and no longer branch).
-
-Event `release_id` fields are typed `ID` rather than `address`, and emit sites
-pass the object id directly; BCS layout and sizes are unchanged.
+With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
+passes 28/28 tests with no warnings and 100.00% coverage. Tests cover the
+published/shared lifecycle with a reader and a stranger, foreign caps on
+every mutator (with and without a record attached), override resolution and
+fallback, the last valid index, out-of-range and `u64::MAX` indices, the raw
+override view, record removal and re-creation, equal-set and absent-clear
+silence, and exact event BCS layouts.

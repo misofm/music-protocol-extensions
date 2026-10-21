@@ -5,30 +5,28 @@
 /// stored as one record under a dynamic field on the release's UID and
 /// written through its cap-gated `uid_mut`. Reads are permissionless.
 ///
-/// Cover art is presentation, not objective recording data, so it lives on
-/// the release rather than the recording. A track's effective cover resolves
-/// to its override if set, else the album cover. The overrides are a
-/// `ReleaseTrackData<Option<CoverArt>>` — one slot per track, aligned to
-/// the release's tracklist by construction.
+/// A track's effective cover is its override if set, else the album cover.
+/// The overrides are a `ReleaseTrackData<Option<CoverArt>>`, one slot per
+/// track, aligned to the tracklist by construction. The record exists exactly
+/// while the album cover or at least one override is set.
 module release_cover_art::release_cover_art;
 
+// === Imports ===
+
+use sui::dynamic_field as df;
+use sui::event::emit;
 use cover_art::cover_art::CoverArt;
 use musicos::release::{Release, ReleaseAdminCap};
 use release_track_data::release_track_data::{Self, ReleaseTrackData};
-use sui::dynamic_field as df;
-use sui::event::emit;
 
 // === Errors ===
 
 /// No cover art record is attached to this release.
-const ENoCoverArt: u64 = 1;
+const ENoCoverArt: u64 = 0;
 /// Track index is out of bounds for this release's track count.
-const ETrackIndexOutOfBounds: u64 = 2;
+const ETrackIndexOutOfBounds: u64 = 1;
 
 // === Structs ===
-
-/// Dynamic-field key — one cover art record per release.
-public struct ExtensionKey() has copy, drop, store;
 
 /// The release's cover art: an album-level cover and per-track overrides. A
 /// track with no override inherits the album cover.
@@ -36,6 +34,9 @@ public struct ReleaseCoverArt has store {
     cover: Option<CoverArt>,
     track_covers: ReleaseTrackData<Option<CoverArt>>,
 }
+
+/// Dynamic-field key: one cover art record per release.
+public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
@@ -80,8 +81,9 @@ public fun set_cover(self: &mut Release, cap: &ReleaseAdminCap, art: CoverArt) {
     emit(ReleaseCoverArtSetEvent { release_id, still_blob_id, animated_blob_id });
 }
 
-/// Removes the album cover, if any. Overrides are untouched. Silent when no
-/// record is attached or the album cover is already absent.
+/// Removes the album cover, if any; overrides are untouched. Detaches the
+/// record when nothing remains set. Silent when nothing is attached or the
+/// album cover is already absent.
 public fun clear_cover(self: &mut Release, cap: &ReleaseAdminCap) {
     let release_id = object::id(self);
     let uid = self.uid_mut(cap);
@@ -89,6 +91,9 @@ public fun clear_cover(self: &mut Release, cap: &ReleaseAdminCap) {
     let record: &mut ReleaseCoverArt = df::borrow_mut(uid, ExtensionKey());
     if (record.cover.is_none()) return;
     record.cover = option::none();
+    if (is_empty(record)) {
+        let ReleaseCoverArt { .. } = df::remove(uid, ExtensionKey());
+    };
     emit(ReleaseCoverArtClearedEvent { release_id });
 }
 
@@ -116,9 +121,9 @@ public fun set_track_cover(
 }
 
 /// Removes the override for the track at `track_index`, if any; the track
-/// then falls back to the album cover. Aborts `ETrackIndexOutOfBounds` past
-/// the tracklist. Silent when no record is attached or the override is
-/// already absent.
+/// then falls back to the album cover. Detaches the record when nothing
+/// remains set. Aborts `ETrackIndexOutOfBounds` past the tracklist. Silent
+/// when nothing is attached or the override is already absent.
 public fun clear_track_cover(self: &mut Release, cap: &ReleaseAdminCap, track_index: u64) {
     assert!(track_index < self.recording_ids().length(), ETrackIndexOutOfBounds);
     let release_id = object::id(self);
@@ -128,12 +133,15 @@ public fun clear_track_cover(self: &mut Release, cap: &ReleaseAdminCap, track_in
     let slot = record.track_covers.borrow_mut(track_index);
     if (slot.is_none()) return;
     *slot = option::none();
+    if (is_empty(record)) {
+        let ReleaseCoverArt { .. } = df::remove(uid, ExtensionKey());
+    };
     emit(ReleaseTrackCoverArtClearedEvent { release_id, track_index });
 }
 
 // === View Functions ===
 
-/// Whether a cover art record is attached to this release.
+/// Whether an album cover or at least one track override is set.
 public fun has_cover_art(self: &Release): bool {
     df::exists(self.uid(), ExtensionKey())
 }
@@ -154,11 +162,30 @@ public fun track_cover(self: &Release, track_index: u64): Option<CoverArt> {
     if (override.is_some()) *override else record.cover
 }
 
+/// A track's raw override slot (none when it inherits the album cover).
+/// Aborts `ETrackIndexOutOfBounds` past the tracklist and `ENoCoverArt` when no
+/// record is attached.
+public fun track_cover_override(self: &Release, track_index: u64): &Option<CoverArt> {
+    assert!(track_index < self.recording_ids().length(), ETrackIndexOutOfBounds);
+    borrow(self.uid()).track_covers.borrow(track_index)
+}
+
 // === Private Functions ===
 
 /// The still and optional animated blob IDs an event carries for `art`.
 fun blob_ids(art: &CoverArt): (u256, Option<u256>) {
     (art.still().blob_id(), art.animated().map_ref!(|blob| blob.blob_id()))
+}
+
+/// Whether neither the album cover nor any override is set.
+fun is_empty(record: &ReleaseCoverArt): bool {
+    if (record.cover.is_some()) return false;
+    let mut i = 0;
+    while (i < record.track_covers.length()) {
+        if (record.track_covers.borrow(i).is_some()) return false;
+        i = i + 1;
+    };
+    true
 }
 
 fun borrow(uid: &UID): &ReleaseCoverArt {
@@ -181,23 +208,23 @@ fun borrow_mut_or_init(self: &mut Release, cap: &ReleaseAdminCap): &mut ReleaseC
 // === Test Functions ===
 
 #[test_only]
-public fun set_event_fields(e: &ReleaseCoverArtSetEvent): (ID, u256, Option<u256>) {
+public fun release_cover_art_set_fields(e: &ReleaseCoverArtSetEvent): (ID, u256, Option<u256>) {
     (e.release_id, e.still_blob_id, e.animated_blob_id)
 }
 
 #[test_only]
-public fun cleared_event_fields(e: &ReleaseCoverArtClearedEvent): ID {
+public fun release_cover_art_cleared_fields(e: &ReleaseCoverArtClearedEvent): ID {
     e.release_id
 }
 
 #[test_only]
-public fun track_set_event_fields(
+public fun release_track_cover_art_set_fields(
     e: &ReleaseTrackCoverArtSetEvent,
 ): (ID, u64, u256, Option<u256>) {
     (e.release_id, e.track_index, e.still_blob_id, e.animated_blob_id)
 }
 
 #[test_only]
-public fun track_cleared_event_fields(e: &ReleaseTrackCoverArtClearedEvent): (ID, u64) {
+public fun release_track_cover_art_cleared_fields(e: &ReleaseTrackCoverArtClearedEvent): (ID, u64) {
     (e.release_id, e.track_index)
 }

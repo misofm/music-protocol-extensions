@@ -1,79 +1,28 @@
 # Security review — `recording_advisory`
 
-Reviewed 2026-09-11 for immutable publication. Verdict: no exploitable
-findings in the reviewed source.
+Pre-publication qualification, 2026-10-20. See `Move.toml`, `README.md`, and
+the tests for the current API.
 
 ## Dependency provenance
 
-`Move.toml` pins `musicos` at
-`4cb3c926b1f9bb5103f3f7194e4e1e34b6c87840`. The generated Testnet and
-Mainnet lock graphs resolve `bps` at
-`4ca1972a67d35c972ca567de7b08315e3778e52b` with no duplicate package aliases.
+`Move.toml` pins `musicos` at `24570431c1c02118c2b558d4ac1c30b39ca4cb2f`.
 
-## Threat model and findings
+## Threat model
 
-The relevant threat is an unauthorized rating change. Set and unset require the
-typed `RecordingAdminCap` through `Recording::uid_mut`, including the unset
-no-op path. The cap address carried by an event is provenance; there is no
-additional runtime cap-ID equality check. `ExtensionKey` is module-owned and
-the stored rating is a closed enum, so malformed or cross-extension values
-cannot enter through this API. Absence, `NotExplicit`, and `Cleaned` remain
-distinct. The package moves no funds and contains no Vault, Action, or Plugin
-logic. Primitive event snapshots use stable compact codes and preserve both
-phantom share dimensions.
+The relevant threat is an unauthorized advisory change. Set and clear go
+through `Recording::uid_mut`, which requires the `RecordingAdminCap` of the
+recording's share type, including the equal-set and absent-clear paths.
+`ExtensionKey` is module-owned and the stored value is a closed enum, so
+malformed or cross-extension values cannot enter through this API. Absence,
+`NotExplicit`, and `Cleaned` remain distinct; `advisory` aborts `ENoAdvisory`
+(0) rather than defaulting. No funds, custody, or external calls are
+involved. Events are 33 (set) and 32 (clear) BCS bytes; equal sets and absent
+clears emit nothing.
 
 ## Evidence
 
-With `sui 1.79.0`, strict Testnet and Mainnet lint, warnings-as-errors builds,
-and tests pass: 12/12 on each network. The production module reports 100.00%
-coverage, including published/shared-object lifecycle, all rating transitions,
-equal replacement, absent/repeated clears, both phantom dimensions, exact
-primitive event payloads, silent views/constructors, and the existing absence
-abort.
-
-## 2026-09-24 — regeneration against musicos `6dff4de`
-
-Re-reviewed for republication against `musicos` at
-`6dff4deca5ced186989c064e152c92a06384750c`, where `Recording` takes a single
-`RecordingShare` parameter and `publish` no longer takes a Clock. Verdict
-unchanged: no exploitable findings.
-
-Changes in this generation:
-
-- Enum renamed `ExplicitRating` → `Advisory`; functions renamed `set_rating` →
-  `set_advisory`, `unset_rating` → `clear_advisory`, `has_rating` →
-  `has_advisory`, `rating` → `advisory`; error `ENoRating` → `ENoAdvisory`
-  (still 1). The `name()` view was dropped: the variant is available through
-  the predicates and the set event.
-- Events renamed `RecordingAdvisoryRating{Set,Cleared}Event` →
-  `RecordingAdvisory{Set,Cleared}Event`, now `<phantom RecordingShare>` only,
-  and slimmed to the recording address plus, on set, the new `Advisory` value
-  (33 and 32 BCS bytes, down from 99 and 97). Dropped: composition id
-  (joinable via `RecordingPublishedEvent`), admin cap address (derived from
-  the recording), prior-value snapshots and presence flags.
-- An equal set now neither writes nor emits; previously it rewrote the field
-  silently. Absent clears remain silent.
-- Guard order is cap check then stored-state comparison; the function takes no
-  validatable argument.
-
-Storage key, value type, authorization, the three variants, and the
-absence-is-not-`NotExplicit` rule are unchanged.
-
-Evidence: with Sui `1.79.0`, strict Testnet and Mainnet lint and
-warnings-as-errors builds pass clean and all 13 tests pass on each network;
-the production module reports 100.00% coverage.
-
-Event `recording_id` fields are typed `ID` rather than `address`, and emit
-sites pass the object id directly; BCS layout and sizes are unchanged.
-
-
-## 2026-09-29 — concrete MusicOS recording migration
-
-The package now pins MusicOS `0b3eb07c9cb1af29c877b66cddfdcc9ef32fc721`. `Recording` and
-`RecordingAdminCap` are concrete types, and the cap identifies one recording at
-runtime. Each write calls `recording::uid_mut(cap)` before reading or changing
-extension state, including an equal set or absent clear. Events are concrete
-types with `recording_id` for per-object filtering. Scenario tests construct a
-composition with `composition::new(ctx)`, then a recording with
-`recording::new(&composition, ctx)`, and publish both. The package tests verify
-that a foreign cap aborts. Earlier entries describe historical revisions.
+With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
+passes 13/13 tests with no warnings and 100.00% coverage, including the
+published/shared lifecycle with distinct senders, every transition between
+the three values, equal sets, absent and repeated clears, per-recording
+isolation, exact event payloads, and the absence abort.

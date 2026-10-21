@@ -16,8 +16,9 @@ package.
   aligned to the tracklist by construction and sized when the record is first
   attached; the tracklist is fixed at release creation, so they stay aligned.
   A track's effective cover resolves to its override if set, otherwise the
-  album cover. The record is attached by the first set and is never removed;
-  a clear empties the slot.
+  album cover. The record is attached by the first set and removed by the
+  clear that leaves neither an album cover nor any override, so
+  `has_cover_art` means something is set.
 
 ## API
 
@@ -29,12 +30,13 @@ cap check. Views are permissionless.
 | Function | Description | Aborts |
 |---|---|---|
 | `set_cover(rel, cap, art)` | Sets or replaces the album cover, attaching the record on first use; setting the value already held neither writes nor emits | none |
-| `clear_cover(rel, cap)` | Removes the album cover; overrides are untouched; silent when absent | none |
-| `set_track_cover(rel, cap, i, art)` | Sets or replaces track `i`'s override, attaching the record on first use; equal set is silent | `ETrackIndexOutOfBounds` (2) |
-| `clear_track_cover(rel, cap, i)` | Removes track `i`'s override so it falls back to the album cover; silent when absent | `ETrackIndexOutOfBounds` (2) |
-| `has_cover_art(rel)` | Whether the record is attached | none |
-| `cover(rel)` | The album cover, `&Option<CoverArt>` | `ENoCoverArt` (1) |
-| `track_cover(rel, i)` | Track `i`'s effective cover | `ETrackIndexOutOfBounds` (2), `ENoCoverArt` (1) |
+| `clear_cover(rel, cap)` | Removes the album cover; overrides are untouched; detaches the record when nothing remains; silent when absent | none |
+| `set_track_cover(rel, cap, i, art)` | Sets or replaces track `i`'s override, attaching the record on first use; equal set is silent | `ETrackIndexOutOfBounds` (1) |
+| `clear_track_cover(rel, cap, i)` | Removes track `i`'s override so it falls back to the album cover; detaches the record when nothing remains; silent when absent | `ETrackIndexOutOfBounds` (1) |
+| `has_cover_art(rel)` | Whether an album cover or any override is set | none |
+| `cover(rel)` | The album cover, `&Option<CoverArt>` | `ENoCoverArt` (0) |
+| `track_cover(rel, i)` | Track `i`'s effective cover | `ETrackIndexOutOfBounds` (1), `ENoCoverArt` (0) |
+| `track_cover_override(rel, i)` | Track `i`'s raw override slot, `&Option<CoverArt>` | `ETrackIndexOutOfBounds` (1), `ENoCoverArt` (0) |
 
 ## Events
 
@@ -57,19 +59,19 @@ state transition.
 
 | Code | Constant | Condition |
 |---|---|---|
-| 1 | `ENoCoverArt` | `cover` or `track_cover` with no record attached |
-| 2 | `ETrackIndexOutOfBounds` | A track index at or past the tracklist length |
+| 0 | `ENoCoverArt` | A view with no record attached |
+| 1 | `ETrackIndexOutOfBounds` | A track index at or past the tracklist length |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `f68189873e712ee931460cc00404db4f01391a24` — `Release`, `ReleaseAdminCap`,
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release`, `ReleaseAdminCap`,
   and `uid_mut`.
 - [`cover_art`](https://github.com/misofm/cover-art) at
   `948213d99f4e0a56064181d9318936beba95e138` — the `CoverArt` value type,
   which rejects encrypted blobs.
 - [`release_track_data`](https://github.com/misofm/release-track-data) at
-  `b03ea603afd1d6857abee8ca1f31103bbb872ff3` — the `ReleaseTrackData<Data>`
+  `8c17dfd96de046b34afe18e5a4890533c4ae321a` — the `ReleaseTrackData<Data>`
   array behind the overrides, pinned to the same musicos.
 - [`ori`](https://github.com/unconfirmedlabs/ori) at
   `367ed5fe92a8b62da02c1116537cf08d111e0789`, test mode only — blob fixtures.

@@ -4,9 +4,5 @@ edition = "2024"
 license = "FSL-1.1-ALv2"
 authors = ["Miso Labs, Inc. (build@miso.fm)"]
 
-# A free string with no vocabulary to enforce and nothing to validate against,
-# so there is nothing to depend on beyond musicos core — needed only to reach
-# `Composition` through its cap-gated `uid_mut`. Pinned at current core, which
-# stores no title.
 [dependencies]
 musicos = { git = "https://github.com/misofm/musicos.git", rev = "24570431c1c02118c2b558d4ac1c30b39ca4cb2f" }

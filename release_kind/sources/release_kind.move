@@ -1,32 +1,28 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// What a release calls itself — "Album", "EP", "Mixtape", "Split" — asserted
-/// by whoever holds the release's admin cap, and believed.
-///
-/// Deliberately a free string rather than an enum: deciding which
-/// self-descriptions are legitimate is not the protocol's job, and nothing
-/// depends on two releases agreeing about what an EP is (unlike genre, which
-/// is a curated vocabulary). Nothing here derives the value or checks it for
-/// plausibility; the only checks are structural — non-empty and bounded.
-///
-/// The value is stored verbatim, so "EP", "ep" and "Extended Play" are three
-/// distinct values. Clients that group by kind should normalise themselves.
+/// What a release calls itself ("Album", "EP", "Mixtape", "Split"), asserted
+/// by the holder of the release's admin cap. A free string rather than an
+/// enum: nothing depends on two releases agreeing about what an EP is. The only
+/// checks are structural (non-empty, bounded), and the value is stored
+/// verbatim, so "EP" and "ep" are distinct; clients normalise if they group.
 module release_kind::release_kind;
 
-use musicos::release::{Release, ReleaseAdminCap};
+// === Imports ===
+
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
+use musicos::release::{Release, ReleaseAdminCap};
 
 // === Errors ===
 
 /// No kind is attached to this release.
-const ENoKind: u64 = 1;
-/// The kind is empty. Asserting nothing is done by not attaching.
-const EEmptyKind: u64 = 2;
+const ENoKind: u64 = 0;
+/// The kind is empty.
+const EEmptyKind: u64 = 1;
 /// The kind exceeds `MAX_KIND_LENGTH` bytes.
-const EKindTooLong: u64 = 3;
+const EKindTooLong: u64 = 2;
 
 // === Constants ===
 
@@ -36,7 +32,7 @@ const MAX_KIND_LENGTH: u64 = 32;
 
 // === Structs ===
 
-/// Dynamic-field key — one kind (`String`) per release.
+/// Dynamic-field key: one kind (`String`) per release.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
@@ -101,11 +97,11 @@ public fun kind(self: &Release): &String {
 // === Test Functions ===
 
 #[test_only]
-public fun kind_set_event_fields(e: &ReleaseKindSetEvent): (ID, String) {
+public fun release_kind_set_fields(e: &ReleaseKindSetEvent): (ID, String) {
     (e.release_id, e.kind)
 }
 
 #[test_only]
-public fun kind_cleared_event_fields(e: &ReleaseKindClearedEvent): ID {
+public fun release_kind_cleared_fields(e: &ReleaseKindClearedEvent): ID {
     e.release_id
 }

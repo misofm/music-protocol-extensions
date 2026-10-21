@@ -8,6 +8,12 @@
 #[test_only]
 module recording_advisory::recording_advisory_e2e_tests;
 
+// === Imports ===
+
+use std::unit_test::{assert_eq, destroy};
+use sui::bcs::to_bytes;
+use sui::event::events_by_type;
+use sui::test_scenario::{Self as ts, Scenario};
 use musicos::composition;
 use musicos::recording::{Self, Recording, RecordingAdminCap};
 use recording_advisory::recording_advisory::{
@@ -15,10 +21,6 @@ use recording_advisory::recording_advisory::{
     RecordingAdvisorySetEvent,
     RecordingAdvisoryClearedEvent,
 };
-use std::unit_test::{assert_eq, destroy};
-use sui::bcs::to_bytes;
-use sui::event::events_by_type;
-use sui::test_scenario::{Self as ts, Scenario};
 
 const ADMIN: address = @0xAD;
 const STRANGER: address = @0x51;
@@ -52,7 +54,7 @@ fun admin_rates_a_published_shared_recording_and_a_stranger_reads_it() {
 
     let events = events_by_type<RecordingAdvisorySetEvent>();
     assert_eq!(events.length(), 1);
-    let (event_id, advisory) = adv::set_event_fields(&events[0]);
+    let (event_id, advisory) = adv::recording_advisory_set_fields(&events[0]);
     assert_eq!(event_id, rec_id);
     assert!(advisory.is_explicit());
     assert_eq!(to_bytes(&events[0]).length(), 33);
@@ -79,7 +81,7 @@ fun admin_rates_a_published_shared_recording_and_a_stranger_reads_it() {
     assert!(!adv::has_advisory(&rec));
     let cleared = events_by_type<RecordingAdvisoryClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(adv::cleared_event_fields(&cleared[0]), rec_id);
+    assert_eq!(adv::recording_advisory_cleared_fields(&cleared[0]), rec_id);
     assert_eq!(to_bytes(&cleared[0]).length(), 32);
     ts::return_shared(rec);
 

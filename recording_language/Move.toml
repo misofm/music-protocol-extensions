@@ -4,10 +4,6 @@ edition = "2024"
 license = "FSL-1.1-ALv2"
 authors = ["Miso Labs, Inc. (build@miso.fm)"]
 
-# One concern, one package: which languages are sung or spoken on a recording.
-# `language_code` supplies an ISO 639-1 code that is valid by construction, so
-# this package validates only count and duplicates — the same split
-# `party_profile` uses.
 [dependencies]
 musicos = { git = "https://github.com/misofm/musicos.git", rev = "24570431c1c02118c2b558d4ac1c30b39ca4cb2f" }
 language_code = { git = "https://github.com/unconfirmedlabs/language_code.git", rev = "61542357f3d2ff989d120185046def7cf6c8bdcb" }

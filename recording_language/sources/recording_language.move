@@ -1,39 +1,32 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// The languages sung or spoken on a recording, stored as a dynamic field on
-/// the recording's UID and written through its cap-gated `uid_mut`.
+/// The languages sung or spoken on a recording, in the caller's order (first
+/// is conventionally the predominant), stored as a dynamic field on the
+/// recording's UID and written through its cap-gated `uid_mut`.
 ///
-/// One concern, one package: language is set by different people, at
-/// different times, under a standard (ISO 639) that has nothing to do with
-/// any other fact about the recording.
-///
-/// A `vector`, not a single code — bilingual and code-switching recordings are
-/// ordinary. Order is the caller's: first is conventionally the predominant.
-///
-/// An attached empty vector means instrumental: a genuine claim that there is
-/// no sung or spoken content, deliberately distinct from attaching nothing,
-/// which says only that nobody has looked.
-///
-/// `LanguageCode` is a valid ISO 639-1 code by construction, so this package
-/// checks only what construction cannot: how many, and whether any repeat.
+/// An attached empty vector is an explicit instrumental claim, distinct from
+/// attaching nothing. `LanguageCode` is a valid ISO 639-1 code by
+/// construction, so this package checks only the count and repeats.
 module recording_language::recording_language;
 
-use language_code::language_code::LanguageCode;
-use musicos::recording::{Recording, RecordingAdminCap};
+// === Imports ===
+
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
 use sui::vec_set;
+use language_code::language_code::LanguageCode;
+use musicos::recording::{Recording, RecordingAdminCap};
 
 // === Errors ===
 
 /// No language record is attached to this recording.
-const ENoLanguages: u64 = 1;
+const ENoLanguages: u64 = 0;
 /// More than `MAX_LANGUAGES` were supplied.
-const ETooManyLanguages: u64 = 2;
+const EMaxLanguagesExceeded: u64 = 1;
 /// The same language appears twice.
-const EDuplicateLanguage: u64 = 3;
+const EDuplicateLanguage: u64 = 2;
 
 // === Constants ===
 
@@ -42,7 +35,7 @@ const MAX_LANGUAGES: u64 = 10;
 
 // === Structs ===
 
-/// Dynamic-field key — one `vector<LanguageCode>` per recording.
+/// Dynamic-field key: one `vector<LanguageCode>` per recording.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
@@ -62,7 +55,7 @@ public struct RecordingLanguagesClearedEvent has copy, drop {
 // === Public Functions ===
 
 /// Sets (or replaces) the languages sung or spoken on the recording; an empty
-/// vector asserts it is instrumental. Aborts `ETooManyLanguages` past
+/// vector asserts it is instrumental. Aborts `EMaxLanguagesExceeded` past
 /// `MAX_LANGUAGES` and `EDuplicateLanguage` on a repeated code. Setting the
 /// list already held neither writes nor emits.
 public fun set_languages<RecordingShare>(
@@ -86,7 +79,7 @@ public fun set_languages<RecordingShare>(
     });
 }
 
-/// Removes the language record, if any — including an instrumental claim.
+/// Removes the language record, if any, including an instrumental claim.
 /// Silent when nothing is attached.
 public fun clear_languages<RecordingShare>(
     self: &mut Recording<RecordingShare>,
@@ -108,8 +101,7 @@ public fun has_languages<RecordingShare>(self: &Recording<RecordingShare>): bool
 }
 
 /// The recording's languages, in the order given; empty means instrumental.
-/// Aborts `ENoLanguages` when nothing is attached — absence is distinct from
-/// an empty list and must not collapse into it.
+/// Aborts `ENoLanguages` when nothing is attached.
 public fun languages<RecordingShare>(
     self: &Recording<RecordingShare>,
 ): &vector<LanguageCode> {
@@ -117,31 +109,26 @@ public fun languages<RecordingShare>(
     df::borrow(self.uid(), ExtensionKey())
 }
 
-// === Test Functions ===
-
-#[test_only]
-public fun set_event_fields(
-    e: &RecordingLanguagesSetEvent,
-): (ID, vector<String>) {
-    (e.recording_id, e.languages)
-}
-
-#[test_only]
-public fun cleared_event_fields(
-    e: &RecordingLanguagesClearedEvent,
-): ID {
-    e.recording_id
-}
-
 // === Private Functions ===
 
-/// Each `LanguageCode` is already valid by construction, so only the count
-/// and duplicates are checked here — count first.
+/// Checks the count, then duplicates.
 fun validate(languages: &vector<LanguageCode>) {
-    assert!(languages.length() <= MAX_LANGUAGES, ETooManyLanguages);
+    assert!(languages.length() <= MAX_LANGUAGES, EMaxLanguagesExceeded);
     let mut seen = vec_set::empty<LanguageCode>();
     languages.do_ref!(|language| {
         assert!(!seen.contains(language), EDuplicateLanguage);
         seen.insert(*language);
     });
+}
+
+// === Test Functions ===
+
+#[test_only]
+public fun recording_languages_set_fields(e: &RecordingLanguagesSetEvent): (ID, vector<String>) {
+    (e.recording_id, e.languages)
+}
+
+#[test_only]
+public fun recording_languages_cleared_fields(e: &RecordingLanguagesClearedEvent): ID {
+    e.recording_id
 }

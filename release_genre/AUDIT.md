@@ -1,107 +1,32 @@
-> Historical audit record: the dated findings below describe earlier reviewed
-> generations and their pinned dependencies. The current unpublished migration
-> targets musicos `0b3eb07c9cb1af29c877b66cddfdcc9ef32fc721`;
-> `sui move test --lint --warnings-are-errors` passed 23/23 tests on
-> 2026-09-29. See `Move.toml`, `README.md`, and tests for the current API.
-
-> Historical audit below predates the 2026-09-15 payload revision. Current event contracts and size bounds are documented in [EVENT_PAYLOADS.md](../EVENT_PAYLOADS.md). Storage, authority, and mutation behavior remain unchanged.
-
 # Security review — `release_genre`
 
-Reviewed 2026-09-11 for immutable publication. The event revision preserves
-the stored key/value layout and production API while making every successful
-mutation auditable as a bounded, replayable transition.
-
-## Reviewed surface
-
-The public API is four functions: `add_genre`, `remove_genre`,
-`clear_genres`, and the permissionless `genres` view. The stored value remains
-the package-owned `ExtensionKey` mapped to a bare, ordered `vector<ID>`; index
-zero is primary and removing the final entry reclaims the dynamic field.
-
-`add_genre` takes a real `&Genre`, captures its raw `Genre.name()` bytes in the
-Added event, and appends only the object id. A missing field aborts with 42
-before cap authorization. When the field exists, `uid_mut` authenticates the
-supplied cap before the member lookup; a missing member then aborts with 42.
-`clear_genres` authenticates even when the field is absent. The pinned Release
-authorization checks `object::id(self) == cap.release_id` at runtime.
+Pre-publication qualification, 2026-10-20. See `Move.toml`, `README.md`, and
+the tests for the current API.
 
 ## Dependency provenance
 
-`Move.toml` pins `genre` at
-`cddf9491426723e2c468cebf40fb4231d9fb0d5a` and `musicos` at
-`4cb3c926b1f9bb5103f3f7194e4e1e34b6c87840`. The checked-in `Move.lock`,
-`Move.toml`, and `Published.toml` remain byte-identical to the baseline; build
-resolution was restored after strict Mainnet verification.
+`Move.toml` pins `musicos` at `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` and
+`genre` at `90baae2919f7272f6d4bbb245b643f7dba5dc0ba`.
 
-## Events
+## Threat model
 
-The three monomorphic event declarations are `ReleaseGenreAddedEvent`,
-`ReleaseGenreRemovedEvent`, and `ReleaseGenresClearedEvent`. Their fields are
-the exact source declaration order documented in `README.md`: actual release,
-cap, and genre addresses; Added's raw UTF-8 name; index; complete before and
-after ordered address vectors; counts; field-existence and primary flags; and
-primary ids/change flag. Cleared additionally carries `clear_cause` and
-`trigger_genre_id`. Cause 0 is explicit clear with an `@0x0` trigger; the
-legacy cause-1 fields remain for wire compatibility but are no longer emitted
-by final removal.
-
-Every successful add emits exactly one Added event after the field write.
-Every successful remove deletes the field before emitting Removed when it is
-the final item, so that event reports `field_exists_after = false`. Explicit
-clear removes the field and emits one Cleared event; an absent explicit clear
-emits none. Constructors, views, and failed guards are silent. No owner,
-timestamp, or full `Genre` object is exposed.
-
-For snapshot lengths `b`, `a`, and Added name length `n`, the exact BCS bounds
-are:
-
-* Added: `192 + n + 32*(b+a)`, maximum 608 (`n=64`, `b=5`, `a=6`);
-* Removed: `191 + 32*(b+a)`, maximum 543;
-* Cleared: `184 + 32*(b+a)`, maximum 376.
-
-The final-removal event is 223-byte Removed. These are serialized event bounds;
-vector/name lengths still contribute transaction gas.
+All three mutations go through `Release::uid_mut`, which aborts
+`release::EUnauthorized` for a cap of another release before any stored-state
+check, including on absent removes and clears. `add_genre` takes a `&Genre`,
+so only ids of real vocabulary entries can enter; removal takes a bare `ID`
+and only removes. The list is unique, bounded at six, and non-empty by
+construction: removing the last genre drops the field, so `has_genres` means
+at least one genre, and `genres` aborts `ENoGenres` rather than returning an
+empty list. The module-owned key prevents cross-extension collisions. No
+funds, custody, or external calls are involved. Events are 64 (add/remove)
+and 32 (clear) BCS bytes.
 
 ## Evidence
 
-With Sui 1.79.0, strict lint and warnings-as-errors Testnet and Mainnet builds
-and tests pass 23/23. The Testnet and Mainnet production-module coverage
-summaries are both 100.00%. Tests include full field-order BCS decoding with
-empty-remainder assertions and event-only replay, exact 64-byte and six-item
-bounds, final-removal pair sizes, two-release monomorphic streams, stable
-ordering and primary promotion, clear/re-add lifecycle, absent and populated
-wrong-cap guard precedence, duplicate-before-capacity behavior, published and
-shared Release lifecycle, and no-op/event silence.
-
-## 2026-09-24 — new generation against musicos `6dff4de`
-
-Reviewed for a fresh immutable publication; `Published.toml` remains the
-record of the prior deployment. Changes in this generation:
-
-- `musicos` re-pinned to `6dff4deca5ced186989c064e152c92a06384750c`
-  (`Release` carries no title; `publish` takes no `Clock`). The `genre` pin
-  is unchanged.
-- Events slimmed to what an event-only indexer needs:
-  `ReleaseGenreAddedEvent { release_id, genre_id }` and
-  `ReleaseGenreRemovedEvent { release_id, genre_id }` (64 BCS bytes each) and
-  `ReleaseGenresClearedEvent { release_id }` (32 bytes). Admin cap ids,
-  indices, counts, before/after lists, lifecycle flags, primary metadata and
-  the clear cause were dropped.
-- Guard order is now uniform: cap authorization first, then stored-state
-  checks. `remove_genre` with a foreign cap therefore aborts with
-  `release::EUnauthorized` (0) even when no list is attached, where the prior
-  generation reported `EGenreNotPresent` (42) first.
-- Unchanged: `&Genre` proof on add, `MAX_GENRES` = 6, duplicate checked
-  before capacity, removal promotes the next entry, removing the last genre
-  drops the field and emits only Removed, absent clear is silent.
-
-Evidence: with Sui 1.79.0, default and Mainnet builds and tests pass with no
-warnings, 23/23 on each environment, covering the published/shared lifecycle,
-wrong caps on add, remove (absent and present) and clear, duplicate and
-capacity bounds, promotion, field reclamation, reorder via clear and re-add,
-per-release isolation, an event-only replay projection, and exact event BCS
-layouts.
-
-Event `release_id`/`genre_id` fields are typed `ID` rather than `address`, and
-emit sites pass object ids directly; BCS layout and sizes are unchanged.
+With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
+passes 25/25 tests with no warnings and 100.00% coverage. Tests cover the
+published/shared lifecycle with distinct senders, foreign caps on add,
+remove (absent and present), and clear (absent and present), primary
+promotion, the six-genre bound, duplicate rejection, absent and not-found
+removals, event replay of the ordered list, field removal with the last
+genre, per-release isolation, and exact event BCS layouts.

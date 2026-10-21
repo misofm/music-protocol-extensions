@@ -1,40 +1,28 @@
 # Security review — `release_title`
 
-> Historical audit record: the dated findings below describe earlier reviewed
-> generations and their pinned dependencies. The current unpublished migration
-> targets musicos `0b3eb07c9cb1af29c877b66cddfdcc9ef32fc721`;
-> `sui move test --lint --warnings-are-errors` passed 20/20 tests on
-> 2026-09-29. See `Move.toml`, `README.md`, and tests for the current API.
-
-Reviewed 2026-09-24 ahead of first publication (unpublished; no
-`Published.toml`). Verdict: no exploitable findings in the reviewed source.
+Pre-publication qualification, 2026-10-20. This package is unpublished: there
+is no `Published.toml`. See `Move.toml`, `README.md`,
+and the tests for the current API.
 
 ## Dependency provenance
 
-`Move.toml` pins `musicos` at `6dff4deca5ced186989c064e152c92a06384750c`.
-Both the default and Mainnet lock graphs resolve `bps` at
-`4ca1972a67d35c972ca567de7b08315e3778e52b` and `share` at
-`6ac1dbf022e74957c5ec15ecf95890e28889cd62` without duplicate aliases.
+`Move.toml` pins `musicos` at `24570431c1c02118c2b558d4ac1c30b39ca4cb2f`.
 
-## Threat model and findings
+## Threat model
 
-Set and clear require the release core's cap-gated `uid_mut`, including the
-absent-clear path. Set validates emptiness (2) and the 300-byte bound (3)
-before cap authorization (0), and neither writes nor emits when the stored
-value is unchanged. A module-owned key stores one bounded, non-empty UTF-8
-`String` exactly as provided. The monomorphic set event carries the release
-id and the new title; the cleared event carries the release id. Views do not
-emit. The value is descriptive and has no economic or authorization meaning.
+Set and clear go through `Release::uid_mut`, which aborts
+`release::EUnauthorized` for a cap of another release, including on absent
+clears. `set_title` rejects an empty string (`EEmptyTitle`, 1) and more than 300
+bytes (`ETitleTooLong`, 2) before authorization. The value is stored verbatim
+under a module-owned key and has no economic or authorization meaning. Set
+events carry the release id and the value (at most 334 BCS bytes); clear
+events carry the release id (32). Equal sets, absent clears, and views emit
+nothing. No funds, custody, or external calls are involved.
 
 ## Evidence
 
-With Sui 1.79.0, default and Mainnet builds and tests pass with no warnings:
-20/20 on each environment. Tests cover the published/shared lifecycle with
-distinct senders, wrong caps on set and on clear (absent and present),
-validation-before-authorization precedence, absence, the exact 300-byte and
-byte-versus-character bounds, verbatim storage, equal-set silence, silent
-views, per-release isolation, and exact event field and BCS layouts including
-the 334-byte maximum set event.
-
-Event `release_id` fields are typed `ID` rather than `address`, and emit sites
-pass object ids directly; BCS layout and sizes are unchanged.
+With Sui 1.82.1, `sui move test --coverage --lint --warnings-are-errors`
+passes 20/20 tests with no warnings and 100.00% coverage. Tests cover the
+published/shared lifecycle with distinct senders, foreign caps on set and on clear (absent and present), validation-before-authorization, the exact
+300-byte and byte-versus-character bounds, verbatim storage, equal-set and
+absent-clear silence, per-release isolation, and exact event BCS layouts.

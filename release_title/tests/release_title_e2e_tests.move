@@ -10,12 +10,14 @@
 #[test_only]
 module release_title::release_title_e2e_tests;
 
-use musicos::release::{Self, Release, ReleaseAdminCap};
-use musicos::test_helpers;
-use release_title::release_title as rt;
+// === Imports ===
+
 use std::unit_test::{assert_eq, destroy};
 use sui::event;
 use sui::test_scenario::{Self, Scenario};
+use musicos::release::{Self, Release, ReleaseAdminCap};
+use musicos::test_helpers;
+use release_title::release_title as rt;
 
 const LABEL: address = @0xAD;
 const STRANGER: address = @0x51;
@@ -59,7 +61,7 @@ fun title_lifecycle_on_a_published_and_shared_release() {
 
     let set_events = event::events_by_type<rt::ReleaseTitleSetEvent>();
     assert_eq!(set_events.length(), 1);
-    let (event_id, event_title) = rt::title_set_event_fields(&set_events[0]);
+    let (event_id, event_title) = rt::release_title_set_fields(&set_events[0]);
     assert_eq!(event_id, rel_id);
     assert_eq!(event_title, b"Long Player".to_string());
 
@@ -79,12 +81,12 @@ fun title_lifecycle_on_a_published_and_shared_release() {
 
     let set_events = event::events_by_type<rt::ReleaseTitleSetEvent>();
     assert_eq!(set_events.length(), 1);
-    let (event_id, event_title) = rt::title_set_event_fields(&set_events[0]);
+    let (event_id, event_title) = rt::release_title_set_fields(&set_events[0]);
     assert_eq!(event_id, rel_id);
     assert_eq!(event_title, b"Long Player (Deluxe Edition)".to_string());
     let cleared_events = event::events_by_type<rt::ReleaseTitleClearedEvent>();
     assert_eq!(cleared_events.length(), 1);
-    assert_eq!(rt::title_cleared_event_fields(&cleared_events[0]), rel_id);
+    assert_eq!(rt::release_title_cleared_fields(&cleared_events[0]), rel_id);
 
     // --- Tx 6 (STRANGER): the clear is visible too ---
     ts.next_tx(STRANGER);

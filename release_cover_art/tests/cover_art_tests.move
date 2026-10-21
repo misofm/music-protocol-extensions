@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
 /// Unit coverage for `release_cover_art`'s abort surface, resolution rule,
-/// no-op rule, and event payloads. Every test here operates as a single
-/// actor on their own release in one transaction, so `tx_context::dummy()`
-/// suffices. Wrong-cap aborts and the published-and-shared production flow
-/// live in `cover_art_e2e_tests`, run under distinct senders.
+/// no-op rule, record lifetime, and event payloads. Wrong-cap aborts and the
+/// published-and-shared flow live in `cover_art_e2e_tests`.
 #[test_only]
 module release_cover_art::cover_art_tests;
 
+// === Imports ===
+
+use std::unit_test::{assert_eq, destroy};
+use sui::bcs::to_bytes;
+use sui::event::events_by_type;
 use cover_art::cover_art as cover;
 use musicos::release::{Self, Release, ReleaseAdminCap};
 use release_cover_art::cover_art_fixtures as fixtures;
@@ -19,9 +22,6 @@ use release_cover_art::release_cover_art::{
     ReleaseTrackCoverArtSetEvent,
     ReleaseTrackCoverArtClearedEvent,
 };
-use std::unit_test::{assert_eq, destroy};
-use sui::bcs::to_bytes;
-use sui::event::events_by_type;
 
 // A 3-track release: flat tracklist indices 0, 1, 2. Recording ids are
 // synthetic — this package's logic never inspects them.
@@ -42,7 +42,8 @@ fun assert_set_event(
     still_blob_id: u256,
     animated_blob_id: Option<u256>,
 ) {
-    let (event_release_id, event_still, event_animated) = release_cover_art::set_event_fields(e);
+    let (event_release_id, event_still, event_animated) =
+        release_cover_art::release_cover_art_set_fields(e);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_still, still_blob_id);
     assert_eq!(event_animated, animated_blob_id);
@@ -56,7 +57,7 @@ fun assert_track_set_event(
     animated_blob_id: Option<u256>,
 ) {
     let (event_release_id, event_index, event_still, event_animated) =
-        release_cover_art::track_set_event_fields(e);
+        release_cover_art::release_track_cover_art_set_fields(e);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_index, track_index);
     assert_eq!(event_still, still_blob_id);
@@ -68,7 +69,8 @@ fun assert_track_cleared_event(
     release_id: ID,
     track_index: u64,
 ) {
-    let (event_release_id, event_index) = release_cover_art::track_cleared_event_fields(e);
+    let (event_release_id, event_index) =
+        release_cover_art::release_track_cover_art_cleared_fields(e);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_index, track_index);
 }
@@ -83,9 +85,9 @@ fun album_cover_set_read_clear() {
     assert!(release_cover_art::has_cover_art(&rel));
     assert!(release_cover_art::cover(&rel).is_some());
 
+    // Clearing the only value detaches the record.
     release_cover_art::clear_cover(&mut rel, &cap);
-    assert!(release_cover_art::has_cover_art(&rel));
-    assert!(release_cover_art::cover(&rel).is_none());
+    assert!(!release_cover_art::has_cover_art(&rel));
 
     destroy(rel);
     destroy(cap);
@@ -126,17 +128,37 @@ fun track_cover_override_resolves_over_album() {
     release_cover_art::clear_track_cover(&mut rel, &cap, 1);
     assert_eq!(release_cover_art::track_cover(&rel, 1), option::some(replacement));
 
-    // With the album cover cleared and no override, a track resolves to none.
+    // With the album cover cleared and no override left, the record detaches.
     release_cover_art::clear_cover(&mut rel, &cap);
-    assert_eq!(release_cover_art::track_cover(&rel, 0), option::none());
-    assert_eq!(release_cover_art::track_cover(&rel, 1), option::none());
-    assert_eq!(release_cover_art::track_cover(&rel, 2), option::none());
+    assert!(!release_cover_art::has_cover_art(&rel));
 
     destroy(rel);
     destroy(cap);
 }
 
 // === Bounds ===
+
+/// The last index is in range; only past it aborts.
+#[test]
+fun set_track_cover_at_last_index() {
+    let ctx = &mut tx_context::dummy();
+    let (mut rel, cap) = mk_release(ctx);
+    let art = fixtures::plain(300);
+    release_cover_art::set_track_cover(&mut rel, &cap, 2, art);
+    assert_eq!(*release_cover_art::track_cover_override(&rel, 2), option::some(art));
+    assert_eq!(release_cover_art::track_cover(&rel, 2), option::some(art));
+    destroy(rel);
+    destroy(cap);
+}
+
+#[test, expected_failure(abort_code = release_cover_art::ETrackIndexOutOfBounds)]
+fun set_track_cover_rejects_max_index() {
+    let ctx = &mut tx_context::dummy();
+    let (mut rel, cap) = mk_release(ctx);
+    let index = 0xFFFF_FFFF_FFFF_FFFF;
+    release_cover_art::set_track_cover(&mut rel, &cap, index, fixtures::plain(1));
+    abort
+}
 
 #[test, expected_failure(abort_code = release_cover_art::ETrackIndexOutOfBounds)]
 fun set_track_cover_rejects_out_of_bounds_index() {
@@ -226,7 +248,7 @@ fun clear_cover_emits_only_the_release() {
 
     let events = events_by_type<ReleaseCoverArtClearedEvent>();
     assert_eq!(events.length(), 1);
-    assert_eq!(release_cover_art::cleared_event_fields(&events[0]), rel_id);
+    assert_eq!(release_cover_art::release_cover_art_cleared_fields(&events[0]), rel_id);
     assert_eq!(to_bytes(&events[0]).length(), 32);
 
     destroy(rel);
@@ -308,18 +330,16 @@ fun clears_of_absent_values_are_silent() {
     assert_eq!(events_by_type<ReleaseCoverArtClearedEvent>().length(), 0);
     assert_eq!(events_by_type<ReleaseTrackCoverArtClearedEvent>().length(), 0);
 
-    // Record attached, values absent.
-    release_cover_art::set_cover(&mut rel, &cap, fixtures::plain(100));
-    release_cover_art::clear_cover(&mut rel, &cap);
-    release_cover_art::clear_cover(&mut rel, &cap);
-    release_cover_art::clear_track_cover(&mut rel, &cap, 1);
-    assert_eq!(events_by_type<ReleaseCoverArtClearedEvent>().length(), 1);
-    assert_eq!(events_by_type<ReleaseTrackCoverArtClearedEvent>().length(), 0);
-
+    // Record attached by an override, album cover absent.
     release_cover_art::set_track_cover(&mut rel, &cap, 1, fixtures::plain(200));
-    release_cover_art::clear_track_cover(&mut rel, &cap, 1);
-    release_cover_art::clear_track_cover(&mut rel, &cap, 1);
-    assert_eq!(events_by_type<ReleaseTrackCoverArtClearedEvent>().length(), 1);
+    release_cover_art::clear_cover(&mut rel, &cap);
+    assert_eq!(events_by_type<ReleaseCoverArtClearedEvent>().length(), 0);
+
+    // Record attached by the album cover, override absent.
+    release_cover_art::set_cover(&mut rel, &cap, fixtures::plain(100));
+    release_cover_art::clear_track_cover(&mut rel, &cap, 0);
+    assert_eq!(events_by_type<ReleaseTrackCoverArtClearedEvent>().length(), 0);
+    assert!(release_cover_art::has_cover_art(&rel));
 
     destroy(rel);
     destroy(cap);
@@ -341,4 +361,65 @@ fun track_cover_view_without_attachment_aborts() {
     let (rel, _cap) = mk_release(ctx);
     let _ = release_cover_art::track_cover(&rel, 0);
     abort
+}
+
+// === Override view and record lifetime ===
+
+/// The raw slot shows only the override, never the inherited album cover.
+#[test]
+fun track_cover_override_returns_the_raw_slot() {
+    let ctx = &mut tx_context::dummy();
+    let (mut rel, cap) = mk_release(ctx);
+    let album = fixtures::plain(100);
+    let override = fixtures::plain(200);
+    release_cover_art::set_cover(&mut rel, &cap, album);
+    release_cover_art::set_track_cover(&mut rel, &cap, 1, override);
+    assert_eq!(*release_cover_art::track_cover_override(&rel, 0), option::none());
+    assert_eq!(*release_cover_art::track_cover_override(&rel, 1), option::some(override));
+    assert_eq!(release_cover_art::track_cover(&rel, 0), option::some(album));
+    destroy(rel);
+    destroy(cap);
+}
+
+#[test, expected_failure(abort_code = release_cover_art::ETrackIndexOutOfBounds)]
+fun track_cover_override_rejects_out_of_bounds_index() {
+    let ctx = &mut tx_context::dummy();
+    let (mut rel, cap) = mk_release(ctx);
+    release_cover_art::set_cover(&mut rel, &cap, fixtures::plain(100));
+    release_cover_art::track_cover_override(&rel, 3);
+    abort
+}
+
+#[test, expected_failure(abort_code = release_cover_art::ENoCoverArt)]
+fun track_cover_override_without_attachment_aborts() {
+    let ctx = &mut tx_context::dummy();
+    let (rel, _cap) = mk_release(ctx);
+    release_cover_art::track_cover_override(&rel, 0);
+    abort
+}
+
+/// The record detaches only once the album cover and every override are
+/// cleared, whichever is cleared last.
+#[test]
+fun record_detaches_when_everything_is_cleared() {
+    let ctx = &mut tx_context::dummy();
+    let (mut rel, cap) = mk_release(ctx);
+    release_cover_art::set_cover(&mut rel, &cap, fixtures::plain(100));
+    release_cover_art::set_track_cover(&mut rel, &cap, 0, fixtures::plain(200));
+    release_cover_art::set_track_cover(&mut rel, &cap, 2, fixtures::plain(300));
+
+    release_cover_art::clear_cover(&mut rel, &cap);
+    assert!(release_cover_art::has_cover_art(&rel));
+    release_cover_art::clear_track_cover(&mut rel, &cap, 0);
+    assert!(release_cover_art::has_cover_art(&rel));
+    release_cover_art::clear_track_cover(&mut rel, &cap, 2);
+    assert!(!release_cover_art::has_cover_art(&rel));
+
+    // A later set attaches a fresh record with every override empty.
+    release_cover_art::set_cover(&mut rel, &cap, fixtures::plain(400));
+    assert_eq!(*release_cover_art::track_cover_override(&rel, 2), option::none());
+    assert_eq!(events_by_type<ReleaseCoverArtClearedEvent>().length(), 1);
+    assert_eq!(events_by_type<ReleaseTrackCoverArtClearedEvent>().length(), 2);
+    destroy(rel);
+    destroy(cap);
 }

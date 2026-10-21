@@ -4,26 +4,24 @@
 /// The roles a party can hold on a recording: the production and performance
 /// contributions to an audio performance of a composition.
 ///
-/// `RecordingPartyRole` is a closed enum constructed only through the
-/// `new_*_role` functions and read through `level()`. Seniority is a separate
-/// axis: most roles carry an optional `RecordingPartyRoleLevel`, so
-/// "Additional Producer" is `Producer` plus `Additional` rather than its own
-/// variant; `ArtistsAndRepertoire` and `Copyist` carry none. `Instrumentalist`
-/// also carries a validated instrument name. The vocabulary is fixed to these
-/// canonical variants and is musicos's own; any overlap with an external
-/// standard (e.g. DDEX) is coincidental. Consumers read a role from its BCS
-/// variant index, in declaration order.
+/// `RecordingPartyRole` is a closed enum built only through the `new_*_role`
+/// functions. Seniority is a separate axis: most roles carry an optional
+/// `RecordingPartyRoleLevel` ("Additional Producer" is `Producer` plus
+/// `Additional`); `ArtistsAndRepertoire` and `Copyist` carry none, and
+/// `Instrumentalist` also carries a validated instrument name. Consumers read a
+/// role from its BCS variant index, in declaration order.
 module recording_credits::recording_party_role;
+
+// === Imports ===
 
 use std::string::String;
 
 // === Errors ===
 
-// Constraint errors (30-39)
-/// Instrument name exceeds maximum length.
-const EMaxInstrumentLengthExceeded: u64 = 30;
-/// String must not be empty.
-const EEmptyString: u64 = 35;
+/// Instrument name is empty.
+const EEmptyInstrument: u64 = 0;
+/// Instrument name exceeds `MAX_INSTRUMENT_LENGTH` bytes.
+const EInstrumentTooLong: u64 = 1;
 
 // === Constants ===
 
@@ -199,8 +197,8 @@ public fun new_instrumentalist_role(
     instrument: String,
     level: Option<RecordingPartyRoleLevel>,
 ): RecordingPartyRole {
-    assert!(!instrument.is_empty(), EEmptyString);
-    assert!(instrument.length() <= MAX_INSTRUMENT_LENGTH, EMaxInstrumentLengthExceeded);
+    assert!(!instrument.is_empty(), EEmptyInstrument);
+    assert!(instrument.length() <= MAX_INSTRUMENT_LENGTH, EInstrumentTooLong);
     RecordingPartyRole::Instrumentalist(instrument, level)
 }
 

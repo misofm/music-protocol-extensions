@@ -18,10 +18,10 @@ cap-gated `release::uid_mut`; views are permissionless.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `set_kind(release, cap, kind: String)` | Sets or replaces the kind, verbatim. Setting the value already stored neither writes nor emits. | `EEmptyKind` (2), then `EKindTooLong` (3) past 32 bytes — both before cap authorization; then wrong cap (`release::EUnauthorized`, 0) |
+| `set_kind(release, cap, kind: String)` | Sets or replaces the kind, verbatim. Setting the value already stored neither writes nor emits. | `EEmptyKind` (1), then `EKindTooLong` (2) past 32 bytes — both before cap authorization; then wrong cap (`release::EUnauthorized`, 0) |
 | `clear_kind(release, cap)` | Removes the kind; an absent kind is a silent no-op | wrong cap (0), even when nothing is attached |
 | `has_kind(release): bool` | Whether a kind is attached | — |
-| `kind(release): &String` | The kind | `ENoKind` (1) when absent |
+| `kind(release): &String` | The kind | `ENoKind` (0) when absent |
 
 The 32-byte bound is on bytes, not characters.
 
@@ -42,15 +42,15 @@ event only when a kind was actually removed. Views emit nothing.
 
 | Code | Constant | Location | Condition |
 |---|---|---|---|
-| 1 | `ENoKind` | `release_kind::release_kind` | `kind` with nothing attached |
-| 2 | `EEmptyKind` | `release_kind::release_kind` | `set_kind` with an empty string |
-| 3 | `EKindTooLong` | `release_kind::release_kind` | `set_kind` with more than 32 bytes |
+| 0 | `ENoKind` | `release_kind::release_kind` | `kind` with nothing attached |
+| 1 | `EEmptyKind` | `release_kind::release_kind` | `set_kind` with an empty string |
+| 2 | `EKindTooLong` | `release_kind::release_kind` | `set_kind` with more than 32 bytes |
 | 0 | `EUnauthorized` | `musicos::release` | any write with a cap for a different release |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Release`, `ReleaseAdminCap`,
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release`, `ReleaseAdminCap`,
   and cap-gated `uid_mut`.
 
 ## Publishing

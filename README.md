@@ -21,7 +21,7 @@ platform adapters bridge Vault custody to an Action:
 | [`misofm/partyos-actions`](https://github.com/misofm/partyos-actions) | Custody-agnostic, return-oriented Party workflows. |
 | [`misofm/vault`](https://github.com/misofm/vault) | Generic capability custody and temporary exact-return leases. |
 | [`misofm/vault-plugins`](https://github.com/misofm/vault-plugins) | Thin installed adapters that borrow a custodied admin capability, call a matching Action, and return the capability. |
-| [`misofm/recording-license`](https://github.com/misofm/recording-license) | A composition's standing license to record it; formerly `recording_license` in this repository. |
+| [`misofm/recording-license`](https://github.com/misofm/recording-license) | A composition's standing license to record it. |
 
 Each directory in this repository is an independently versioned and published
 Move package. Applications should depend only on the extensions they use.
@@ -64,11 +64,11 @@ release_genre = { git = "https://github.com/misofm/musicos-extensions.git", subd
 
 Each package's `Move.toml` pins its own protocol and supporting dependencies.
 The current sources target musicos commit
-`654ea7d08ef2ae4f7f6b088ed665d147566db768`: Composition and Recording are
+`24570431c1c02118c2b558d4ac1c30b39ca4cb2f`: Composition and Recording are
 generic over their share coin type, and their admin capabilities authorize by
-that type. Metadata operations are generic over the share type but never touch
-shares. Composition and Recording extension events carry no share type
-arguments; consumers identify the subject through the event's object ID.
+that type; a Release admin capability authorizes by the release's ID.
+Composition and Recording extension events carry no share type arguments;
+consumers identify the subject through the event's object ID.
 
 Existing `Published.toml` files are retained as records of the currently
 deployed, prior package generation, including the protocol extension packages'
@@ -107,5 +107,5 @@ becomes Apache-2.0 two years after its release.
 
 ## Event payload policy
 
-See [EVENT_PAYLOADS.md](EVENT_PAYLOADS.md) for the complete event inventory,
-content omission policy and consumer integration notes.
+See [EVENT_PAYLOADS.md](EVENT_PAYLOADS.md) for the payload rule and
+consumer integration notes; each package README lists its events.

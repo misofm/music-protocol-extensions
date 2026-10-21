@@ -16,22 +16,21 @@ advisory has been asserted, and is deliberately distinct from `NotExplicit`.
 ## API
 
 Writes require the recording's `&RecordingAdminCap<RecordingShare>` and go
-through `recording::uid_mut(cap)`; the share type ties the cap to its one recording. Views
-are permissionless.
+through `recording::uid_mut(cap)`; the share type ties the cap to its one
+recording. Views are permissionless.
 
 | Function | Description | Aborts |
 |---|---|---|
 | `set_advisory(rec, cap, advisory)` | Sets or replaces the advisory; setting the value already held neither writes nor emits | none |
 | `clear_advisory(rec, cap)` | Removes the advisory; silent when absent | none |
 | `has_advisory(rec)` | Whether an advisory is attached | none |
-| `advisory(rec)` | The attached `Advisory` | `ENoAdvisory` (1) when absent |
+| `advisory(rec)` | The attached `Advisory` | `ENoAdvisory` (0) when absent |
 | `explicit()`, `not_explicit()`, `cleaned()` | Constructors | none |
 | `is_explicit(&a)`, `is_not_explicit(&a)`, `is_cleaned(&a)` | Variant predicates (enums cannot be matched outside their module) | none |
 
 ## Events
 
-Both events carry what an
-event-only indexer would otherwise have to look up.
+Both events carry what an event-only indexer would otherwise have to look up.
 
 | Event | Fields | BCS bytes |
 |---|---|---|
@@ -46,12 +45,12 @@ a real state transition.
 
 | Code | Constant | Condition |
 |---|---|---|
-| 1 | `ENoAdvisory` | `advisory` with nothing attached |
+| 0 | `ENoAdvisory` | `advisory` with nothing attached |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Recording<RecordingShare>` and its type-bound `RecordingAdminCap<RecordingShare>`.
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Recording<RecordingShare>` and its type-bound `RecordingAdminCap<RecordingShare>`.
 
 ## Publishing
 

@@ -8,6 +8,12 @@
 #[test_only]
 module recording_language::recording_language_tests;
 
+// === Imports ===
+
+use std::string::String;
+use std::unit_test::{assert_eq, destroy};
+use sui::bcs::to_bytes;
+use sui::event::events_by_type;
 use language_code::language_code::{Self, LanguageCode};
 use musicos::recording::{Self, Recording, RecordingAdminCap};
 use recording_language::recording_language::{
@@ -15,11 +21,6 @@ use recording_language::recording_language::{
     RecordingLanguagesSetEvent,
     RecordingLanguagesClearedEvent,
 };
-use std::string::String;
-use std::unit_test::{assert_eq, destroy};
-use sui::bcs::to_bytes;
-use sui::event::events_by_type;
-
 
 const TEN_CODES: vector<vector<u8>> =
     vector[b"en", b"fr", b"es", b"de", b"it", b"ja", b"ko", b"pt", b"ru", b"zh"];
@@ -63,7 +64,7 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(stored_codes(&rec), strings(vector[b"en", b"fr"]));
     let set_events = events_by_type<RecordingLanguagesSetEvent>();
     assert_eq!(set_events.length(), 1);
-    let (event_rec_id, languages) = rl::set_event_fields(&set_events[0]);
+    let (event_rec_id, languages) = rl::recording_languages_set_fields(&set_events[0]);
     assert_eq!(event_rec_id, rec_id);
     assert_eq!(languages, strings(vector[b"en", b"fr"]));
 
@@ -72,14 +73,14 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(stored_codes(&rec), strings(vector[b"fr", b"en"]));
     let set_events = events_by_type<RecordingLanguagesSetEvent>();
     assert_eq!(set_events.length(), 2);
-    let (_, languages) = rl::set_event_fields(&set_events[1]);
+    let (_, languages) = rl::recording_languages_set_fields(&set_events[1]);
     assert_eq!(languages, strings(vector[b"fr", b"en"]));
 
     rl::clear_languages(&mut rec, &cap);
     assert!(!rl::has_languages(&rec));
     let cleared = events_by_type<RecordingLanguagesClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(rl::cleared_event_fields(&cleared[0]), rec_id);
+    assert_eq!(rl::recording_languages_cleared_fields(&cleared[0]), rec_id);
 
     // Re-attachment after a clear starts fresh.
     rl::set_languages(&mut rec, &cap, langs(vector[b"ja"]));
@@ -143,6 +144,25 @@ fun order_is_preserved() {
     destroy(cap);
 }
 
+/// The same codes in a different order are a different value: the write
+/// lands and emits a set event with the new order.
+#[test]
+fun reordered_languages_count_as_a_change() {
+    let ctx = &mut tx_context::dummy();
+    let (mut rec, cap) = new_rec(ctx);
+
+    rl::set_languages(&mut rec, &cap, langs(vector[b"en", b"fr", b"ja"]));
+    rl::set_languages(&mut rec, &cap, langs(vector[b"ja", b"en", b"fr"]));
+    assert_eq!(stored_codes(&rec), strings(vector[b"ja", b"en", b"fr"]));
+    let set_events = events_by_type<RecordingLanguagesSetEvent>();
+    assert_eq!(set_events.length(), 2);
+    let (_, languages) = rl::recording_languages_set_fields(&set_events[1]);
+    assert_eq!(languages, strings(vector[b"ja", b"en", b"fr"]));
+
+    destroy(rec);
+    destroy(cap);
+}
+
 /// The three states stay distinct: instrumental is an attached empty list,
 /// absence is nothing attached, and neither is a sung recording.
 #[test]
@@ -160,7 +180,7 @@ fun instrumental_is_distinct_from_absent_and_from_sung() {
     assert!(rl::languages(&rec).is_empty());
     let set_events = events_by_type<RecordingLanguagesSetEvent>();
     assert_eq!(set_events.length(), 1);
-    let (event_rec_id, languages) = rl::set_event_fields(&set_events[0]);
+    let (event_rec_id, languages) = rl::recording_languages_set_fields(&set_events[0]);
     assert_eq!(event_rec_id, rec_id);
     assert!(languages.is_empty());
     assert_eq!(to_bytes(&set_events[0]).length(), 33);
@@ -180,7 +200,7 @@ fun instrumental_is_distinct_from_absent_and_from_sung() {
     assert!(!rl::has_languages(&rec));
     let cleared = events_by_type<RecordingLanguagesClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(rl::cleared_event_fields(&cleared[0]), rec_id);
+    assert_eq!(rl::recording_languages_cleared_fields(&cleared[0]), rec_id);
     assert_eq!(to_bytes(&cleared[0]).length(), 32);
 
     destroy(rec);
@@ -198,7 +218,7 @@ fun set_event_carries_the_recording_and_the_new_value() {
     rl::set_languages(&mut rec, &cap, langs(vector[b"en", b"fr"]));
     let events = events_by_type<RecordingLanguagesSetEvent>();
     assert_eq!(events.length(), 1);
-    let (event_rec_id, languages) = rl::set_event_fields(&events[0]);
+    let (event_rec_id, languages) = rl::recording_languages_set_fields(&events[0]);
     assert_eq!(event_rec_id, rec_id);
     assert_eq!(languages, strings(vector[b"en", b"fr"]));
     assert_eq!(to_bytes(&events[0]).length(), 32 + 1 + 3 * 2);
@@ -219,7 +239,7 @@ fun exactly_max_languages_is_accepted() {
     assert_eq!(stored_codes(&rec), strings(TEN_CODES));
     let events = events_by_type<RecordingLanguagesSetEvent>();
     assert_eq!(events.length(), 1);
-    let (_, languages) = rl::set_event_fields(&events[0]);
+    let (_, languages) = rl::recording_languages_set_fields(&events[0]);
     assert_eq!(languages, strings(TEN_CODES));
     assert_eq!(to_bytes(&events[0]).length(), 32 + 1 + 3 * 10);
 
@@ -299,7 +319,7 @@ fun duplicate_language_aborts() {
     destroy(cap);
 }
 
-#[test, expected_failure(abort_code = rl::ETooManyLanguages)]
+#[test, expected_failure(abort_code = rl::EMaxLanguagesExceeded)]
 fun more_than_max_languages_aborts() {
     let ctx = &mut tx_context::dummy();
     let (mut rec, cap) = new_rec(ctx);
@@ -312,7 +332,7 @@ fun more_than_max_languages_aborts() {
 
 /// Count is validated before duplicates: an eleven-entry list that also
 /// repeats a code aborts on the count.
-#[test, expected_failure(abort_code = rl::ETooManyLanguages)]
+#[test, expected_failure(abort_code = rl::EMaxLanguagesExceeded)]
 fun count_is_checked_before_duplicates() {
     let ctx = &mut tx_context::dummy();
     let (mut rec, cap) = new_rec(ctx);

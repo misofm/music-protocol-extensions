@@ -1,33 +1,28 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// The title a release prefers to be known by, asserted by whoever holds the
-/// release's admin cap, and believed.
-///
-/// Core `Release` carries no title: a title is presentation, not the
-/// constitutive tracklist the release id commits to, so it
-/// lives here as an extension. It is a free string with no vocabulary to
-/// enforce and nothing to derive it from; the only checks are structural —
-/// non-empty and bounded — so the field stays storable. It is mutable, since
-/// a release may be retitled without changing what it is.
-///
-/// The value is stored verbatim. Attaching nothing and attaching a title are
-/// distinct states, so an empty string is rejected rather than stored.
+/// The title a release prefers to be known by, asserted by the holder of the
+/// release's admin cap. Core `Release` carries no title, so it lives here as a
+/// mutable extension. The value is stored verbatim; the only checks are
+/// structural (non-empty, bounded), and an empty string is rejected because
+/// absence already means "no title".
 module release_title::release_title;
 
-use musicos::release::{Release, ReleaseAdminCap};
+// === Imports ===
+
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
+use musicos::release::{Release, ReleaseAdminCap};
 
 // === Errors ===
 
 /// No title is attached to this release.
-const ENoTitle: u64 = 1;
-/// The title is empty. Asserting nothing is done by not attaching.
-const EEmptyTitle: u64 = 2;
+const ENoTitle: u64 = 0;
+/// The title is empty.
+const EEmptyTitle: u64 = 1;
 /// The title exceeds `MAX_TITLE_LENGTH` bytes.
-const ETitleTooLong: u64 = 3;
+const ETitleTooLong: u64 = 2;
 
 // === Constants ===
 
@@ -37,7 +32,7 @@ const MAX_TITLE_LENGTH: u64 = 300;
 
 // === Structs ===
 
-/// Dynamic-field key — one title (`String`) per release.
+/// Dynamic-field key: one title (`String`) per release.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
@@ -102,11 +97,11 @@ public fun title(self: &Release): &String {
 // === Test Functions ===
 
 #[test_only]
-public fun title_set_event_fields(e: &ReleaseTitleSetEvent): (ID, String) {
+public fun release_title_set_fields(e: &ReleaseTitleSetEvent): (ID, String) {
     (e.release_id, e.title)
 }
 
 #[test_only]
-public fun title_cleared_event_fields(e: &ReleaseTitleClearedEvent): ID {
+public fun release_title_cleared_fields(e: &ReleaseTitleClearedEvent): ID {
     e.release_id
 }

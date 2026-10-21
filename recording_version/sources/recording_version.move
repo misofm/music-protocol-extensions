@@ -1,32 +1,29 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// The version name of a recording — which take of the composition it is
-/// ("Live", "Radio Edit", "Acoustic") — stored as a dynamic field on the
-/// recording's UID and written through its cap-gated `uid_mut`.
-///
-/// A recording's display title is its composition's title plus this version
-/// name; core `Recording` carries no title of its own. Absence means the
-/// recording is the composition's plain rendition and displays under the
-/// composition title alone.
-///
-/// The value is a non-empty UTF-8 `String` of at most `MAX_VERSION_LENGTH`
-/// bytes, mutable through the recording's admin cap.
+/// The version name of a recording, which take of the composition it is
+/// ("Live", "Radio Edit", "Acoustic"), stored as a dynamic field on the
+/// recording's UID and written through its cap-gated `uid_mut`. A recording
+/// displays as its composition's title plus this name; absence means the plain
+/// rendition. The value is a non-empty UTF-8 `String` of at most
+/// `MAX_VERSION_LENGTH` bytes.
 module recording_version::recording_version;
 
-use musicos::recording::{Recording, RecordingAdminCap};
+// === Imports ===
+
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
+use musicos::recording::{Recording, RecordingAdminCap};
 
 // === Errors ===
 
 /// No version name is attached to this recording.
-const ENoVersion: u64 = 1;
+const ENoVersion: u64 = 0;
 /// The version name is empty.
-const EEmptyVersion: u64 = 2;
+const EEmptyVersion: u64 = 1;
 /// The version name exceeds `MAX_VERSION_LENGTH` bytes.
-const EVersionTooLong: u64 = 3;
+const EVersionTooLong: u64 = 2;
 
 // === Constants ===
 
@@ -35,7 +32,7 @@ const MAX_VERSION_LENGTH: u64 = 300;
 
 // === Structs ===
 
-/// Dynamic-field key — one version name per recording.
+/// Dynamic-field key: one version name per recording.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
@@ -104,15 +101,11 @@ public fun version<RecordingShare>(self: &Recording<RecordingShare>): &String {
 // === Test Functions ===
 
 #[test_only]
-public fun set_event_fields(
-    e: &RecordingVersionSetEvent,
-): (ID, String) {
+public fun recording_version_set_fields(e: &RecordingVersionSetEvent): (ID, String) {
     (e.recording_id, e.version)
 }
 
 #[test_only]
-public fun cleared_event_fields(
-    e: &RecordingVersionClearedEvent,
-): ID {
+public fun recording_version_cleared_fields(e: &RecordingVersionClearedEvent): ID {
     e.recording_id
 }

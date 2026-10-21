@@ -12,16 +12,20 @@
 /// the compressed body is read from the dynamic field.
 module composition_lyrics::composition_lyrics;
 
-use language_code::language_code::LanguageCode;
-use musicos::composition::{Composition, CompositionAdminCap};
+// === Imports ===
+
 use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
+use language_code::language_code::LanguageCode;
+use musicos::composition::{Composition, CompositionAdminCap};
 
 // === Errors ===
 
 /// No lyrics are attached for this language.
-const ENoLyrics: u64 = 1;
+const ENoLyrics: u64 = 0;
+/// The lyrics payload is empty.
+const EEmptyLyrics: u64 = 1;
 /// The compressed lyrics exceed `MAX_LYRICS_LENGTH` bytes.
 const ELyricsTooLong: u64 = 2;
 
@@ -32,7 +36,7 @@ const MAX_LYRICS_LENGTH: u64 = 32768;
 
 // === Structs ===
 
-/// Dynamic-field key — one compressed payload (`vector<u8>`) per language.
+/// Dynamic-field key: one compressed payload (`vector<u8>`) per language.
 public struct ExtensionKey(LanguageCode) has copy, drop, store;
 
 // === Events ===
@@ -52,15 +56,15 @@ public struct CompositionLyricsClearedEvent has copy, drop {
 // === Public Functions ===
 
 /// Adds or replaces one language, preserving the supplied bytes exactly.
-/// Aborts `ELyricsTooLong` past `MAX_LYRICS_LENGTH` bytes, before cap
-/// authorization. Empty and malformed frames are left for clients to
-/// interpret. Setting the bytes already stored neither writes nor emits.
+/// Aborts `EEmptyLyrics` or `ELyricsTooLong` before cap authorization; frame
+/// validity is left to clients. Setting the stored bytes neither writes nor emits.
 public fun set_lyrics<CompositionShare>(
     self: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
     language: LanguageCode,
     lyrics: vector<u8>,
 ) {
+    assert!(!lyrics.is_empty(), EEmptyLyrics);
     assert!(lyrics.length() <= MAX_LYRICS_LENGTH, ELyricsTooLong);
 
     let composition_id = object::id(self);
@@ -121,15 +125,11 @@ public fun max_lyrics_length(): u64 { MAX_LYRICS_LENGTH }
 // === Test Functions ===
 
 #[test_only]
-public fun set_event_fields(
-    e: &CompositionLyricsSetEvent,
-): (ID, String) {
+public fun composition_lyrics_set_fields(e: &CompositionLyricsSetEvent): (ID, String) {
     (e.composition_id, e.language)
 }
 
 #[test_only]
-public fun clear_event_fields(
-    e: &CompositionLyricsClearedEvent,
-): (ID, String) {
+public fun composition_lyrics_cleared_fields(e: &CompositionLyricsClearedEvent): (ID, String) {
     (e.composition_id, e.language)
 }

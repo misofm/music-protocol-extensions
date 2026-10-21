@@ -1,36 +1,27 @@
 // Copyright (c) Miso Labs, Inc.
 // SPDX-License-Identifier: FSL-1.1-ALv2
 
-/// The parental advisory for a recording — whether its content is explicit —
-/// stored as a dynamic field on the recording's UID and written through its
-/// cap-gated `uid_mut`.
-///
-/// One concern, one package: the advisory is asserted by a different person,
-/// at a different time, under a standard that moves on its own schedule, so it
-/// is attached and replaced independently of every other fact about the
-/// recording.
-///
-/// The value is not a boolean. A `Cleaned` edit — an explicit recording
-/// re-issued with the offending content removed — is merchandised differently
-/// from a recording that was never explicit, so it is a first-class variant.
-///
-/// Attaching the extension is the statement: a present value has been asserted
-/// by the rights holder, and a recording with nothing attached has said
-/// nothing. Absence is therefore distinct from `NotExplicit`.
+/// The parental advisory for a recording, stored as a dynamic field on the
+/// recording's UID and written through its cap-gated `uid_mut`. `Cleaned` (an
+/// explicit recording re-issued with the content removed) is its own variant.
+/// A present value has been asserted by the rights holder; absence means
+/// nothing was asserted and is distinct from `NotExplicit`.
 module recording_advisory::recording_advisory;
 
-use musicos::recording::{Recording, RecordingAdminCap};
+// === Imports ===
+
 use sui::dynamic_field as df;
 use sui::event::emit;
+use musicos::recording::{Recording, RecordingAdminCap};
 
 // === Errors ===
 
 /// No advisory is attached to this recording.
-const ENoAdvisory: u64 = 1;
+const ENoAdvisory: u64 = 0;
 
 // === Structs ===
 
-/// Dynamic-field key — one `Advisory` per recording.
+/// Dynamic-field key: one `Advisory` per recording.
 public struct ExtensionKey() has copy, drop, store;
 
 // === Enums ===
@@ -134,15 +125,11 @@ public fun is_cleaned(self: &Advisory): bool {
 // === Test Functions ===
 
 #[test_only]
-public fun set_event_fields(
-    e: &RecordingAdvisorySetEvent,
-): (ID, Advisory) {
+public fun recording_advisory_set_fields(e: &RecordingAdvisorySetEvent): (ID, Advisory) {
     (e.recording_id, e.advisory)
 }
 
 #[test_only]
-public fun cleared_event_fields(
-    e: &RecordingAdvisoryClearedEvent,
-): ID {
+public fun recording_advisory_cleared_fields(e: &RecordingAdvisoryClearedEvent): ID {
     e.recording_id
 }

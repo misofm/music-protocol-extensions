@@ -7,15 +7,17 @@
 #[test_only]
 module recording_advisory::recording_advisory_tests;
 
+// === Imports ===
+
+use std::unit_test::{assert_eq, destroy};
+use sui::bcs::to_bytes;
+use sui::event::events_by_type;
 use musicos::recording::{Self, Recording, RecordingAdminCap};
 use recording_advisory::recording_advisory::{
     Self as adv,
     RecordingAdvisorySetEvent,
     RecordingAdvisoryClearedEvent,
 };
-use std::unit_test::{assert_eq, destroy};
-use sui::bcs::to_bytes;
-use sui::event::events_by_type;
 
 public struct TestShare() has drop;
 
@@ -39,7 +41,7 @@ fun set_read_replace_clear_lifecycle() {
     assert!(adv::advisory(&rec).is_explicit());
     let set_events = events_by_type<RecordingAdvisorySetEvent>();
     assert_eq!(set_events.length(), 1);
-    let (event_rec_id, advisory) = adv::set_event_fields(&set_events[0]);
+    let (event_rec_id, advisory) = adv::recording_advisory_set_fields(&set_events[0]);
     assert_eq!(event_rec_id, rec_id);
     assert!(advisory.is_explicit());
 
@@ -49,14 +51,14 @@ fun set_read_replace_clear_lifecycle() {
     assert!(!adv::advisory(&rec).is_explicit());
     let set_events = events_by_type<RecordingAdvisorySetEvent>();
     assert_eq!(set_events.length(), 2);
-    let (_, advisory) = adv::set_event_fields(&set_events[1]);
+    let (_, advisory) = adv::recording_advisory_set_fields(&set_events[1]);
     assert!(advisory.is_cleaned());
 
     adv::clear_advisory(&mut rec, &cap);
     assert!(!adv::has_advisory(&rec));
     let cleared = events_by_type<RecordingAdvisoryClearedEvent>();
     assert_eq!(cleared.length(), 1);
-    assert_eq!(adv::cleared_event_fields(&cleared[0]), rec_id);
+    assert_eq!(adv::recording_advisory_cleared_fields(&cleared[0]), rec_id);
 
     // Re-attachment after a clear starts fresh.
     adv::set_advisory(&mut rec, &cap, adv::not_explicit());
@@ -149,7 +151,7 @@ fun set_events_carry_the_recording_and_the_new_value() {
         assert_eq!(adv::advisory(&rec), sequence[i]);
         let events = events_by_type<RecordingAdvisorySetEvent>();
         assert_eq!(events.length(), i + 1);
-        let (event_rec_id, advisory) = adv::set_event_fields(&events[i]);
+        let (event_rec_id, advisory) = adv::recording_advisory_set_fields(&events[i]);
         assert_eq!(event_rec_id, rec_id);
         assert_eq!(advisory, sequence[i]);
         let bytes = to_bytes(&events[i]);
@@ -172,7 +174,7 @@ fun cleared_event_carries_only_the_recording() {
 
     let events = events_by_type<RecordingAdvisoryClearedEvent>();
     assert_eq!(events.length(), 1);
-    assert_eq!(adv::cleared_event_fields(&events[0]), rec_id);
+    assert_eq!(adv::recording_advisory_cleared_fields(&events[0]), rec_id);
     assert_eq!(to_bytes(&events[0]).length(), 32);
 
     destroy(rec);

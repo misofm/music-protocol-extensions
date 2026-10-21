@@ -6,16 +6,16 @@ Top-line billing for a `musicos::release::Release`: one
 record stored as a dynamic field on the release and written through its
 cap-gated `uid_mut`. Attribution is display-oriented and varies across
 platforms, so it lives here rather than in immutable core; it is not read by
-any economics, and
-because it is an extension, other parties may publish their own credits
-standard against the same `Release`.
+any economics, and because it is an extension, other parties may publish
+their own credits standard against the same `Release`.
 
 ## What it stores
 
 - Key: `ExtensionKey()` — a unit struct local to this package.
 - Value: one `ReleaseCredits { credits: VecMap<ID, Credit<ReleasePartyRole>> }`,
   party ID to credit in insertion order. The record is created on the first
-  `add_credit` and retained, empty, after the last `remove_credit`.
+  `add_credit` and removed with the last `remove_credit`, so `has_credits`
+  is true exactly when at least one credit is held.
 
 Invariants enforced on write: a credit carries exactly one role
 (`CREDIT_ROLE_COUNT`), a party holds at most one credit, and a release holds
@@ -31,14 +31,14 @@ the cap, then stored state.
 
 | Function | Description | Aborts |
 |---|---|---|
-| `add_credit(rel, cap, party, credit)` | Credits a party, creating the record on first use | `EInvalidCreditRoleCount` (53), `release::EUnauthorized`, `EMaxCreditsExceeded` (32), `EPartyAlreadyCredited` (40) |
-| `remove_credit(rel, cap, party_id)` | Removes a party's credit; the empty record stays attached | `release::EUnauthorized`, `ENoCredits` (50), `EPartyNotCredited` (52) |
-| `has_credits(rel)` | Whether a record is attached | none |
-| `credits(rel)` | The `&VecMap<ID, Credit<ReleasePartyRole>>` | `ENoCredits` (50) when absent |
+| `add_credit(rel, cap, party, credit)` | Credits a party, creating the record on first use | `EInvalidCreditRoleCount` (4), `release::EUnauthorized`, `EMaxCreditsExceeded` (0), `EDuplicateParty` (1) |
+| `remove_credit(rel, cap, party_id)` | Removes a party's credit; removing the last one detaches the record | `release::EUnauthorized`, `ENoCredits` (2), `EPartyNotFound` (3) |
+| `has_credits(rel)` | Whether at least one credit is attached | none |
+| `credits(rel)` | The `&VecMap<ID, Credit<ReleasePartyRole>>` | `ENoCredits` (2) when absent |
 | `release_party_role::new_primary_role()`, `new_featured_role()` | Role constructors | none |
 
 At capacity, a duplicate party reports `EMaxCreditsExceeded` rather than
-`EPartyAlreadyCredited`. No write is a silent no-op: re-crediting a party
+`EDuplicateParty`. No write is a silent no-op: re-crediting a party
 (even with an identical credit) and removing an uncredited party both abort.
 
 ## Events
@@ -49,12 +49,12 @@ on add — the role exactly as stored.
 
 | Event | Fields | BCS bytes |
 |---|---|---|
-| `ReleaseCreditAddedEvent` | `release_id: ID`, `party_id: ID`, `roles: vector<ReleasePartyRole>` | 66 |
+| `ReleaseCreditAddedEvent` | `release_id: ID`, `party_id: ID`, `role: ReleasePartyRole` | 65 |
 | `ReleaseCreditRemovedEvent` | `release_id: ID`, `party_id: ID` | 64 |
 
-`roles` is the credit's one-element role vector; `ReleasePartyRole` is a unit
-variant (`Primary = 0`, `Featured = 1` by declaration order), so every add
-event is exactly 66 bytes. The display name stays in storage (it normally
+`role` is the credit's one role; `ReleasePartyRole` is a unit variant
+(`Primary = 0`, `Featured = 1` by declaration order), so every add event is
+exactly 65 bytes. The display name stays in storage (it normally
 duplicates the party's own name from `partyos` events); the events do not
 carry the admin cap (derived from the release), counts or indices (replayable
 from the ordered add/remove stream), or presence flags.
@@ -63,16 +63,16 @@ from the ordered add/remove stream), or presence flags.
 
 | Code | Constant | Condition |
 |---|---|---|
-| 32 | `EMaxCreditsExceeded` | Fifty credits already held |
-| 40 | `EPartyAlreadyCredited` | Party already credited |
-| 50 | `ENoCredits` | No record attached |
-| 52 | `EPartyNotCredited` | Party not credited |
-| 53 | `EInvalidCreditRoleCount` | Credit does not carry exactly one role |
+| 0 | `EMaxCreditsExceeded` | Fifty credits already held |
+| 1 | `EDuplicateParty` | Party already credited |
+| 2 | `ENoCredits` | No record attached |
+| 3 | `EPartyNotFound` | Party not credited |
+| 4 | `EInvalidCreditRoleCount` | Credit does not carry exactly one role |
 
 ## Dependencies
 
 - [`musicos`](https://github.com/misofm/musicos) at
-  `654ea7d08ef2ae4f7f6b088ed665d147566db768` — `Release` and
+  `24570431c1c02118c2b558d4ac1c30b39ca4cb2f` — `Release` and
   `ReleaseAdminCap`.
 - [`partyos`](https://github.com/misofm/partyos) at
   `88c2e40353dbee8d8f98272069b4d836b02b12ae` — `Party`, the credited identity.

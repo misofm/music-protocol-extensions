@@ -4,6 +4,8 @@
 #[test_only]
 module release_cover_art::cover_art_fixtures;
 
+// === Imports ===
+
 use cover_art::cover_art::{Self, CoverArt};
 use ori::{confidentiality, data};
 
