@@ -69,7 +69,7 @@ from the frozen `Genre` objects, or derived offline with
 ## Dependencies
 
 - [`miso_music`](https://github.com/misofm/music-protocol) at
-  `c5a4a3f78eca20c225ff702750b54da5c754fe4c` — `Release`, `ReleaseAdminCap`,
+  `f52e79db4f44e9c59f277c4291c2b167295d002b` — `Release`, `ReleaseAdminCap`,
   and cap-gated `uid_mut`.
 - [`genre`](https://github.com/misofm/genre) at
   `0e9a031046ac3e199f23440377ad4ed3f6cd8dce` — the canonical shared genre

@@ -67,7 +67,7 @@ resolve client-side from the frozen `Genre` objects.
 ## Dependencies
 
 - [`miso_music`](https://github.com/misofm/music-protocol) at
-  `c5a4a3f78eca20c225ff702750b54da5c754fe4c` — `Recording<RecordingShare>`
+  `f52e79db4f44e9c59f277c4291c2b167295d002b` — `Recording<RecordingShare>`
   and its type-bound `RecordingAdminCap<RecordingShare>`.
 - [`genre`](https://github.com/misofm/genre) at
   `0e9a031046ac3e199f23440377ad4ed3f6cd8dce` — the canonical shared genre
