@@ -65,13 +65,13 @@ state transition.
 ## Dependencies
 
 - [`miso_music`](https://github.com/misofm/music-protocol) at
-  `aae43b34a5b6fe97201ecdb5e9c520cebfc79450` — `Release`, `ReleaseAdminCap`,
+  `a62de87ff9c24c692ba711855b5acd94c4a6472e` — `Release`, `ReleaseAdminCap`,
   and `uid_mut`.
 - [`cover_art`](https://github.com/misofm/cover-art) at
-  `62e05c0aa6927500a1d272a86b7c622b865a2c28` — the `CoverArt` value type,
+  `d5e472ca4ba90a99883ff0cf849679d8c4bca501` — the `CoverArt` value type,
   which rejects encrypted blobs.
 - [`release_track_data`](https://github.com/misofm/release-track-data) at
-  `8690f9fee95cb48b2ff2b3dbe1f6e00611744d35` — the `ReleaseTrackData<Data>`
+  `e91e247e092202d354681ba56b1453afaab08664` — the `ReleaseTrackData<Data>`
   array behind the overrides, pinned to the same `miso_music`.
 - [`ori`](https://github.com/unconfirmedlabs/ori) at
   `367ed5fe92a8b62da02c1116537cf08d111e0789`, test mode only — blob fixtures.

@@ -14,7 +14,7 @@ attached.
 
 ## Dependency provenance
 
-`Move.toml` pins `miso_music` at `aae43b34a5b6fe97201ecdb5e9c520cebfc79450`.
+`Move.toml` pins `miso_music` at `a62de87ff9c24c692ba711855b5acd94c4a6472e`.
 
 ## Threat model
 

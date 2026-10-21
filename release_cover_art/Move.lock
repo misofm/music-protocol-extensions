@@ -17,21 +17,21 @@ manifest_digest = "CD547CB1ACCE0880C835DAED2D8FFCB91D56C833AE5240D3AA5B918398263
 deps = { MoveStdlib = "MoveStdlib" }
 
 [pinned.mainnet.composition_share]
-source = { git = "https://github.com/misofm/music-protocol.git", subdir = "templates/composition_share", rev = "aae43b34a5b6fe97201ecdb5e9c520cebfc79450" }
+source = { git = "https://github.com/misofm/music-protocol.git", subdir = "templates/composition_share", rev = "a62de87ff9c24c692ba711855b5acd94c4a6472e" }
 use_environment = "mainnet"
 manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5ECF6"
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.cover_art]
-source = { git = "https://github.com/misofm/cover-art.git", subdir = ".", rev = "62e05c0aa6927500a1d272a86b7c622b865a2c28" }
+source = { git = "https://github.com/misofm/cover-art.git", subdir = ".", rev = "d5e472ca4ba90a99883ff0cf849679d8c4bca501" }
 use_environment = "mainnet"
 manifest_digest = "C384006492A520ABD3E2A62AB659441D512D76DE2A045F94E46B6DAB0BC0E6A2"
 deps = { ori = "ori", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.miso_music]
-source = { git = "https://github.com/misofm/music-protocol.git", subdir = ".", rev = "aae43b34a5b6fe97201ecdb5e9c520cebfc79450" }
+source = { git = "https://github.com/misofm/music-protocol.git", subdir = ".", rev = "a62de87ff9c24c692ba711855b5acd94c4a6472e" }
 use_environment = "mainnet"
-manifest_digest = "79D4211BB149259A6A686859F4FDE4088A8EA9C1DB486FD79E6D4188D01C4FB6"
+manifest_digest = "E82CDBB4916BD8B39CE7ABAA78EB156899D059777ABC7DBD1A900506490CCC1C"
 deps = { composition_share = "composition_share", recording_share = "recording_share", share = "share", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.ori]
@@ -41,7 +41,7 @@ manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5E
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.recording_share]
-source = { git = "https://github.com/misofm/music-protocol.git", subdir = "templates/recording_share", rev = "aae43b34a5b6fe97201ecdb5e9c520cebfc79450" }
+source = { git = "https://github.com/misofm/music-protocol.git", subdir = "templates/recording_share", rev = "a62de87ff9c24c692ba711855b5acd94c4a6472e" }
 use_environment = "mainnet"
 manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5ECF6"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -49,17 +49,17 @@ deps = { std = "MoveStdlib", sui = "Sui" }
 [pinned.mainnet.release_cover_art]
 source = { root = true }
 use_environment = "mainnet"
-manifest_digest = "A5ABFC61811167CDD09593C63776066185ED4723C6915E420E351A272AF8BD21"
+manifest_digest = "40D85B77FBC5ED40B290844B89BB3ABED0889B0684D7DE0EF2A89D70CC763163"
 deps = { cover_art = "cover_art", miso_music = "miso_music", ori = "ori", release_track_data = "release_track_data", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.release_track_data]
-source = { git = "https://github.com/misofm/release-track-data.git", subdir = ".", rev = "8690f9fee95cb48b2ff2b3dbe1f6e00611744d35" }
+source = { git = "https://github.com/misofm/release-track-data.git", subdir = ".", rev = "e91e247e092202d354681ba56b1453afaab08664" }
 use_environment = "mainnet"
-manifest_digest = "B0B2C4B515698CDEC5C69A544FB209ADE2323B3D4D3C675C282DF3ADD60F0378"
+manifest_digest = "4477DF62761A2799C199BBFF175E8A208B963F577380821D8966A36561C3B2AD"
 deps = { miso_music = "miso_music", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.share]
-source = { git = "https://github.com/misofm/share.git", subdir = ".", rev = "410dea3614b2bf6824679b85c8d9164e1d8edfdd" }
+source = { git = "https://github.com/misofm/share.git", subdir = ".", rev = "ac65a136e5953c8c050a76ef2c314a4424bd76ca" }
 use_environment = "mainnet"
 manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5ECF6"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -77,21 +77,21 @@ manifest_digest = "7AFB66695545775FBFBB2D3078ADFD084244D5002392E837FDE21D9EA1C6D
 deps = { MoveStdlib = "MoveStdlib" }
 
 [pinned.testnet.composition_share]
-source = { git = "https://github.com/misofm/music-protocol.git", subdir = "templates/composition_share", rev = "aae43b34a5b6fe97201ecdb5e9c520cebfc79450" }
+source = { git = "https://github.com/misofm/music-protocol.git", subdir = "templates/composition_share", rev = "a62de87ff9c24c692ba711855b5acd94c4a6472e" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.cover_art]
-source = { git = "https://github.com/misofm/cover-art.git", subdir = ".", rev = "62e05c0aa6927500a1d272a86b7c622b865a2c28" }
+source = { git = "https://github.com/misofm/cover-art.git", subdir = ".", rev = "d5e472ca4ba90a99883ff0cf849679d8c4bca501" }
 use_environment = "testnet"
 manifest_digest = "7C4A14C06348625FD571B1CF30D4669A72A67304FD19876F629605F24D752C3D"
 deps = { ori = "ori", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.miso_music]
-source = { git = "https://github.com/misofm/music-protocol.git", subdir = ".", rev = "aae43b34a5b6fe97201ecdb5e9c520cebfc79450" }
+source = { git = "https://github.com/misofm/music-protocol.git", subdir = ".", rev = "a62de87ff9c24c692ba711855b5acd94c4a6472e" }
 use_environment = "testnet"
-manifest_digest = "FBE7E08C026E90CBDEDA9D2090C67F13A14B23B41318A920A252A43973C53CF3"
+manifest_digest = "5DA4DDD959A91FD40EE72BB9F39E21F6BB3806D6B8462F446BEA94AF6CDEBA4C"
 deps = { composition_share = "composition_share", recording_share = "recording_share", share = "share", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.ori]
@@ -101,7 +101,7 @@ manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.recording_share]
-source = { git = "https://github.com/misofm/music-protocol.git", subdir = "templates/recording_share", rev = "aae43b34a5b6fe97201ecdb5e9c520cebfc79450" }
+source = { git = "https://github.com/misofm/music-protocol.git", subdir = "templates/recording_share", rev = "a62de87ff9c24c692ba711855b5acd94c4a6472e" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -109,17 +109,17 @@ deps = { std = "MoveStdlib", sui = "Sui" }
 [pinned.testnet.release_cover_art]
 source = { root = true }
 use_environment = "testnet"
-manifest_digest = "9B99A9EF62A15A8F8F2C0947ACACAFEA893B8B7F7593FE07B3BD1960EF8C0464"
+manifest_digest = "15C0BBD724E3ABDE15C7548B66100BAC1DF40F70AD75ED2EA3E3064B97476E00"
 deps = { cover_art = "cover_art", miso_music = "miso_music", ori = "ori", release_track_data = "release_track_data", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.release_track_data]
-source = { git = "https://github.com/misofm/release-track-data.git", subdir = ".", rev = "8690f9fee95cb48b2ff2b3dbe1f6e00611744d35" }
+source = { git = "https://github.com/misofm/release-track-data.git", subdir = ".", rev = "e91e247e092202d354681ba56b1453afaab08664" }
 use_environment = "testnet"
-manifest_digest = "024ED420B126E4612282B55CA664CF5D646720F282E9C528DA11B77E9F7C3D0A"
+manifest_digest = "A7A20B32967DF5655F77B8CD959372C97A41FF9144083C59337576E8E2FF8B6D"
 deps = { miso_music = "miso_music", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.share]
-source = { git = "https://github.com/misofm/share.git", subdir = ".", rev = "410dea3614b2bf6824679b85c8d9164e1d8edfdd" }
+source = { git = "https://github.com/misofm/share.git", subdir = ".", rev = "ac65a136e5953c8c050a76ef2c314a4424bd76ca" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }
