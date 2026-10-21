@@ -27,14 +27,17 @@ a Walrus blob referenced by an extension.
 
 ## Events
 
-Both events carry only the release id. The description can be up to 8 KB, so
-under the repository's event payload rule it is not repeated in the event; an
-indexer reads it from the release's dynamic field after a set event.
+The set event carries the full description, so an indexer never reads the
+dynamic field; the clear event carries the release id.
 
 | Event | Fields | BCS size |
 |---|---|---|
-| `ReleaseDescriptionSetEvent` | `release_id: ID` | 32 |
+| `ReleaseDescriptionSetEvent` | `release_id: ID`, `description: String` | `32 + U(n) + n` for `n` bytes: 34 – 8,226 |
 | `ReleaseDescriptionClearedEvent` | `release_id: ID` | 32 |
+
+`U(n)` is the ULEB128 length prefix: one byte below 128 bytes, two up to the
+8,192-byte maximum. The largest event is far below Sui's 250 KiB per-event
+limit.
 
 A set event is emitted only when the stored value actually changes; a cleared
 event only when a description was actually removed. Views emit nothing.

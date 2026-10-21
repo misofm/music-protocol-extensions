@@ -19,8 +19,9 @@ the tests for the current API.
 - Payloads are non-empty and at most 32,768 stored bytes; both bounds are
   checked before authorization. The bound does not limit decompressed size or
   validate the frame, so client decoders must enforce output and memory limits.
-- Events carry the composition and the two-byte language code only (35 BCS
-  bytes); the body stays in storage. Equal sets and absent clears are silent.
+- Set events carry the composition, the two-byte language code, and the
+  stored bytes (at most 32,806 BCS bytes); clear events carry the composition
+  and language (35). Equal sets and absent clears are silent.
 - No funds, custody, or external calls are involved.
 
 ## Evidence

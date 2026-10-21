@@ -5,8 +5,7 @@
 /// the holder of the release's admin cap. A free string that nothing on-chain
 /// reads, stored exactly as given in one slot. The 8 KB ceiling is storage
 /// hygiene; an empty string is rejected because absence already means "no
-/// description". Events carry only the release id; the prose is read from
-/// storage.
+/// description". The set event carries the full text.
 module release_description::release_description;
 
 // === Imports ===
@@ -39,9 +38,10 @@ public struct ExtensionKey() has copy, drop, store;
 // === Events ===
 
 /// Emitted when a release's description is set or replaced with a different
-/// value; the new text is read from storage.
+/// value, with the new text.
 public struct ReleaseDescriptionSetEvent has copy, drop {
     release_id: ID,
+    description: String,
 }
 
 /// Emitted when an attached description is removed.
@@ -69,7 +69,7 @@ public fun set_description(self: &mut Release, cap: &ReleaseAdminCap, descriptio
     } else {
         df::add(uid, ExtensionKey(), description);
     };
-    emit(ReleaseDescriptionSetEvent { release_id });
+    emit(ReleaseDescriptionSetEvent { release_id, description });
 }
 
 /// Removes the description, if any. Authorizes first; an absent description
@@ -100,8 +100,8 @@ public fun description(self: &Release): &String {
 // === Test Functions ===
 
 #[test_only]
-public fun release_description_set_fields(e: &ReleaseDescriptionSetEvent): ID {
-    e.release_id
+public fun release_description_set_fields(e: &ReleaseDescriptionSetEvent): (ID, String) {
+    (e.release_id, e.description)
 }
 
 #[test_only]

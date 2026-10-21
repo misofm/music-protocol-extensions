@@ -53,13 +53,16 @@ composition's, so a cap for another composition does not type-check.
 
 ## Events
 
-Both events carry only what an event-only indexer would otherwise have to
-look up: the composition and the language key. The compressed body stays in the dynamic field.
+The set event carries the compressed bytes exactly as stored, so an indexer
+never reads the dynamic field; the clear event carries the key.
 
 | Event | Fields | BCS size |
 |---|---|---|
-| `CompositionLyricsSetEvent` | `composition_id: ID`, `language: String` | 35 |
+| `CompositionLyricsSetEvent` | `composition_id: ID`, `language: String`, `lyrics: vector<u8>` | `35 + U(n) + n` for `n` bytes: 37 – 32,806 |
 | `CompositionLyricsClearedEvent` | `composition_id: ID`, `language: String` | 35 |
+
+`U(n)` is the ULEB128 length prefix (one to three bytes). The largest event,
+a 32,768-byte body, is 32,806 bytes, well under Sui's 250 KiB per-event limit.
 
 A set event is emitted only when the stored bytes actually change; a cleared
 event only when an entry was actually removed. Views emit nothing. Replaying

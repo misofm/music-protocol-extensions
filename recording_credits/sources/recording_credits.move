@@ -13,6 +13,7 @@ module recording_credits::recording_credits;
 
 // === Imports ===
 
+use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
 use sui::vec_map::{Self, VecMap};
@@ -75,11 +76,12 @@ public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
-/// Emitted when a party is credited, with the roles as stored (instrument
-/// names and levels included); the display name stays in storage.
+/// Emitted when a party is credited, with the credit as stored (instrument
+/// names and levels included).
 public struct RecordingCreditAddedEvent has copy, drop {
     recording_id: ID,
     party_id: ID,
+    display_name: String,
     roles: vector<RecordingPartyRole>,
 }
 
@@ -131,6 +133,7 @@ public fun add_credit<RecordingShare>(
 
     let recording_id = object::id(self);
     let party_id = object::id(party);
+    let display_name = *credit.display_name();
     let roles = *credit.roles();
     let uid = self.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) {
@@ -149,7 +152,7 @@ public fun add_credit<RecordingShare>(
     assert!(!record.credits.contains(&party_id), EDuplicateParty);
     record.credits.insert(party_id, credit);
 
-    emit(RecordingCreditAddedEvent { recording_id, party_id, roles });
+    emit(RecordingCreditAddedEvent { recording_id, party_id, display_name, roles });
 }
 
 /// Removes a party's credit and any designation it held. A cleared designation
@@ -313,8 +316,8 @@ fun borrow_mut(uid: &mut UID): &mut RecordingCredits {
 #[test_only]
 public fun recording_credit_added_fields(
     e: &RecordingCreditAddedEvent,
-): (ID, ID, vector<RecordingPartyRole>) {
-    (e.recording_id, e.party_id, e.roles)
+): (ID, ID, String, vector<RecordingPartyRole>) {
+    (e.recording_id, e.party_id, e.display_name, e.roles)
 }
 
 #[test_only]

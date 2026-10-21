@@ -24,21 +24,23 @@ fun new_composition(
 }
 
 /// Asserts a set event's fields and its exact BCS layout: `composition_id`
-/// (32) then the two-byte language code as a ULEB128-prefixed string (3).
+/// (32), the two-byte language code (3), then the ULEB128-prefixed lyrics.
 fun assert_set_event(
     e: &cl::CompositionLyricsSetEvent,
     composition_id: ID,
     language: vector<u8>,
+    lyrics: vector<u8>,
 ) {
-    let (event_id, event_language) = cl::composition_lyrics_set_fields(e);
+    let (event_id, event_language, event_lyrics) = cl::composition_lyrics_set_fields(e);
     assert_eq!(event_id, composition_id);
     assert_eq!(event_language, language.to_string());
+    assert_eq!(event_lyrics, lyrics);
 
     let mut bytes = bcs::new(bcs::to_bytes(e));
     assert_eq!(bytes.peel_address().to_id(), composition_id);
     assert_eq!(bytes.peel_vec_u8(), language);
+    assert_eq!(bytes.peel_vec_u8(), lyrics);
     assert!(bytes.into_remainder_bytes().is_empty());
-    assert_eq!(bcs::to_bytes(e).length(), 35);
 }
 
 /// Asserts a cleared event's fields and its exact 35-byte BCS layout.
@@ -81,9 +83,10 @@ fun languages_are_independent_and_events_replay_transitions() {
     // Equal replacement is silent; each other transition emits one event.
     let sets = event::events_by_type<cl::CompositionLyricsSetEvent>();
     assert_eq!(sets.length(), 3);
-    assert_set_event(&sets[0], id, b"en");
-    assert_set_event(&sets[1], id, b"ja");
-    assert_set_event(&sets[2], id, b"en");
+    assert_set_event(&sets[0], id, b"en", first);
+    assert_set_event(&sets[1], id, b"ja", vector[42]);
+    assert_set_event(&sets[2], id, b"en", vector[7]);
+    assert_eq!(bcs::to_bytes(&sets[2]).length(), 32 + 3 + 1 + 1);
 
     cl::clear_lyrics(&mut comp, &cap, en);
     cl::clear_lyrics(&mut comp, &cap, en);
@@ -97,7 +100,7 @@ fun languages_are_independent_and_events_replay_transitions() {
     cl::set_lyrics(&mut comp, &cap, en, first);
     let sets = event::events_by_type<cl::CompositionLyricsSetEvent>();
     assert_eq!(sets.length(), 4);
-    assert_set_event(&sets[3], id, b"en");
+    assert_set_event(&sets[3], id, b"en", first);
     cl::clear_lyrics(&mut comp, &cap, en);
     cl::clear_lyrics(&mut comp, &cap, ja);
     destroy(comp);
@@ -120,7 +123,7 @@ fun equal_set_is_a_silent_no_op() {
 
     let sets = event::events_by_type<cl::CompositionLyricsSetEvent>();
     assert_eq!(sets.length(), 1);
-    assert_set_event(&sets[0], id, b"en");
+    assert_set_event(&sets[0], id, b"en", vector[1, 2, 3]);
     destroy(comp);
     destroy(cap);
 }
@@ -159,8 +162,8 @@ fun max_lyrics_length_is_32_kib() {
     assert_eq!(cl::max_lyrics_length(), 32768);
 }
 
-/// The event size is fixed regardless of payload size: a full 32,768-byte
-/// body produces the same 35-byte events as a one-byte one.
+/// A full 32,768-byte body is carried whole: each set event is 32,806 bytes,
+/// well under Sui's per-event limit.
 #[test]
 fun maximum_payload_can_be_added_replaced_and_cleared() {
     let ctx = &mut tx_context::dummy();
@@ -177,8 +180,9 @@ fun maximum_payload_can_be_added_replaced_and_cleared() {
     assert_eq!(*cl::lyrics(&comp, en), other);
     let sets = event::events_by_type<cl::CompositionLyricsSetEvent>();
     assert_eq!(sets.length(), 2);
-    assert_set_event(&sets[0], id, b"en");
-    assert_set_event(&sets[1], id, b"en");
+    assert_set_event(&sets[0], id, b"en", data);
+    assert_set_event(&sets[1], id, b"en", other);
+    assert_eq!(bcs::to_bytes(&sets[1]).length(), 32 + 3 + 3 + 32768);
     cl::clear_lyrics(&mut comp, &cap, en);
     let clears = event::events_by_type<cl::CompositionLyricsClearedEvent>();
     assert_cleared_event(&clears[0], id, b"en");
@@ -271,10 +275,12 @@ fun compositions_have_separate_lyrics_and_identified_events() {
     cl::set_lyrics(&mut other, &other_cap, en, vector[2]);
     let events = event::events_by_type<cl::CompositionLyricsSetEvent>();
     assert_eq!(events.length(), 2);
-    let (first_id, _) = cl::composition_lyrics_set_fields(&events[0]);
+    let (first_id, _, first_lyrics) = cl::composition_lyrics_set_fields(&events[0]);
     assert_eq!(first_id, object::id(&comp));
-    let (second_id, _) = cl::composition_lyrics_set_fields(&events[1]);
+    assert_eq!(first_lyrics, vector[1]);
+    let (second_id, _, second_lyrics) = cl::composition_lyrics_set_fields(&events[1]);
     assert_eq!(second_id, object::id(&other));
+    assert_eq!(second_lyrics, vector[2]);
     cl::clear_lyrics(&mut comp, &cap, en);
     assert_eq!(*cl::lyrics(&other, en), vector[2]);
     destroy(comp); destroy(cap); destroy(other); destroy(other_cap);

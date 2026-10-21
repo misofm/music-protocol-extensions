@@ -90,15 +90,17 @@ fun full_credit_lifecycle_on_published_shared_recording() {
     // Full RecordingCreditAddedEvent payloads, not just presence.
     let added = events_by_type<credits::RecordingCreditAddedEvent>();
     assert_eq!(added.length(), 2);
-    let (event_object, event_party, event_roles) =
+    let (event_object, event_party, event_name, event_roles) =
         credits::recording_credit_added_fields(&added[0]);
     assert_eq!(event_object, recording_id);
     assert_eq!(event_party, lead_id);
+    assert_eq!(event_name, *lead_credit.display_name());
     assert_eq!(event_roles, *lead_credit.roles());
-    let (event_object, event_party, event_roles) =
+    let (event_object, event_party, event_name, event_roles) =
         credits::recording_credit_added_fields(&added[1]);
     assert_eq!(event_object, recording_id);
     assert_eq!(event_party, guest_id);
+    assert_eq!(event_name, *guest_credit.display_name());
     assert_eq!(event_roles, *guest_credit.roles());
     assert_eq!(credits::credits(&rec)[&lead_id], lead_credit);
     assert_eq!(credits::credits(&rec)[&guest_id], guest_credit);

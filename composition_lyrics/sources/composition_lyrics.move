@@ -8,8 +8,7 @@
 /// text, or attest to the lyrics or their language.
 ///
 /// Writes require the composition's matching admin cap; reads are
-/// permissionless. Events carry the composition and the language key only;
-/// the compressed body is read from the dynamic field.
+/// permissionless. The set event carries the compressed bytes as stored.
 module composition_lyrics::composition_lyrics;
 
 // === Imports ===
@@ -41,10 +40,12 @@ public struct ExtensionKey(LanguageCode) has copy, drop, store;
 
 // === Events ===
 
-/// Emitted when a language's lyrics are set or replaced with different bytes.
+/// Emitted when a language's lyrics are set or replaced with different bytes,
+/// with the compressed bytes as stored.
 public struct CompositionLyricsSetEvent has copy, drop {
     composition_id: ID,
     language: String,
+    lyrics: vector<u8>,
 }
 
 /// Emitted when a language's lyrics are removed.
@@ -77,7 +78,7 @@ public fun set_lyrics<CompositionShare>(
     } else {
         df::add(uid, key, lyrics);
     };
-    emit(CompositionLyricsSetEvent { composition_id, language: language.code() });
+    emit(CompositionLyricsSetEvent { composition_id, language: language.code(), lyrics });
 }
 
 /// Removes only this language. Authorizes first; an absent entry is a silent
@@ -125,8 +126,10 @@ public fun max_lyrics_length(): u64 { MAX_LYRICS_LENGTH }
 // === Test Functions ===
 
 #[test_only]
-public fun composition_lyrics_set_fields(e: &CompositionLyricsSetEvent): (ID, String) {
-    (e.composition_id, e.language)
+public fun composition_lyrics_set_fields(
+    e: &CompositionLyricsSetEvent,
+): (ID, String, vector<u8>) {
+    (e.composition_id, e.language, e.lyrics)
 }
 
 #[test_only]

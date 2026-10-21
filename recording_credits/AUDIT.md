@@ -25,8 +25,9 @@ presence means at least one credit. Credits are administrator-authored
 attribution and never drive royalty accounting. Views and constructors are
 silent. No funds, custody, or external calls are involved.
 
-`RecordingCreditAddedEvent` carries the stored roles: 66 bytes typically, up
-to 1,105 bytes for ten instrumentalist roles with 100-byte instrument names.
+`RecordingCreditAddedEvent` carries the stored credit (display name and
+roles): up to 1,307 bytes for a 200-byte display name and ten instrumentalist
+roles with 100-byte instrument names.
 
 ## Evidence
 

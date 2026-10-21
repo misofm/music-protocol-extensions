@@ -61,12 +61,12 @@ absent credit or designation all abort.
 
 All six events carry what an event-only indexer would otherwise have to look
 up: the target, the party
-that keys the entry, and — on credit add — the roles exactly as stored,
-instrument names and levels included.
+that keys the entry, and — on credit add — the full credit as stored: the
+display name and the roles, instrument names and levels included.
 
 | Event | Fields | BCS bytes |
 |---|---|---|
-| `RecordingCreditAddedEvent` | `recording_id: ID`, `party_id: ID`, `roles: vector<RecordingPartyRole>` | 66 – 1105 (typically 67: one levelless role) |
+| `RecordingCreditAddedEvent` | `recording_id: ID`, `party_id: ID`, `display_name: String`, `roles: vector<RecordingPartyRole>` | 68 – 1307 (typically 68 + name bytes: one role without a level) |
 | `RecordingCreditRemovedEvent` | `recording_id: ID`, `party_id: ID` | 64 |
 | `RecordingPrimaryArtistAddedEvent` | `recording_id: ID`, `party_id: ID` | 64 |
 | `RecordingPrimaryArtistRemovedEvent` | `recording_id: ID`, `party_id: ID` | 64 |
@@ -87,9 +87,9 @@ value: the variant index in declaration order, then the instrument name for
 level's variant index) for every role except the levelless
 `ArtistsAndRepertoire` and `Copyist`. A levelless or level-free role is one
 or two bytes; the worst case is ten instrumentalists each with a 100-byte
-instrument name and a level (104 bytes apiece), 1105 in total. The display
-name stays in storage (it normally duplicates the party's own name from
-`miso_party` events).
+instrument name and a level (104 bytes apiece). `display_name` is a
+ULEB128-prefixed string of 1 to 200 bytes, so the largest event is
+64 + 202 + 1 + 1040 = 1307 bytes.
 
 The events do not carry the composition id (joinable via core's
 `RecordingPublishedEvent`), the admin cap (derived from

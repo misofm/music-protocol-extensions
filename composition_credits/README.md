@@ -46,19 +46,20 @@ At capacity, a duplicate party reports `EMaxCreditsExceeded` rather than
 ## Events
 
 Both events carry what an event-only indexer would otherwise have to look up: the target, the party
-that keys the entry, and — on add — the roles exactly as stored.
+that keys the entry, and — on add — the full credit as stored (display name and roles).
 
 | Event | Fields | BCS bytes |
 |---|---|---|
-| `CompositionCreditAddedEvent` | `composition_id: ID`, `party_id: ID`, `roles: vector<CompositionPartyRole>` | 66 (one role) – 71 (six) |
+| `CompositionCreditAddedEvent` | `composition_id: ID`, `party_id: ID`, `display_name: String`, `roles: vector<CompositionPartyRole>` | `64 + U(n) + n + 1 + r` for an `n`-byte name and `r` roles: 68 – 273 |
 | `CompositionCreditRemovedEvent` | `composition_id: ID`, `party_id: ID` | 64 |
 
-`roles` is the credit's role vector in stored order; every
-`CompositionPartyRole` is a unit variant, so each role is one byte (its
-variant index in declaration order). The display name stays in storage (it
-normally duplicates the party's own name from `miso_party` events); the events
-do not carry the admin cap (derived from the composition), counts or indices
-(replayable from the ordered add/remove stream), or presence flags.
+`U(n)` is the ULEB128 length prefix (one byte below 128, two up to the
+200-byte display-name maximum). `roles` is the credit's role vector in stored
+order; every `CompositionPartyRole` is a unit variant, so each role is one byte
+(its variant index in declaration order). The events do not carry the admin
+cap (derived from the composition), counts or indices (replayable from the
+ordered add/remove stream), or presence flags (the record exists while the
+replayed credit count is non-zero).
 
 ## Errors
 

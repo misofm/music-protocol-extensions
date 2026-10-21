@@ -85,15 +85,17 @@ fun credits_lifecycle_against_a_published_shared_release() {
 
     let events = events_by_type<credits::ReleaseCreditAddedEvent>();
     assert_eq!(events.length(), 2);
-    let (event_object, event_party, event_role) =
+    let (event_object, event_party, event_name, event_role) =
         credits::release_credit_added_fields(&events[0]);
     assert_eq!(event_object, rel_id);
     assert_eq!(event_party, artist_id);
+    assert_eq!(event_name, b"Alice".to_string());
     assert_eq!(event_role, rpr::new_primary_role());
-    let (event_object, event_party, event_role) =
+    let (event_object, event_party, event_name, event_role) =
         credits::release_credit_added_fields(&events[1]);
     assert_eq!(event_object, rel_id);
     assert_eq!(event_party, feat_id);
+    assert_eq!(event_name, b"Bob".to_string());
     assert_eq!(event_role, rpr::new_featured_role());
     assert_eq!(credits::credits(&rel)[&artist_id], alice);
     assert_eq!(credits::credits(&rel)[&feat_id], bob);

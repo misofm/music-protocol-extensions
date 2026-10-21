@@ -18,8 +18,8 @@ each credit carries exactly one role, and the credit count is bounded at 50.
 The record is removed with its last credit, so presence means at least one
 credit. The module-owned key and private fields prevent cross-extension
 collisions. Credits are administrator-authored attribution and drive no
-economics; no funds, custody, or external calls are involved. Events are 65
-(add) and 64 (remove) BCS bytes.
+economics; no funds, custody, or external calls are involved. Events are 67
+to 267 (add, with the display name) and 64 (remove) BCS bytes.
 
 ## Evidence
 

@@ -13,6 +13,7 @@ module release_credits::release_credits;
 
 // === Imports ===
 
+use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
 use sui::vec_map::{Self, VecMap};
@@ -54,10 +55,11 @@ public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
-/// Emitted when a party is credited, with its one role.
+/// Emitted when a party is credited, with its display name and one role.
 public struct ReleaseCreditAddedEvent has copy, drop {
     release_id: ID,
     party_id: ID,
+    display_name: String,
     role: ReleasePartyRole,
 }
 
@@ -82,6 +84,7 @@ public fun add_credit(
 
     let release_id = object::id(self);
     let party_id = object::id(party);
+    let display_name = *credit.display_name();
     let role = credit.roles()[0];
     let uid = self.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) {
@@ -92,7 +95,7 @@ public fun add_credit(
     assert!(!record.credits.contains(&party_id), EDuplicateParty);
     record.credits.insert(party_id, credit);
 
-    emit(ReleaseCreditAddedEvent { release_id, party_id, role });
+    emit(ReleaseCreditAddedEvent { release_id, party_id, display_name, role });
 }
 
 /// Removes a party's credit, detaching the record when it was the last one.
@@ -128,8 +131,10 @@ public fun credits(self: &Release): &VecMap<ID, Credit<ReleasePartyRole>> {
 // === Test Functions ===
 
 #[test_only]
-public fun release_credit_added_fields(e: &ReleaseCreditAddedEvent): (ID, ID, ReleasePartyRole) {
-    (e.release_id, e.party_id, e.role)
+public fun release_credit_added_fields(
+    e: &ReleaseCreditAddedEvent,
+): (ID, ID, String, ReleasePartyRole) {
+    (e.release_id, e.party_id, e.display_name, e.role)
 }
 
 #[test_only]

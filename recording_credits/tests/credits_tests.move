@@ -70,9 +70,11 @@ fun assert_added(
     party_id: ID,
     credit: &credit::Credit<RecordingPartyRole>,
 ) {
-    let (event_object, event_party, event_roles) = credits::recording_credit_added_fields(e);
+    let (event_object, event_party, event_name, event_roles) =
+        credits::recording_credit_added_fields(e);
     assert_eq!(event_object, recording_id);
     assert_eq!(event_party, party_id);
+    assert_eq!(event_name, *credit.display_name());
     assert_eq!(event_roles, *credit.roles());
 }
 
@@ -250,15 +252,16 @@ fun add_credit_emits_the_full_credit() {
 
     let events = events_by_type<credits::RecordingCreditAddedEvent>();
     assert_eq!(events.length(), 1);
-    let (event_recording_id, event_party_id, event_roles) =
+    let (event_recording_id, event_party_id, event_name, event_roles) =
         credits::recording_credit_added_fields(&events[0]);
     assert_eq!(event_recording_id, recording_id);
     assert_eq!(event_party_id, party_id);
+    assert_eq!(event_name, b"Alice Display".to_string());
     assert_eq!(event_roles, *credit.roles());
-    // Two ids and three roles: `Producer(None)` (1 + 1),
-    // `Producer(Some(Primary))` (1 + 2), and `Instrumentalist("Piano",
-    // Some(Lead))` (1 + 1 + 5 + 2); the display name stays in storage.
-    assert_eq!(to_bytes(&events[0]).length(), 32 + 32 + 1 + 2 + 3 + 9);
+    // Two ids, the display name (1 + 13), and three roles: `Producer(None)`
+    // (1 + 1), `Producer(Some(Primary))` (1 + 2), and `Instrumentalist("Piano",
+    // Some(Lead))` (1 + 1 + 5 + 2).
+    assert_eq!(to_bytes(&events[0]).length(), 32 + 32 + 1 + 13 + 1 + 2 + 3 + 9);
     assert_eq!(credits::credits(&rec)[&object::id(&p)], credit);
 
     // Views are silent and do not change the event count.
@@ -744,8 +747,8 @@ fun remove_and_readd_preserves_order() {
     assert_eq!(credits::credits(&rec).get_idx(&id4), 2);
     assert_eq!(credits::credits(&rec).get_idx(&id2), 3);
 
-    // The ordered add/remove stream is enough to replay that order; the
-    // credits themselves are read from storage.
+    // The ordered add/remove stream, with each full credit, replays that
+    // order and content.
     assert_eq!(credits::credits(&rec)[&id1], one_again);
     assert_eq!(credits::credits(&rec)[&id2], two_again);
     assert_eq!(credits::credits(&rec)[&id3], three);
@@ -797,9 +800,10 @@ fun event_bcs_sizes_match_declared_maxima() {
     let pid = object::id(&p);
     credits::add_credit(&mut rec, &cap, &p, max_credit);
     let added = events_by_type<credits::RecordingCreditAddedEvent>();
-    let (_, _, roles) = credits::recording_credit_added_fields(&added[0]);
+    let (_, _, name, roles) = credits::recording_credit_added_fields(&added[0]);
+    assert_eq!(name, long_string(200));
     assert_eq!(roles, *credits::credits(&rec)[&pid].roles());
-    assert_eq!(to_bytes(&added[0]).length(), 32 + 32 + 1 + 10 * 104);
+    assert_eq!(to_bytes(&added[0]).length(), 32 + 32 + 2 + 200 + 1 + 10 * 104);
     credits::add_primary_artist(&mut rec, &cap, object::id(&p));
     let primary_added = events_by_type<credits::RecordingPrimaryArtistAddedEvent>();
     assert_eq!(to_bytes(&primary_added[0]).length(), 64);

@@ -13,8 +13,9 @@ Set and clear go through `Release::uid_mut`, which aborts
 `release::EUnauthorized` for a cap of another release, including on absent
 clears. `set_description` rejects an empty string (`EEmptyDescription`, 1)
 and more than 8,192 bytes (`EDescriptionTooLong`, 2) before authorization.
-The value is stored verbatim under a module-owned key. Events carry only the
-release id (32 BCS bytes); the prose is read from storage. Equal sets, absent
+The value is stored verbatim under a module-owned key. Set events carry the
+release id and the full description (at most 8,226 BCS bytes); clear events
+carry the release id (32). Equal sets, absent
 clears, and views emit nothing. No funds, custody, or external calls are
 involved.
 

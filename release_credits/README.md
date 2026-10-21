@@ -45,19 +45,20 @@ At capacity, a duplicate party reports `EMaxCreditsExceeded` rather than
 
 Both events are monomorphic and carry what an event-only indexer would
 otherwise have to look up: the target, the party that keys the entry, and —
-on add — the role exactly as stored.
+on add — the full credit as stored (billing display name and role).
 
 | Event | Fields | BCS bytes |
 |---|---|---|
-| `ReleaseCreditAddedEvent` | `release_id: ID`, `party_id: ID`, `role: ReleasePartyRole` | 65 |
+| `ReleaseCreditAddedEvent` | `release_id: ID`, `party_id: ID`, `display_name: String`, `role: ReleasePartyRole` | `64 + U(n) + n + 1` for an `n`-byte name: 67 – 267 |
 | `ReleaseCreditRemovedEvent` | `release_id: ID`, `party_id: ID` | 64 |
 
-`role` is the credit's one role; `ReleasePartyRole` is a unit variant
-(`Primary = 0`, `Featured = 1` by declaration order), so every add event is
-exactly 65 bytes. The display name stays in storage (it normally
-duplicates the party's own name from `miso_party` events); the events do not
-carry the admin cap (derived from the release), counts or indices (replayable
-from the ordered add/remove stream), or presence flags.
+`U(n)` is the ULEB128 length prefix (one byte below 128, two up to the
+200-byte display-name maximum). `role` is the credit's one role;
+`ReleasePartyRole` is a unit variant (`Primary = 0`, `Featured = 1` by
+declaration order), one byte. The events do not carry the admin cap (derived
+from the release), counts or indices (replayable from the ordered add/remove
+stream), or presence flags (the record exists while the replayed credit count
+is non-zero).
 
 ## Errors
 

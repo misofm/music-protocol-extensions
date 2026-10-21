@@ -198,16 +198,20 @@ fun add_credit_emits_the_full_record() {
 
     let events = events_by_type<credits::ReleaseCreditAddedEvent>();
     assert_eq!(events.length(), 2);
-    let (event_object, event_party, event_role) = credits::release_credit_added_fields(&events[0]);
+    let (event_object, event_party, event_name, event_role) =
+        credits::release_credit_added_fields(&events[0]);
     assert_eq!(event_object, rel_id);
     assert_eq!(event_party, object::id(&p1));
+    assert_eq!(event_name, b"Alice".to_string());
     assert_eq!(event_role, rpr::new_primary_role());
-    let (event_object, event_party, event_role) = credits::release_credit_added_fields(&events[1]);
+    let (event_object, event_party, event_name, event_role) =
+        credits::release_credit_added_fields(&events[1]);
     assert_eq!(event_object, rel_id);
     assert_eq!(event_party, object::id(&p2));
+    assert_eq!(event_name, b"Bob".to_string());
     assert_eq!(event_role, rpr::new_featured_role());
-    // Two ids and one unit-variant role: every add event is exactly this.
-    assert_eq!(to_bytes(&events[0]).length(), 32 + 32 + 1);
+    // Two ids, the display name (1 + 5), and one unit-variant role.
+    assert_eq!(to_bytes(&events[0]).length(), 32 + 32 + 1 + 5 + 1);
 
     destroy(rel); destroy(cap); destroy(p1); destroy(p1c); destroy(p2); destroy(p2c);
     ts.end();
@@ -245,19 +249,19 @@ fun role_bcs_variant_indices_are_stable() {
     assert_eq!(events_by_type<credits::ReleaseCreditRemovedEvent>().length(), 0);
 }
 
-/// The event carries the credit's role and the party id; the billing
-/// display name stays in storage (it is neither the party's name nor
-/// re-broadcast).
+/// The event carries the credit's billing display name, which is not the
+/// party's own name, and its role.
 #[test]
-fun event_carries_role_and_leaves_display_name_in_storage() {
+fun event_carries_billing_display_name_and_role() {
     let mut ts = test_scenario::begin(ARTIST);
     let (mut rel, cap) = mk_release(ts.ctx());
     let (party, party_cap) = mk_party(b"PartyObjectName", ts.ctx());
     credits::add_credit(&mut rel, &cap, &party, featured(b"BillingDisplayName"));
 
     let events = events_by_type<credits::ReleaseCreditAddedEvent>();
-    let (_, party_id, role) = credits::release_credit_added_fields(&events[0]);
+    let (_, party_id, display_name, role) = credits::release_credit_added_fields(&events[0]);
     assert_eq!(party_id, object::id(&party));
+    assert_eq!(display_name, b"BillingDisplayName".to_string());
     assert_eq!(role, rpr::new_featured_role());
     let stored = &credits::credits(&rel)[&object::id(&party)];
     assert_eq!(*stored.display_name(), b"BillingDisplayName".to_string());
@@ -292,8 +296,9 @@ fun remove_shifts_stored_order_and_readd_appends() {
     credits::add_credit(&mut rel, &cap, &p2, two_readded);
     assert_eq!(credits::credits(&rel).get_idx(&object::id(&p2)), 2);
     let added = events_by_type<credits::ReleaseCreditAddedEvent>();
-    let (_, party_id, role) = credits::release_credit_added_fields(&added[3]);
+    let (_, party_id, display_name, role) = credits::release_credit_added_fields(&added[3]);
     assert_eq!(party_id, object::id(&p2));
+    assert_eq!(display_name, b"Two Readded".to_string());
     assert_eq!(role, rpr::new_featured_role());
     assert_eq!(credits::credits(&rel)[&object::id(&p2)], two_readded);
 
@@ -318,8 +323,9 @@ fun final_remove_detaches_record_and_readd_recreates_it() {
     credits::add_credit(&mut rel, &cap, &party, second);
     assert_eq!(credits::credits(&rel).get_idx(&party_id), 0);
     let added = events_by_type<credits::ReleaseCreditAddedEvent>();
-    let (_, event_party, role) = credits::release_credit_added_fields(&added[1]);
+    let (_, event_party, display_name, role) = credits::release_credit_added_fields(&added[1]);
     assert_eq!(event_party, party_id);
+    assert_eq!(display_name, b"Second".to_string());
     assert_eq!(role, rpr::new_featured_role());
     assert_eq!(credits::credits(&rel)[&party_id], second);
 
@@ -327,10 +333,10 @@ fun final_remove_detaches_record_and_readd_recreates_it() {
     ts.end();
 }
 
-/// The display name stays in storage, so its length — including the ULEB128
-/// prefix boundary at 128 bytes — never changes the event size.
+/// The event size tracks the display name, including the ULEB128 length
+/// prefix growing to two bytes at 128.
 #[test]
-fun event_bcs_size_is_independent_of_display_name_length() {
+fun event_bcs_size_tracks_display_name_length() {
     let mut ts = test_scenario::begin(ARTIST);
     let (mut rel, cap) = mk_release(ts.ctx());
     let (p1, p1c) = mk_party(b"P1", ts.ctx());
@@ -340,9 +346,9 @@ fun event_bcs_size_is_independent_of_display_name_length() {
     credits::add_credit(&mut rel, &cap, &p2, primary(name_of_length(127)));
     credits::add_credit(&mut rel, &cap, &p3, primary(name_of_length(128)));
     let added = events_by_type<credits::ReleaseCreditAddedEvent>();
-    assert_eq!(to_bytes(&added[0]).length(), 65);
-    assert_eq!(to_bytes(&added[1]).length(), 65);
-    assert_eq!(to_bytes(&added[2]).length(), 65);
+    assert_eq!(to_bytes(&added[0]).length(), 64 + 1 + 1 + 1);
+    assert_eq!(to_bytes(&added[1]).length(), 64 + 1 + 127 + 1);
+    assert_eq!(to_bytes(&added[2]).length(), 64 + 2 + 128 + 1);
 
     destroy(rel); destroy(cap); destroy(p1); destroy(p1c); destroy(p2); destroy(p2c);
     destroy(p3); destroy(p3c);
@@ -356,8 +362,9 @@ fun event_bcs_supports_maximum_credit_display_name() {
     let (party, party_cap) = mk_party(b"Party", ts.ctx());
     credits::add_credit(&mut rel, &cap, &party, featured(name_of_length(200)));
     let added = events_by_type<credits::ReleaseCreditAddedEvent>();
-    assert_eq!(to_bytes(&added[0]).length(), 65);
-    let (_, _, role) = credits::release_credit_added_fields(&added[0]);
+    assert_eq!(to_bytes(&added[0]).length(), 64 + 2 + 200 + 1);
+    let (_, _, display_name, role) = credits::release_credit_added_fields(&added[0]);
+    assert_eq!(display_name, name_of_length(200).to_string());
     assert_eq!(role, rpr::new_featured_role());
     assert_eq!(credits::credits(&rel)[&object::id(&party)].display_name().length(), 200);
     destroy(rel); destroy(cap); destroy(party); destroy(party_cap);

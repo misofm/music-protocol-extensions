@@ -31,13 +31,20 @@ fun repeated(byte: u8, n: u64): String {
     vector::tabulate!(n, |_| byte).to_string()
 }
 
-/// Asserts the set event's field and its exact 32-byte BCS layout: the prose
-/// is never in the event.
-fun assert_set_event(event: &rd::ReleaseDescriptionSetEvent, release_id: ID) {
-    assert_eq!(rd::release_description_set_fields(event), release_id);
+/// Asserts the set event's fields and its exact BCS layout: the release id,
+/// then the full description.
+fun assert_set_event(
+    event: &rd::ReleaseDescriptionSetEvent,
+    release_id: ID,
+    description: String,
+) {
+    let (event_release_id, event_description) = rd::release_description_set_fields(event);
+    assert_eq!(event_release_id, release_id);
+    assert_eq!(event_description, description);
 
     let mut bytes = bcs::new(bcs::to_bytes(event));
     assert_eq!(bytes.peel_address().to_id(), release_id);
+    assert_eq!(bytes.peel_vec_u8(), description.into_bytes());
     assert!(bytes.into_remainder_bytes().is_empty());
 }
 
@@ -65,14 +72,14 @@ fun set_read_replace_clear_lifecycle() {
     assert_eq!(*rd::description(&rel), first);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 1);
-    assert_set_event(&set_events[0], release_id);
+    assert_set_event(&set_events[0], release_id, first);
 
     // A release may rewrite what it says about itself.
     rd::set_description(&mut rel, &cap, second);
     assert_eq!(*rd::description(&rel), second);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 2);
-    assert_set_event(&set_events[1], release_id);
+    assert_set_event(&set_events[1], release_id, second);
 
     rd::clear_description(&mut rel, &cap);
     assert!(!rd::has_description(&rel));
@@ -89,7 +96,7 @@ fun set_read_replace_clear_lifecycle() {
     rd::set_description(&mut rel, &cap, first);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 3);
-    assert_set_event(&set_events[2], release_id);
+    assert_set_event(&set_events[2], release_id, first);
 
     destroy(rel);
     destroy(cap);
@@ -108,7 +115,7 @@ fun prose_is_preserved_verbatim() {
     rd::set_description(&mut rel, &cap, text);
     assert_eq!(*rd::description(&rel), text);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
-    assert_set_event(&set_events[0], release_id);
+    assert_set_event(&set_events[0], release_id, text);
 
     destroy(rel);
     destroy(cap);
@@ -135,8 +142,8 @@ fun descriptions_are_per_release() {
 
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 2);
-    assert_set_event(&set_events[0], a_id);
-    assert_set_event(&set_events[1], b_id);
+    assert_set_event(&set_events[0], a_id, a_text);
+    assert_set_event(&set_events[1], b_id, b_text);
     let cleared_events = event::events_by_type<rd::ReleaseDescriptionClearedEvent>();
     assert_eq!(cleared_events.length(), 1);
     assert_cleared_event(&cleared_events[0], a_id);
@@ -144,7 +151,7 @@ fun descriptions_are_per_release() {
     destroy(a); destroy(a_cap); destroy(b); destroy(b_cap);
 }
 
-/// 8192 bytes is the inclusive bound; the set event stays 32 bytes.
+/// 8192 bytes is the inclusive bound; the set event carries it all.
 #[test]
 fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     let ctx = &mut tx_context::dummy();
@@ -156,8 +163,8 @@ fun exactly_max_length_is_accepted_with_exact_bcs_size() {
     assert_eq!(rd::description(&rel).length(), 8192);
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 1);
-    assert_eq!(bcs::to_bytes(&set_events[0]).length(), 32);
-    assert_set_event(&set_events[0], release_id);
+    assert_eq!(bcs::to_bytes(&set_events[0]).length(), 32 + 2 + 8192);
+    assert_set_event(&set_events[0], release_id, max);
 
     rd::clear_description(&mut rel, &cap);
     let cleared_events = event::events_by_type<rd::ReleaseDescriptionClearedEvent>();
@@ -212,7 +219,7 @@ fun equal_set_is_a_silent_no_op() {
 
     let set_events = event::events_by_type<rd::ReleaseDescriptionSetEvent>();
     assert_eq!(set_events.length(), 1);
-    assert_set_event(&set_events[0], release_id);
+    assert_set_event(&set_events[0], release_id, text);
     assert_eq!(*rd::description(&rel), text);
 
     destroy(rel);

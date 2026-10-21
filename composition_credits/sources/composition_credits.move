@@ -10,6 +10,7 @@ module composition_credits::composition_credits;
 
 // === Imports ===
 
+use std::string::String;
 use sui::dynamic_field as df;
 use sui::event::emit;
 use sui::vec_map::{Self, VecMap};
@@ -47,10 +48,11 @@ public struct ExtensionKey() has copy, drop, store;
 
 // === Events ===
 
-/// Emitted when a party is credited, with the roles as stored.
+/// Emitted when a party is credited, with the credit as stored.
 public struct CompositionCreditAddedEvent has copy, drop {
     composition_id: ID,
     party_id: ID,
+    display_name: String,
     roles: vector<CompositionPartyRole>,
 }
 
@@ -72,6 +74,7 @@ public fun add_credit<CompositionShare>(
 ) {
     let composition_id = object::id(self);
     let party_id = object::id(party);
+    let display_name = *credit.display_name();
     let roles = *credit.roles();
     let uid = self.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) {
@@ -82,7 +85,7 @@ public fun add_credit<CompositionShare>(
     assert!(!record.credits.contains(&party_id), EDuplicateParty);
     record.credits.insert(party_id, credit);
 
-    emit(CompositionCreditAddedEvent { composition_id, party_id, roles });
+    emit(CompositionCreditAddedEvent { composition_id, party_id, display_name, roles });
 }
 
 /// Removes a party's credit, detaching the record when it was the last one.
@@ -126,8 +129,8 @@ public fun credits<CompositionShare>(
 #[test_only]
 public fun composition_credit_added_fields(
     e: &CompositionCreditAddedEvent,
-): (ID, ID, vector<CompositionPartyRole>) {
-    (e.composition_id, e.party_id, e.roles)
+): (ID, ID, String, vector<CompositionPartyRole>) {
+    (e.composition_id, e.party_id, e.display_name, e.roles)
 }
 
 #[test_only]
