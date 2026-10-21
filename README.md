@@ -18,7 +18,7 @@ platform adapters bridge Vault custody to an Action:
 | [`misofm/music-protocol`](https://github.com/misofm/music-protocol) | Core music objects and the canonical `ReleaseRegistry` namespace. |
 | [`misofm/royalty-pool`](https://github.com/misofm/royalty-pool) | Each work's canonical royalty pools. |
 | [`misofm/release-revenue-forwarder`](https://github.com/misofm/release-revenue-forwarder) | Forwards release revenue to the tracks' pools. |
-| [`misofm/partyos-actions`](https://github.com/misofm/partyos-actions) | Custody-agnostic, return-oriented Party workflows. |
+| [`misofm/party-protocol-actions`](https://github.com/misofm/party-protocol-actions) | Custody-agnostic, return-oriented Party workflows. |
 | [`misofm/vault`](https://github.com/misofm/vault) | Generic capability custody and temporary exact-return leases. |
 | [`misofm/vault-plugins`](https://github.com/misofm/vault-plugins) | Thin installed adapters that borrow a custodied admin capability, call a matching Action, and return the capability. |
 | [`misofm/recording-license`](https://github.com/misofm/recording-license) | A composition's standing license to record it. |
