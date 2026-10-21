@@ -58,9 +58,9 @@ public struct ReleaseTrackCoverArtClearedEvent has copy, drop {
 // === Public Functions ===
 
 /// Setting the value already held neither writes nor emits.
-public fun set_cover(self: &mut Release, cap: &ReleaseAdminCap, art: CoverArt) {
-    let release_id = object::id(self);
-    let cover = &mut borrow_mut_or_init(self, cap).cover;
+public fun set_cover(release: &mut Release, cap: &ReleaseAdminCap, art: CoverArt) {
+    let release_id = object::id(release);
+    let cover = &mut borrow_mut_or_init(release, cap).cover;
     if (cover.contains(&art)) return;
     cover.swap_or_fill(art);
     let (still_blob_id, animated_blob_id) = blob_ids(&art);
@@ -69,9 +69,9 @@ public fun set_cover(self: &mut Release, cap: &ReleaseAdminCap, art: CoverArt) {
 
 /// Overrides are untouched. Silent when nothing is attached or the album cover is already
 /// absent.
-public fun clear_cover(self: &mut Release, cap: &ReleaseAdminCap) {
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+public fun clear_cover(release: &mut Release, cap: &ReleaseAdminCap) {
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) return;
     let record: &mut ReleaseCoverArt = df::borrow_mut(uid, ExtensionKey());
     if (record.cover.is_none()) return;
@@ -84,14 +84,14 @@ public fun clear_cover(self: &mut Release, cap: &ReleaseAdminCap) {
 
 /// Setting the value already held neither writes nor emits.
 public fun set_track_cover(
-    self: &mut Release,
+    release: &mut Release,
     cap: &ReleaseAdminCap,
     track_index: u64,
     art: CoverArt,
 ) {
-    assert!(track_index < self.recording_ids().length(), ETrackIndexOutOfBounds);
-    let release_id = object::id(self);
-    let slot = borrow_mut_or_init(self, cap).track_covers.borrow_mut(track_index);
+    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+    let release_id = object::id(release);
+    let slot = borrow_mut_or_init(release, cap).track_covers.borrow_mut(track_index);
     if (slot.contains(&art)) return;
     slot.swap_or_fill(art);
     let (still_blob_id, animated_blob_id) = blob_ids(&art);
@@ -104,10 +104,10 @@ public fun set_track_cover(
 }
 
 /// Silent when nothing is attached or the override is already absent.
-public fun clear_track_cover(self: &mut Release, cap: &ReleaseAdminCap, track_index: u64) {
-    assert!(track_index < self.recording_ids().length(), ETrackIndexOutOfBounds);
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+public fun clear_track_cover(release: &mut Release, cap: &ReleaseAdminCap, track_index: u64) {
+    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) return;
     let record: &mut ReleaseCoverArt = df::borrow_mut(uid, ExtensionKey());
     let slot = record.track_covers.borrow_mut(track_index);
@@ -121,27 +121,27 @@ public fun clear_track_cover(self: &mut Release, cap: &ReleaseAdminCap, track_in
 
 // === View Functions ===
 
-public fun has_cover_art(self: &Release): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_cover_art(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
 }
 
 /// None when only overrides are set. Aborts `ENoCoverArt` when no record is attached.
-public fun cover(self: &Release): &Option<CoverArt> {
-    &borrow(self.uid()).cover
+public fun cover(release: &Release): &Option<CoverArt> {
+    &borrow(release.uid()).cover
 }
 
 /// Aborts `ENoCoverArt` when no record is attached.
-public fun track_cover(self: &Release, track_index: u64): Option<CoverArt> {
-    assert!(track_index < self.recording_ids().length(), ETrackIndexOutOfBounds);
-    let record = borrow(self.uid());
+public fun track_cover(release: &Release, track_index: u64): Option<CoverArt> {
+    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+    let record = borrow(release.uid());
     let override = record.track_covers.borrow(track_index);
     if (override.is_some()) *override else record.cover
 }
 
 /// None when the track inherits the album cover. Aborts `ENoCoverArt` when no record is attached.
-public fun track_cover_override(self: &Release, track_index: u64): &Option<CoverArt> {
-    assert!(track_index < self.recording_ids().length(), ETrackIndexOutOfBounds);
-    borrow(self.uid()).track_covers.borrow(track_index)
+public fun track_cover_override(release: &Release, track_index: u64): &Option<CoverArt> {
+    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+    borrow(release.uid()).track_covers.borrow(track_index)
 }
 
 // === Private Functions ===
@@ -167,11 +167,11 @@ fun borrow(uid: &UID): &ReleaseCoverArt {
 
 /// The tracklist is fixed at release creation, so the overrides stay aligned. The cap gate runs
 /// before the existence check on every path.
-fun borrow_mut_or_init(self: &mut Release, cap: &ReleaseAdminCap): &mut ReleaseCoverArt {
-    let uid = self.uid_mut(cap);
+fun borrow_mut_or_init(release: &mut Release, cap: &ReleaseAdminCap): &mut ReleaseCoverArt {
+    let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) return df::borrow_mut(uid, ExtensionKey());
-    let track_covers = release_track_data::filled(self, option::none<CoverArt>());
-    let uid = self.uid_mut(cap);
+    let track_covers = release_track_data::filled(release, option::none<CoverArt>());
+    let uid = release.uid_mut(cap);
     df::add(uid, ExtensionKey(), ReleaseCoverArt { cover: option::none(), track_covers });
     df::borrow_mut(uid, ExtensionKey())
 }
@@ -179,23 +179,25 @@ fun borrow_mut_or_init(self: &mut Release, cap: &ReleaseAdminCap): &mut ReleaseC
 // === Test Functions ===
 
 #[test_only]
-public fun release_cover_art_set_fields(e: &ReleaseCoverArtSetEvent): (ID, u256, Option<u256>) {
-    (e.release_id, e.still_blob_id, e.animated_blob_id)
+public fun release_cover_art_set_fields(event: &ReleaseCoverArtSetEvent): (ID, u256, Option<u256>) {
+    (event.release_id, event.still_blob_id, event.animated_blob_id)
 }
 
 #[test_only]
-public fun release_cover_art_cleared_fields(e: &ReleaseCoverArtClearedEvent): ID {
-    e.release_id
+public fun release_cover_art_cleared_fields(event: &ReleaseCoverArtClearedEvent): ID {
+    event.release_id
 }
 
 #[test_only]
 public fun release_track_cover_art_set_fields(
-    e: &ReleaseTrackCoverArtSetEvent,
+    event: &ReleaseTrackCoverArtSetEvent,
 ): (ID, u64, u256, Option<u256>) {
-    (e.release_id, e.track_index, e.still_blob_id, e.animated_blob_id)
+    (event.release_id, event.track_index, event.still_blob_id, event.animated_blob_id)
 }
 
 #[test_only]
-public fun release_track_cover_art_cleared_fields(e: &ReleaseTrackCoverArtClearedEvent): (ID, u64) {
-    (e.release_id, e.track_index)
+public fun release_track_cover_art_cleared_fields(
+    event: &ReleaseTrackCoverArtClearedEvent,
+): (ID, u64) {
+    (event.release_id, event.track_index)
 }

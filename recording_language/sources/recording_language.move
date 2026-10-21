@@ -45,13 +45,13 @@ public struct RecordingLanguagesClearedEvent has copy, drop {
 
 /// Setting the list already held neither writes nor emits.
 public fun set_languages<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     languages: vector<LanguageCode>,
 ) {
     validate(&languages);
-    let recording_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let recording_id = object::id(recording);
+    let uid = recording.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let current: &mut vector<LanguageCode> = df::borrow_mut(uid, ExtensionKey());
         if (*current == languages) return;
@@ -67,11 +67,11 @@ public fun set_languages<RecordingShare>(
 
 /// Silent when nothing is attached.
 public fun clear_languages<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
 ) {
-    let recording_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let recording_id = object::id(recording);
+    let uid = recording.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let _: vector<LanguageCode> = df::remove(uid, ExtensionKey());
         emit(RecordingLanguagesClearedEvent { recording_id });
@@ -80,15 +80,15 @@ public fun clear_languages<RecordingShare>(
 
 // === View Functions ===
 
-public fun has_languages<RecordingShare>(self: &Recording<RecordingShare>): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_languages<RecordingShare>(recording: &Recording<RecordingShare>): bool {
+    df::exists(recording.uid(), ExtensionKey())
 }
 
 public fun languages<RecordingShare>(
-    self: &Recording<RecordingShare>,
+    recording: &Recording<RecordingShare>,
 ): &vector<LanguageCode> {
-    assert!(has_languages(self), ENoLanguages);
-    df::borrow(self.uid(), ExtensionKey())
+    assert!(has_languages(recording), ENoLanguages);
+    df::borrow(recording.uid(), ExtensionKey())
 }
 
 // === Private Functions ===
@@ -105,11 +105,13 @@ fun validate(languages: &vector<LanguageCode>) {
 // === Test Functions ===
 
 #[test_only]
-public fun recording_languages_set_fields(e: &RecordingLanguagesSetEvent): (ID, vector<String>) {
-    (e.recording_id, e.languages)
+public fun recording_languages_set_fields(
+    event: &RecordingLanguagesSetEvent,
+): (ID, vector<String>) {
+    (event.recording_id, event.languages)
 }
 
 #[test_only]
-public fun recording_languages_cleared_fields(e: &RecordingLanguagesClearedEvent): ID {
-    e.recording_id
+public fun recording_languages_cleared_fields(event: &RecordingLanguagesClearedEvent): ID {
+    event.recording_id
 }

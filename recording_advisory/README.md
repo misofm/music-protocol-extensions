@@ -50,7 +50,7 @@ a real state transition.
 ## Dependencies
 
 - [`miso_music`](https://github.com/misofm/music-protocol) at
-  `a62de87ff9c24c692ba711855b5acd94c4a6472e` — `Recording<RecordingShare>` and its type-bound `RecordingAdminCap<RecordingShare>`.
+  `c5a4a3f78eca20c225ff702750b54da5c754fe4c` — `Recording<RecordingShare>` and its type-bound `RecordingAdminCap<RecordingShare>`.
 
 ## Publishing
 

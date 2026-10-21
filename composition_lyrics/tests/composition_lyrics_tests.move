@@ -23,17 +23,17 @@ fun new_composition(
 }
 
 fun assert_set_event(
-    e: &cl::CompositionLyricsSetEvent,
+    event: &cl::CompositionLyricsSetEvent,
     composition_id: ID,
     language: vector<u8>,
     lyrics: vector<u8>,
 ) {
-    let (event_id, event_language, event_lyrics) = cl::composition_lyrics_set_fields(e);
+    let (event_id, event_language, event_lyrics) = cl::composition_lyrics_set_fields(event);
     assert_eq!(event_id, composition_id);
     assert_eq!(event_language, language.to_string());
     assert_eq!(event_lyrics, lyrics);
 
-    let mut bytes = bcs::new(bcs::to_bytes(e));
+    let mut bytes = bcs::new(bcs::to_bytes(event));
     assert_eq!(bytes.peel_address().to_id(), composition_id);
     assert_eq!(bytes.peel_vec_u8(), language);
     assert_eq!(bytes.peel_vec_u8(), lyrics);
@@ -41,19 +41,19 @@ fun assert_set_event(
 }
 
 fun assert_cleared_event(
-    e: &cl::CompositionLyricsClearedEvent,
+    event: &cl::CompositionLyricsClearedEvent,
     composition_id: ID,
     language: vector<u8>,
 ) {
-    let (event_id, event_language) = cl::composition_lyrics_cleared_fields(e);
+    let (event_id, event_language) = cl::composition_lyrics_cleared_fields(event);
     assert_eq!(event_id, composition_id);
     assert_eq!(event_language, language.to_string());
 
-    let mut bytes = bcs::new(bcs::to_bytes(e));
+    let mut bytes = bcs::new(bcs::to_bytes(event));
     assert_eq!(bytes.peel_address().to_id(), composition_id);
     assert_eq!(bytes.peel_vec_u8(), language);
     assert!(bytes.into_remainder_bytes().is_empty());
-    assert_eq!(bcs::to_bytes(e).length(), 35);
+    assert_eq!(bcs::to_bytes(event).length(), 35);
 }
 
 #[test]

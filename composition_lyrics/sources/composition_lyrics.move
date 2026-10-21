@@ -46,7 +46,7 @@ public struct CompositionLyricsClearedEvent has copy, drop {
 
 /// Setting the bytes already stored neither writes nor emits.
 public fun set_lyrics<CompositionShare>(
-    self: &mut Composition<CompositionShare>,
+    composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
     language: LanguageCode,
     lyrics: vector<u8>,
@@ -54,8 +54,8 @@ public fun set_lyrics<CompositionShare>(
     assert!(!lyrics.is_empty(), EEmptyLyrics);
     assert!(lyrics.length() <= MAX_LYRICS_LENGTH, ELyricsTooLong);
 
-    let composition_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let composition_id = object::id(composition);
+    let uid = composition.uid_mut(cap);
     let key = ExtensionKey(language);
     if (df::exists(uid, key)) {
         let stored: &mut vector<u8> = df::borrow_mut(uid, key);
@@ -69,12 +69,12 @@ public fun set_lyrics<CompositionShare>(
 
 /// An absent entry is a no-op, but the cap is still checked.
 public fun clear_lyrics<CompositionShare>(
-    self: &mut Composition<CompositionShare>,
+    composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
     language: LanguageCode,
 ) {
-    let composition_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let composition_id = object::id(composition);
+    let uid = composition.uid_mut(cap);
     let key = ExtensionKey(language);
     if (df::exists(uid, key)) {
         let _: vector<u8> = df::remove(uid, key);
@@ -88,18 +88,18 @@ public fun clear_lyrics<CompositionShare>(
 // === View Functions ===
 
 public fun has_lyrics<CompositionShare>(
-    self: &Composition<CompositionShare>,
+    composition: &Composition<CompositionShare>,
     language: LanguageCode,
 ): bool {
-    df::exists(self.uid(), ExtensionKey(language))
+    df::exists(composition.uid(), ExtensionKey(language))
 }
 
 public fun lyrics<CompositionShare>(
-    self: &Composition<CompositionShare>,
+    composition: &Composition<CompositionShare>,
     language: LanguageCode,
 ): &vector<u8> {
-    assert!(has_lyrics(self, language), ENoLyrics);
-    df::borrow(self.uid(), ExtensionKey(language))
+    assert!(has_lyrics(composition, language), ENoLyrics);
+    df::borrow(composition.uid(), ExtensionKey(language))
 }
 
 public fun max_lyrics_length(): u64 { MAX_LYRICS_LENGTH }
@@ -108,12 +108,12 @@ public fun max_lyrics_length(): u64 { MAX_LYRICS_LENGTH }
 
 #[test_only]
 public fun composition_lyrics_set_fields(
-    e: &CompositionLyricsSetEvent,
+    event: &CompositionLyricsSetEvent,
 ): (ID, String, vector<u8>) {
-    (e.composition_id, e.language, e.lyrics)
+    (event.composition_id, event.language, event.lyrics)
 }
 
 #[test_only]
-public fun composition_lyrics_cleared_fields(e: &CompositionLyricsClearedEvent): (ID, String) {
-    (e.composition_id, e.language)
+public fun composition_lyrics_cleared_fields(event: &CompositionLyricsClearedEvent): (ID, String) {
+    (event.composition_id, event.language)
 }

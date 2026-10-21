@@ -42,12 +42,12 @@ public struct ReleaseTitleClearedEvent has copy, drop {
 // === Public Functions ===
 
 /// Setting the value already stored neither writes nor emits.
-public fun set_title(self: &mut Release, cap: &ReleaseAdminCap, title: String) {
+public fun set_title(release: &mut Release, cap: &ReleaseAdminCap, title: String) {
     assert!(!title.is_empty(), EEmptyTitle);
     assert!(title.length() <= MAX_TITLE_LENGTH, ETitleTooLong);
 
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let stored: &mut String = df::borrow_mut(uid, ExtensionKey());
         if (*stored == title) return;
@@ -59,9 +59,9 @@ public fun set_title(self: &mut Release, cap: &ReleaseAdminCap, title: String) {
 }
 
 /// An absent title is a no-op, but the cap is still checked.
-public fun clear_title(self: &mut Release, cap: &ReleaseAdminCap) {
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+public fun clear_title(release: &mut Release, cap: &ReleaseAdminCap) {
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let _: String = df::remove(uid, ExtensionKey());
         emit(ReleaseTitleClearedEvent { release_id });
@@ -70,23 +70,23 @@ public fun clear_title(self: &mut Release, cap: &ReleaseAdminCap) {
 
 // === View Functions ===
 
-public fun has_title(self: &Release): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_title(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
 }
 
-public fun title(self: &Release): &String {
-    assert!(has_title(self), ENoTitle);
-    df::borrow(self.uid(), ExtensionKey())
+public fun title(release: &Release): &String {
+    assert!(has_title(release), ENoTitle);
+    df::borrow(release.uid(), ExtensionKey())
 }
 
 // === Test Functions ===
 
 #[test_only]
-public fun release_title_set_fields(e: &ReleaseTitleSetEvent): (ID, String) {
-    (e.release_id, e.title)
+public fun release_title_set_fields(event: &ReleaseTitleSetEvent): (ID, String) {
+    (event.release_id, event.title)
 }
 
 #[test_only]
-public fun release_title_cleared_fields(e: &ReleaseTitleClearedEvent): ID {
-    e.release_id
+public fun release_title_cleared_fields(event: &ReleaseTitleClearedEvent): ID {
+    event.release_id
 }

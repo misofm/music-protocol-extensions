@@ -5,8 +5,8 @@ the tests for the current API.
 
 ## Dependency provenance
 
-`Move.toml` pins `miso_music` at `a62de87ff9c24c692ba711855b5acd94c4a6472e`,
-`miso_party` at `9374c6eed64c907722ac1c93813c76dc7912b357`, and `credit` at
+`Move.toml` pins `miso_music` at `c5a4a3f78eca20c225ff702750b54da5c754fe4c`,
+`miso_party` at `65f22c8a0e8e32ac4ee52322536a15cbb5b0a429`, and `credit` at
 `5aa56d788657f7438d85ae07862d07ebd3cb5f8c`. `credit` provides
 `Credit<RecordingPartyRole>`; `miso_party` provides only the credited `Party`
 identity.

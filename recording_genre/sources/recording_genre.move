@@ -50,13 +50,13 @@ public struct RecordingGenresClearedEvent has copy, drop {
 // === Public Functions ===
 
 public fun add_genre<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     genre: &Genre,
 ) {
-    let recording_id = object::id(self);
+    let recording_id = object::id(recording);
     let genre_id = object::id(genre);
-    let uid = self.uid_mut(cap);
+    let uid = recording.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let genres: &mut vector<ID> = df::borrow_mut(uid, ExtensionKey());
         assert!(!genres.contains(&genre_id), EDuplicateGenre);
@@ -70,12 +70,12 @@ public fun add_genre<RecordingShare>(
 
 /// Removing the primary promotes the next genre.
 public fun remove_genre<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     genre_id: ID,
 ) {
-    let recording_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let recording_id = object::id(recording);
+    let uid = recording.uid_mut(cap);
     assert!(df::exists(uid, ExtensionKey()), ENoGenres);
     let genres: &mut vector<ID> = df::borrow_mut(uid, ExtensionKey());
     let (found, index) = genres.index_of(&genre_id);
@@ -89,11 +89,11 @@ public fun remove_genre<RecordingShare>(
 
 /// Silent when nothing is attached.
 public fun clear_genres<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
 ) {
-    let recording_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let recording_id = object::id(recording);
+    let uid = recording.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let _: vector<ID> = df::remove(uid, ExtensionKey());
         emit(RecordingGenresClearedEvent { recording_id });
@@ -102,28 +102,28 @@ public fun clear_genres<RecordingShare>(
 
 // === View Functions ===
 
-public fun has_genres<RecordingShare>(self: &Recording<RecordingShare>): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_genres<RecordingShare>(recording: &Recording<RecordingShare>): bool {
+    df::exists(recording.uid(), ExtensionKey())
 }
 
-public fun genres<RecordingShare>(self: &Recording<RecordingShare>): &vector<ID> {
-    assert!(has_genres(self), ENoGenres);
-    df::borrow(self.uid(), ExtensionKey())
+public fun genres<RecordingShare>(recording: &Recording<RecordingShare>): &vector<ID> {
+    assert!(has_genres(recording), ENoGenres);
+    df::borrow(recording.uid(), ExtensionKey())
 }
 
 // === Test Functions ===
 
 #[test_only]
-public fun recording_genre_added_fields(e: &RecordingGenreAddedEvent): (ID, ID) {
-    (e.recording_id, e.genre_id)
+public fun recording_genre_added_fields(event: &RecordingGenreAddedEvent): (ID, ID) {
+    (event.recording_id, event.genre_id)
 }
 
 #[test_only]
-public fun recording_genre_removed_fields(e: &RecordingGenreRemovedEvent): (ID, ID) {
-    (e.recording_id, e.genre_id)
+public fun recording_genre_removed_fields(event: &RecordingGenreRemovedEvent): (ID, ID) {
+    (event.recording_id, event.genre_id)
 }
 
 #[test_only]
-public fun recording_genres_cleared_fields(e: &RecordingGenresClearedEvent): ID {
-    e.recording_id
+public fun recording_genres_cleared_fields(event: &RecordingGenresClearedEvent): ID {
+    event.recording_id
 }

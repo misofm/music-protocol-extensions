@@ -54,16 +54,16 @@ public struct CompositionCreditRemovedEvent has copy, drop {
 
 /// At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
 public fun add_credit<CompositionShare>(
-    self: &mut Composition<CompositionShare>,
+    composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
     party: &Party,
     credit: Credit<CompositionPartyRole>,
 ) {
-    let composition_id = object::id(self);
+    let composition_id = object::id(composition);
     let party_id = object::id(party);
     let display_name = *credit.display_name();
     let roles = *credit.roles();
-    let uid = self.uid_mut(cap);
+    let uid = composition.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) {
         df::add(uid, ExtensionKey(), CompositionCredits { credits: vec_map::empty() });
     };
@@ -76,12 +76,12 @@ public fun add_credit<CompositionShare>(
 }
 
 public fun remove_credit<CompositionShare>(
-    self: &mut Composition<CompositionShare>,
+    composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
     party_id: ID,
 ) {
-    let composition_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let composition_id = object::id(composition);
+    let uid = composition.uid_mut(cap);
     assert!(df::exists(uid, ExtensionKey()), ENoCredits);
     let record: &mut CompositionCredits = df::borrow_mut(uid, ExtensionKey());
     assert!(record.credits.contains(&party_id), EPartyNotFound);
@@ -96,15 +96,15 @@ public fun remove_credit<CompositionShare>(
 
 // === View Functions ===
 
-public fun has_credits<CompositionShare>(self: &Composition<CompositionShare>): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_credits<CompositionShare>(composition: &Composition<CompositionShare>): bool {
+    df::exists(composition.uid(), ExtensionKey())
 }
 
 public fun credits<CompositionShare>(
-    self: &Composition<CompositionShare>,
+    composition: &Composition<CompositionShare>,
 ): &VecMap<ID, Credit<CompositionPartyRole>> {
-    assert!(df::exists(self.uid(), ExtensionKey()), ENoCredits);
-    let record: &CompositionCredits = df::borrow(self.uid(), ExtensionKey());
+    assert!(df::exists(composition.uid(), ExtensionKey()), ENoCredits);
+    let record: &CompositionCredits = df::borrow(composition.uid(), ExtensionKey());
     &record.credits
 }
 
@@ -112,12 +112,12 @@ public fun credits<CompositionShare>(
 
 #[test_only]
 public fun composition_credit_added_fields(
-    e: &CompositionCreditAddedEvent,
+    event: &CompositionCreditAddedEvent,
 ): (ID, ID, String, vector<CompositionPartyRole>) {
-    (e.composition_id, e.party_id, e.display_name, e.roles)
+    (event.composition_id, event.party_id, event.display_name, event.roles)
 }
 
 #[test_only]
-public fun composition_credit_removed_fields(e: &CompositionCreditRemovedEvent): (ID, ID) {
-    (e.composition_id, e.party_id)
+public fun composition_credit_removed_fields(event: &CompositionCreditRemovedEvent): (ID, ID) {
+    (event.composition_id, event.party_id)
 }

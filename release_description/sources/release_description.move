@@ -41,12 +41,12 @@ public struct ReleaseDescriptionClearedEvent has copy, drop {
 // === Public Functions ===
 
 /// Setting the value already stored neither writes nor emits.
-public fun set_description(self: &mut Release, cap: &ReleaseAdminCap, description: String) {
+public fun set_description(release: &mut Release, cap: &ReleaseAdminCap, description: String) {
     assert!(!description.is_empty(), EEmptyDescription);
     assert!(description.length() <= MAX_DESCRIPTION_LENGTH, EDescriptionTooLong);
 
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let stored: &mut String = df::borrow_mut(uid, ExtensionKey());
         if (*stored == description) return;
@@ -58,9 +58,9 @@ public fun set_description(self: &mut Release, cap: &ReleaseAdminCap, descriptio
 }
 
 /// An absent description is a no-op, but the cap is still checked.
-public fun clear_description(self: &mut Release, cap: &ReleaseAdminCap) {
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+public fun clear_description(release: &mut Release, cap: &ReleaseAdminCap) {
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let _: String = df::remove(uid, ExtensionKey());
         emit(ReleaseDescriptionClearedEvent { release_id });
@@ -69,23 +69,23 @@ public fun clear_description(self: &mut Release, cap: &ReleaseAdminCap) {
 
 // === View Functions ===
 
-public fun has_description(self: &Release): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_description(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
 }
 
-public fun description(self: &Release): &String {
-    assert!(has_description(self), ENoDescription);
-    df::borrow(self.uid(), ExtensionKey())
+public fun description(release: &Release): &String {
+    assert!(has_description(release), ENoDescription);
+    df::borrow(release.uid(), ExtensionKey())
 }
 
 // === Test Functions ===
 
 #[test_only]
-public fun release_description_set_fields(e: &ReleaseDescriptionSetEvent): (ID, String) {
-    (e.release_id, e.description)
+public fun release_description_set_fields(event: &ReleaseDescriptionSetEvent): (ID, String) {
+    (event.release_id, event.description)
 }
 
 #[test_only]
-public fun release_description_cleared_fields(e: &ReleaseDescriptionClearedEvent): ID {
-    e.release_id
+public fun release_description_cleared_fields(event: &ReleaseDescriptionClearedEvent): ID {
+    event.release_id
 }

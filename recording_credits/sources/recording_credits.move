@@ -90,18 +90,18 @@ public struct RecordingFeaturedArtistRemovedEvent has copy, drop {
 
 /// At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
 public fun add_credit<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party: &Party,
     credit: Credit<RecordingPartyRole>,
 ) {
     assert!(credit.roles().length() <= MAX_ROLES_PER_CREDIT, EMaxRolesExceeded);
 
-    let recording_id = object::id(self);
+    let recording_id = object::id(recording);
     let party_id = object::id(party);
     let display_name = *credit.display_name();
     let roles = *credit.roles();
-    let uid = self.uid_mut(cap);
+    let uid = recording.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) {
         df::add(
             uid,
@@ -122,12 +122,12 @@ public fun add_credit<RecordingShare>(
 }
 
 public fun remove_credit<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party_id: ID,
 ) {
-    let recording_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let recording_id = object::id(recording);
+    let uid = recording.uid_mut(cap);
     let record = borrow_mut(uid);
     assert!(record.credits.contains(&party_id), EPartyNotFound);
     if (record.primary_artist_ids.contains(&party_id)) {
@@ -147,12 +147,12 @@ public fun remove_credit<RecordingShare>(
 }
 
 public fun add_primary_artist<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party_id: ID,
 ) {
-    let recording_id = object::id(self);
-    let record = borrow_mut(self.uid_mut(cap));
+    let recording_id = object::id(recording);
+    let record = borrow_mut(recording.uid_mut(cap));
     assert!(
         record.primary_artist_ids.length() < MAX_PRIMARY_ARTISTS,
         EMaxPrimaryArtistsExceeded,
@@ -166,12 +166,12 @@ public fun add_primary_artist<RecordingShare>(
 }
 
 public fun remove_primary_artist<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party_id: ID,
 ) {
-    let recording_id = object::id(self);
-    let record = borrow_mut(self.uid_mut(cap));
+    let recording_id = object::id(recording);
+    let record = borrow_mut(recording.uid_mut(cap));
     assert!(record.credits.contains(&party_id), EPartyNotFound);
     assert!(record.primary_artist_ids.contains(&party_id), ENotPrimaryArtist);
     record.primary_artist_ids.remove(&party_id);
@@ -180,12 +180,12 @@ public fun remove_primary_artist<RecordingShare>(
 }
 
 public fun add_featured_artist<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party_id: ID,
 ) {
-    let recording_id = object::id(self);
-    let record = borrow_mut(self.uid_mut(cap));
+    let recording_id = object::id(recording);
+    let record = borrow_mut(recording.uid_mut(cap));
     assert!(
         record.featured_artist_ids.length() < MAX_FEATURED_ARTISTS,
         EMaxFeaturedArtistsExceeded,
@@ -199,12 +199,12 @@ public fun add_featured_artist<RecordingShare>(
 }
 
 public fun remove_featured_artist<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     party_id: ID,
 ) {
-    let recording_id = object::id(self);
-    let record = borrow_mut(self.uid_mut(cap));
+    let recording_id = object::id(recording);
+    let record = borrow_mut(recording.uid_mut(cap));
     assert!(record.credits.contains(&party_id), EPartyNotFound);
     assert!(record.featured_artist_ids.contains(&party_id), ENotFeaturedArtist);
     record.featured_artist_ids.remove(&party_id);
@@ -214,42 +214,42 @@ public fun remove_featured_artist<RecordingShare>(
 
 // === View Functions ===
 
-public fun has_credits<RecordingShare>(self: &Recording<RecordingShare>): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_credits<RecordingShare>(recording: &Recording<RecordingShare>): bool {
+    df::exists(recording.uid(), ExtensionKey())
 }
 
 public fun credits<RecordingShare>(
-    self: &Recording<RecordingShare>,
+    recording: &Recording<RecordingShare>,
 ): &VecMap<ID, Credit<RecordingPartyRole>> {
-    &borrow(self.uid()).credits
+    &borrow(recording.uid()).credits
 }
 
 public fun primary_artist_ids<RecordingShare>(
-    self: &Recording<RecordingShare>,
+    recording: &Recording<RecordingShare>,
 ): &VecSet<ID> {
-    &borrow(self.uid()).primary_artist_ids
+    &borrow(recording.uid()).primary_artist_ids
 }
 
 public fun featured_artist_ids<RecordingShare>(
-    self: &Recording<RecordingShare>,
+    recording: &Recording<RecordingShare>,
 ): &VecSet<ID> {
-    &borrow(self.uid()).featured_artist_ids
+    &borrow(recording.uid()).featured_artist_ids
 }
 
 /// False, not an abort, when no record is attached.
 public fun is_primary_artist<RecordingShare>(
-    self: &Recording<RecordingShare>,
+    recording: &Recording<RecordingShare>,
     party_id: ID,
 ): bool {
-    has_credits(self) && borrow(self.uid()).primary_artist_ids.contains(&party_id)
+    has_credits(recording) && borrow(recording.uid()).primary_artist_ids.contains(&party_id)
 }
 
 /// False, not an abort, when no record is attached.
 public fun is_featured_artist<RecordingShare>(
-    self: &Recording<RecordingShare>,
+    recording: &Recording<RecordingShare>,
     party_id: ID,
 ): bool {
-    has_credits(self) && borrow(self.uid()).featured_artist_ids.contains(&party_id)
+    has_credits(recording) && borrow(recording.uid()).featured_artist_ids.contains(&party_id)
 }
 
 // === Private Functions ===
@@ -268,36 +268,40 @@ fun borrow_mut(uid: &mut UID): &mut RecordingCredits {
 
 #[test_only]
 public fun recording_credit_added_fields(
-    e: &RecordingCreditAddedEvent,
+    event: &RecordingCreditAddedEvent,
 ): (ID, ID, String, vector<RecordingPartyRole>) {
-    (e.recording_id, e.party_id, e.display_name, e.roles)
+    (event.recording_id, event.party_id, event.display_name, event.roles)
 }
 
 #[test_only]
-public fun recording_credit_removed_fields(e: &RecordingCreditRemovedEvent): (ID, ID) {
-    (e.recording_id, e.party_id)
+public fun recording_credit_removed_fields(event: &RecordingCreditRemovedEvent): (ID, ID) {
+    (event.recording_id, event.party_id)
 }
 
 #[test_only]
-public fun recording_primary_artist_added_fields(e: &RecordingPrimaryArtistAddedEvent): (ID, ID) {
-    (e.recording_id, e.party_id)
+public fun recording_primary_artist_added_fields(
+    event: &RecordingPrimaryArtistAddedEvent,
+): (ID, ID) {
+    (event.recording_id, event.party_id)
 }
 
 #[test_only]
 public fun recording_primary_artist_removed_fields(
-    e: &RecordingPrimaryArtistRemovedEvent,
+    event: &RecordingPrimaryArtistRemovedEvent,
 ): (ID, ID) {
-    (e.recording_id, e.party_id)
+    (event.recording_id, event.party_id)
 }
 
 #[test_only]
-public fun recording_featured_artist_added_fields(e: &RecordingFeaturedArtistAddedEvent): (ID, ID) {
-    (e.recording_id, e.party_id)
+public fun recording_featured_artist_added_fields(
+    event: &RecordingFeaturedArtistAddedEvent,
+): (ID, ID) {
+    (event.recording_id, event.party_id)
 }
 
 #[test_only]
 public fun recording_featured_artist_removed_fields(
-    e: &RecordingFeaturedArtistRemovedEvent,
+    event: &RecordingFeaturedArtistRemovedEvent,
 ): (ID, ID) {
-    (e.recording_id, e.party_id)
+    (event.recording_id, event.party_id)
 }

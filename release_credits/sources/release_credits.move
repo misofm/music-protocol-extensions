@@ -57,18 +57,18 @@ public struct ReleaseCreditRemovedEvent has copy, drop {
 
 /// At capacity, even a duplicate party aborts `EMaxCreditsExceeded`.
 public fun add_credit(
-    self: &mut Release,
+    release: &mut Release,
     cap: &ReleaseAdminCap,
     party: &Party,
     credit: Credit<ReleasePartyRole>,
 ) {
     assert!(credit.roles().length() == CREDIT_ROLE_COUNT, EInvalidCreditRoleCount);
 
-    let release_id = object::id(self);
+    let release_id = object::id(release);
     let party_id = object::id(party);
     let display_name = *credit.display_name();
     let role = credit.roles()[0];
-    let uid = self.uid_mut(cap);
+    let uid = release.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) {
         df::add(uid, ExtensionKey(), ReleaseCredits { credits: vec_map::empty() });
     };
@@ -80,9 +80,9 @@ public fun add_credit(
     emit(ReleaseCreditAddedEvent { release_id, party_id, display_name, role });
 }
 
-public fun remove_credit(self: &mut Release, cap: &ReleaseAdminCap, party_id: ID) {
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+public fun remove_credit(release: &mut Release, cap: &ReleaseAdminCap, party_id: ID) {
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     assert!(df::exists(uid, ExtensionKey()), ENoCredits);
     let record: &mut ReleaseCredits = df::borrow_mut(uid, ExtensionKey());
     assert!(record.credits.contains(&party_id), EPartyNotFound);
@@ -97,13 +97,13 @@ public fun remove_credit(self: &mut Release, cap: &ReleaseAdminCap, party_id: ID
 
 // === View Functions ===
 
-public fun has_credits(self: &Release): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_credits(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
 }
 
-public fun credits(self: &Release): &VecMap<ID, Credit<ReleasePartyRole>> {
-    assert!(has_credits(self), ENoCredits);
-    let record: &ReleaseCredits = df::borrow(self.uid(), ExtensionKey());
+public fun credits(release: &Release): &VecMap<ID, Credit<ReleasePartyRole>> {
+    assert!(has_credits(release), ENoCredits);
+    let record: &ReleaseCredits = df::borrow(release.uid(), ExtensionKey());
     &record.credits
 }
 
@@ -111,12 +111,12 @@ public fun credits(self: &Release): &VecMap<ID, Credit<ReleasePartyRole>> {
 
 #[test_only]
 public fun release_credit_added_fields(
-    e: &ReleaseCreditAddedEvent,
+    event: &ReleaseCreditAddedEvent,
 ): (ID, ID, String, ReleasePartyRole) {
-    (e.release_id, e.party_id, e.display_name, e.role)
+    (event.release_id, event.party_id, event.display_name, event.role)
 }
 
 #[test_only]
-public fun release_credit_removed_fields(e: &ReleaseCreditRemovedEvent): (ID, ID) {
-    (e.release_id, e.party_id)
+public fun release_credit_removed_fields(event: &ReleaseCreditRemovedEvent): (ID, ID) {
+    (event.release_id, event.party_id)
 }

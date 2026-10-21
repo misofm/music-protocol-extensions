@@ -43,12 +43,12 @@ public struct ReleaseKindClearedEvent has copy, drop {
 // === Public Functions ===
 
 /// Setting the value already stored neither writes nor emits.
-public fun set_kind(self: &mut Release, cap: &ReleaseAdminCap, kind: String) {
+public fun set_kind(release: &mut Release, cap: &ReleaseAdminCap, kind: String) {
     assert!(!kind.is_empty(), EEmptyKind);
     assert!(kind.length() <= MAX_KIND_LENGTH, EKindTooLong);
 
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let stored: &mut String = df::borrow_mut(uid, ExtensionKey());
         if (*stored == kind) return;
@@ -60,9 +60,9 @@ public fun set_kind(self: &mut Release, cap: &ReleaseAdminCap, kind: String) {
 }
 
 /// An absent kind is a no-op, but the cap is still checked.
-public fun clear_kind(self: &mut Release, cap: &ReleaseAdminCap) {
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+public fun clear_kind(release: &mut Release, cap: &ReleaseAdminCap) {
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let _: String = df::remove(uid, ExtensionKey());
         emit(ReleaseKindClearedEvent { release_id });
@@ -71,23 +71,23 @@ public fun clear_kind(self: &mut Release, cap: &ReleaseAdminCap) {
 
 // === View Functions ===
 
-public fun has_kind(self: &Release): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_kind(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
 }
 
-public fun kind(self: &Release): &String {
-    assert!(has_kind(self), ENoKind);
-    df::borrow(self.uid(), ExtensionKey())
+public fun kind(release: &Release): &String {
+    assert!(has_kind(release), ENoKind);
+    df::borrow(release.uid(), ExtensionKey())
 }
 
 // === Test Functions ===
 
 #[test_only]
-public fun release_kind_set_fields(e: &ReleaseKindSetEvent): (ID, String) {
-    (e.release_id, e.kind)
+public fun release_kind_set_fields(event: &ReleaseKindSetEvent): (ID, String) {
+    (event.release_id, event.kind)
 }
 
 #[test_only]
-public fun release_kind_cleared_fields(e: &ReleaseKindClearedEvent): ID {
-    e.release_id
+public fun release_kind_cleared_fields(event: &ReleaseKindClearedEvent): ID {
+    event.release_id
 }

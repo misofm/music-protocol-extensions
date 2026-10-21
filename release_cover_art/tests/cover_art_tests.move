@@ -32,27 +32,27 @@ fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
 }
 
 fun assert_set_event(
-    e: &ReleaseCoverArtSetEvent,
+    event: &ReleaseCoverArtSetEvent,
     release_id: ID,
     still_blob_id: u256,
     animated_blob_id: Option<u256>,
 ) {
     let (event_release_id, event_still, event_animated) =
-        release_cover_art::release_cover_art_set_fields(e);
+        release_cover_art::release_cover_art_set_fields(event);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_still, still_blob_id);
     assert_eq!(event_animated, animated_blob_id);
 }
 
 fun assert_track_set_event(
-    e: &ReleaseTrackCoverArtSetEvent,
+    event: &ReleaseTrackCoverArtSetEvent,
     release_id: ID,
     track_index: u64,
     still_blob_id: u256,
     animated_blob_id: Option<u256>,
 ) {
     let (event_release_id, event_index, event_still, event_animated) =
-        release_cover_art::release_track_cover_art_set_fields(e);
+        release_cover_art::release_track_cover_art_set_fields(event);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_index, track_index);
     assert_eq!(event_still, still_blob_id);
@@ -60,12 +60,12 @@ fun assert_track_set_event(
 }
 
 fun assert_track_cleared_event(
-    e: &ReleaseTrackCoverArtClearedEvent,
+    event: &ReleaseTrackCoverArtClearedEvent,
     release_id: ID,
     track_index: u64,
 ) {
     let (event_release_id, event_index) =
-        release_cover_art::release_track_cover_art_cleared_fields(e);
+        release_cover_art::release_track_cover_art_cleared_fields(event);
     assert_eq!(event_release_id, release_id);
     assert_eq!(event_index, track_index);
 }

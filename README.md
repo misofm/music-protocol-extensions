@@ -64,7 +64,7 @@ release_genre = { git = "https://github.com/misofm/music-protocol-extensions.git
 
 Each package's `Move.toml` pins its own protocol and supporting dependencies.
 The current sources target `miso_music` commit
-`a62de87ff9c24c692ba711855b5acd94c4a6472e`: Composition and Recording are
+`c5a4a3f78eca20c225ff702750b54da5c754fe4c`: Composition and Recording are
 generic over their share coin type, and their admin capabilities authorize by
 that type; a Release admin capability authorizes by the release's ID.
 Composition and Recording extension events carry no share type arguments;

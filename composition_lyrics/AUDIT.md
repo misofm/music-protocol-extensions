@@ -5,7 +5,7 @@ the tests for the current API.
 
 ## Dependency provenance
 
-`Move.toml` pins `miso_music` at `a62de87ff9c24c692ba711855b5acd94c4a6472e` and
+`Move.toml` pins `miso_music` at `c5a4a3f78eca20c225ff702750b54da5c754fe4c` and
 `language_code` at `61542357f3d2ff989d120185046def7cf6c8bdcb`.
 
 ## Threat model

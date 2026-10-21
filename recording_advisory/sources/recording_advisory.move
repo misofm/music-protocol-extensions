@@ -50,12 +50,12 @@ public fun cleaned(): Advisory { Advisory::Cleaned }
 
 /// Setting the value already held neither writes nor emits.
 public fun set_advisory<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
     advisory: Advisory,
 ) {
-    let recording_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let recording_id = object::id(recording);
+    let uid = recording.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let current: &mut Advisory = df::borrow_mut(uid, ExtensionKey());
         if (*current == advisory) return;
@@ -68,11 +68,11 @@ public fun set_advisory<RecordingShare>(
 
 /// Silent when nothing is attached.
 public fun clear_advisory<RecordingShare>(
-    self: &mut Recording<RecordingShare>,
+    recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
 ) {
-    let recording_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let recording_id = object::id(recording);
+    let uid = recording.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let _: Advisory = df::remove(uid, ExtensionKey());
         emit(RecordingAdvisoryClearedEvent { recording_id });
@@ -81,13 +81,13 @@ public fun clear_advisory<RecordingShare>(
 
 // === View Functions ===
 
-public fun has_advisory<RecordingShare>(self: &Recording<RecordingShare>): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_advisory<RecordingShare>(recording: &Recording<RecordingShare>): bool {
+    df::exists(recording.uid(), ExtensionKey())
 }
 
-public fun advisory<RecordingShare>(self: &Recording<RecordingShare>): Advisory {
-    assert!(has_advisory(self), ENoAdvisory);
-    *df::borrow(self.uid(), ExtensionKey())
+public fun advisory<RecordingShare>(recording: &Recording<RecordingShare>): Advisory {
+    assert!(has_advisory(recording), ENoAdvisory);
+    *df::borrow(recording.uid(), ExtensionKey())
 }
 
 public fun is_explicit(self: &Advisory): bool {
@@ -105,11 +105,11 @@ public fun is_cleaned(self: &Advisory): bool {
 // === Test Functions ===
 
 #[test_only]
-public fun recording_advisory_set_fields(e: &RecordingAdvisorySetEvent): (ID, Advisory) {
-    (e.recording_id, e.advisory)
+public fun recording_advisory_set_fields(event: &RecordingAdvisorySetEvent): (ID, Advisory) {
+    (event.recording_id, event.advisory)
 }
 
 #[test_only]
-public fun recording_advisory_cleared_fields(e: &RecordingAdvisoryClearedEvent): ID {
-    e.recording_id
+public fun recording_advisory_cleared_fields(event: &RecordingAdvisoryClearedEvent): ID {
+    event.recording_id
 }

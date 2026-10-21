@@ -49,10 +49,10 @@ public struct ReleaseGenresClearedEvent has copy, drop {
 
 // === Public Functions ===
 
-public fun add_genre(self: &mut Release, cap: &ReleaseAdminCap, genre: &Genre) {
-    let release_id = object::id(self);
+public fun add_genre(release: &mut Release, cap: &ReleaseAdminCap, genre: &Genre) {
+    let release_id = object::id(release);
     let genre_id = object::id(genre);
-    let uid = self.uid_mut(cap);
+    let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let genres: &mut vector<ID> = df::borrow_mut(uid, ExtensionKey());
         assert!(!genres.contains(&genre_id), EDuplicateGenre);
@@ -65,9 +65,9 @@ public fun add_genre(self: &mut Release, cap: &ReleaseAdminCap, genre: &Genre) {
 }
 
 /// Removing the primary promotes the next genre.
-public fun remove_genre(self: &mut Release, cap: &ReleaseAdminCap, genre_id: ID) {
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+public fun remove_genre(release: &mut Release, cap: &ReleaseAdminCap, genre_id: ID) {
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     assert!(df::exists(uid, ExtensionKey()), ENoGenres);
     let genres: &mut vector<ID> = df::borrow_mut(uid, ExtensionKey());
     let (found, index) = genres.index_of(&genre_id);
@@ -80,9 +80,9 @@ public fun remove_genre(self: &mut Release, cap: &ReleaseAdminCap, genre_id: ID)
 }
 
 /// An absent list is a no-op, but the cap is still checked.
-public fun clear_genres(self: &mut Release, cap: &ReleaseAdminCap) {
-    let release_id = object::id(self);
-    let uid = self.uid_mut(cap);
+public fun clear_genres(release: &mut Release, cap: &ReleaseAdminCap) {
+    let release_id = object::id(release);
+    let uid = release.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let _: vector<ID> = df::remove(uid, ExtensionKey());
         emit(ReleaseGenresClearedEvent { release_id });
@@ -91,28 +91,28 @@ public fun clear_genres(self: &mut Release, cap: &ReleaseAdminCap) {
 
 // === View Functions ===
 
-public fun has_genres(self: &Release): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_genres(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
 }
 
-public fun genres(self: &Release): &vector<ID> {
-    assert!(has_genres(self), ENoGenres);
-    df::borrow(self.uid(), ExtensionKey())
+public fun genres(release: &Release): &vector<ID> {
+    assert!(has_genres(release), ENoGenres);
+    df::borrow(release.uid(), ExtensionKey())
 }
 
 // === Test Functions ===
 
 #[test_only]
-public fun release_genre_added_fields(e: &ReleaseGenreAddedEvent): (ID, ID) {
-    (e.release_id, e.genre_id)
+public fun release_genre_added_fields(event: &ReleaseGenreAddedEvent): (ID, ID) {
+    (event.release_id, event.genre_id)
 }
 
 #[test_only]
-public fun release_genre_removed_fields(e: &ReleaseGenreRemovedEvent): (ID, ID) {
-    (e.release_id, e.genre_id)
+public fun release_genre_removed_fields(event: &ReleaseGenreRemovedEvent): (ID, ID) {
+    (event.release_id, event.genre_id)
 }
 
 #[test_only]
-public fun release_genres_cleared_fields(e: &ReleaseGenresClearedEvent): ID {
-    e.release_id
+public fun release_genres_cleared_fields(event: &ReleaseGenresClearedEvent): ID {
+    event.release_id
 }

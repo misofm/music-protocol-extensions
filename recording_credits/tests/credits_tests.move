@@ -62,13 +62,13 @@ fun other_long_string(len: u64): String {
 }
 
 fun assert_added(
-    e: &credits::RecordingCreditAddedEvent,
+    event: &credits::RecordingCreditAddedEvent,
     recording_id: ID,
     party_id: ID,
     credit: &credit::Credit<RecordingPartyRole>,
 ) {
     let (event_object, event_party, event_name, event_roles) =
-        credits::recording_credit_added_fields(e);
+        credits::recording_credit_added_fields(event);
     assert_eq!(event_object, recording_id);
     assert_eq!(event_party, party_id);
     assert_eq!(event_name, *credit.display_name());

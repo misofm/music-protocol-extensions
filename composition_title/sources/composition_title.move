@@ -43,7 +43,7 @@ public struct CompositionTitleClearedEvent has copy, drop {
 // === Public Functions ===
 
 public fun set_title<CompositionShare>(
-    self: &mut Composition<CompositionShare>,
+    composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
     title: String,
 ) {
@@ -51,8 +51,8 @@ public fun set_title<CompositionShare>(
     assert!(!bytes.is_empty(), EEmptyTitle);
     assert!(bytes.length() <= MAX_TITLE_LENGTH, ETitleTooLong);
 
-    let composition_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let composition_id = object::id(composition);
+    let uid = composition.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
         let stored: &mut String = df::borrow_mut(uid, ExtensionKey());
         if (*stored == title) return;
@@ -65,11 +65,11 @@ public fun set_title<CompositionShare>(
 
 /// A clear of nothing still requires the cap.
 public fun clear_title<CompositionShare>(
-    self: &mut Composition<CompositionShare>,
+    composition: &mut Composition<CompositionShare>,
     cap: &CompositionAdminCap<CompositionShare>,
 ) {
-    let composition_id = object::id(self);
-    let uid = self.uid_mut(cap);
+    let composition_id = object::id(composition);
+    let uid = composition.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) return;
     let _: String = df::remove(uid, ExtensionKey());
     emit(CompositionTitleClearedEvent { composition_id });
@@ -77,23 +77,23 @@ public fun clear_title<CompositionShare>(
 
 // === View Functions ===
 
-public fun has_title<CompositionShare>(self: &Composition<CompositionShare>): bool {
-    df::exists(self.uid(), ExtensionKey())
+public fun has_title<CompositionShare>(composition: &Composition<CompositionShare>): bool {
+    df::exists(composition.uid(), ExtensionKey())
 }
 
-public fun title<CompositionShare>(self: &Composition<CompositionShare>): &String {
-    assert!(has_title(self), ENoTitle);
-    df::borrow(self.uid(), ExtensionKey())
+public fun title<CompositionShare>(composition: &Composition<CompositionShare>): &String {
+    assert!(has_title(composition), ENoTitle);
+    df::borrow(composition.uid(), ExtensionKey())
 }
 
 // === Test Functions ===
 
 #[test_only]
-public fun composition_title_set_fields(e: &CompositionTitleSetEvent): (ID, String) {
-    (e.composition_id, e.title)
+public fun composition_title_set_fields(event: &CompositionTitleSetEvent): (ID, String) {
+    (event.composition_id, event.title)
 }
 
 #[test_only]
-public fun composition_title_cleared_fields(e: &CompositionTitleClearedEvent): ID {
-    e.composition_id
+public fun composition_title_cleared_fields(event: &CompositionTitleClearedEvent): ID {
+    event.composition_id
 }
