@@ -7,7 +7,7 @@ the tests for the current API.
 
 `Move.toml` pins `miso_music` at `a62de87ff9c24c692ba711855b5acd94c4a6472e`,
 `miso_party` at `9374c6eed64c907722ac1c93813c76dc7912b357`, and `credit` at
-`a503e692daa47d35e78a8e86632a4e138629d6a2`.
+`c8d5be0a462760c74b45dcdc39a3e5e0a2f10b99`.
 
 ## Threat model
 

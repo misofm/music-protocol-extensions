@@ -19,7 +19,7 @@ deps = { MoveStdlib = "MoveStdlib" }
 [pinned.mainnet.composition_credits]
 source = { root = true }
 use_environment = "mainnet"
-manifest_digest = "BBCAAD5995D207C62C7BD10F167C25B4B9BE5DA7724B3B393BEC4631E156BAD9"
+manifest_digest = "DD9ED28F197BD85815DE63DF8B84969A452EBC2678E29E243FE4701E078F17EB"
 deps = { credit = "credit", miso_music = "miso_music", miso_party = "miso_party", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.composition_share]
@@ -29,7 +29,7 @@ manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5E
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.mainnet.credit]
-source = { git = "https://github.com/misofm/credit.git", subdir = ".", rev = "a503e692daa47d35e78a8e86632a4e138629d6a2" }
+source = { git = "https://github.com/misofm/credit.git", subdir = ".", rev = "c8d5be0a462760c74b45dcdc39a3e5e0a2f10b99" }
 use_environment = "mainnet"
 manifest_digest = "E41BBD67BE8940D26C79D78B028477EF5B33BA217A1282C78ACB344CF8A5ECF6"
 deps = { std = "MoveStdlib", sui = "Sui" }
@@ -73,7 +73,7 @@ deps = { MoveStdlib = "MoveStdlib" }
 [pinned.testnet.composition_credits]
 source = { root = true }
 use_environment = "testnet"
-manifest_digest = "612CE115C316365CDDCC9F951D4F6CB7F2391A1FF261E04F8E5906C14309E0B0"
+manifest_digest = "F103A1F240BFEC1F09416C4EFD2CA15EC86E513EFB09B2DDFDFDD66BC8BC78E6"
 deps = { credit = "credit", miso_music = "miso_music", miso_party = "miso_party", std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.composition_share]
@@ -83,7 +83,7 @@ manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332
 deps = { std = "MoveStdlib", sui = "Sui" }
 
 [pinned.testnet.credit]
-source = { git = "https://github.com/misofm/credit.git", subdir = ".", rev = "a503e692daa47d35e78a8e86632a4e138629d6a2" }
+source = { git = "https://github.com/misofm/credit.git", subdir = ".", rev = "c8d5be0a462760c74b45dcdc39a3e5e0a2f10b99" }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }

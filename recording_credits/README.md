@@ -122,7 +122,7 @@ stream), or presence and cascade flags.
 - [`miso_party`](https://github.com/misofm/party-protocol) at
   `9374c6eed64c907722ac1c93813c76dc7912b357` — `Party`, the credited identity.
 - [`credit`](https://github.com/misofm/credit) at
-  `a503e692daa47d35e78a8e86632a4e138629d6a2` — the generic `Credit<Role>`.
+  `c8d5be0a462760c74b45dcdc39a3e5e0a2f10b99` — the generic `Credit<Role>`.
 
 ## Publishing
 
