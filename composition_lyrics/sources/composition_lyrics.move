@@ -38,7 +38,26 @@ public struct CompositionLyricsClearedEvent has copy, drop {
     language: String,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_lyrics<CompositionShare>(
+    composition: &Composition<CompositionShare>,
+    language: LanguageCode,
+): bool {
+    df::exists(composition.uid(), ExtensionKey(language))
+}
+
+public fun lyrics<CompositionShare>(
+    composition: &Composition<CompositionShare>,
+    language: LanguageCode,
+): &vector<u8> {
+    assert!(has_lyrics(composition, language), ENoLyrics);
+    df::borrow(composition.uid(), ExtensionKey(language))
+}
+
+public fun max_lyrics_length(): u64 { MAX_LYRICS_LENGTH }
+
+// === Admin Functions ===
 
 public fun set_lyrics<CompositionShare>(
     composition: &mut Composition<CompositionShare>,
@@ -78,25 +97,6 @@ public fun clear_lyrics<CompositionShare>(
         });
     }
 }
-
-// === View Functions ===
-
-public fun has_lyrics<CompositionShare>(
-    composition: &Composition<CompositionShare>,
-    language: LanguageCode,
-): bool {
-    df::exists(composition.uid(), ExtensionKey(language))
-}
-
-public fun lyrics<CompositionShare>(
-    composition: &Composition<CompositionShare>,
-    language: LanguageCode,
-): &vector<u8> {
-    assert!(has_lyrics(composition, language), ENoLyrics);
-    df::borrow(composition.uid(), ExtensionKey(language))
-}
-
-public fun max_lyrics_length(): u64 { MAX_LYRICS_LENGTH }
 
 // === Test Functions ===
 

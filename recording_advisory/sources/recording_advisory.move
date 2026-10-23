@@ -44,6 +44,31 @@ public fun not_explicit(): Advisory { Advisory::NotExplicit }
 
 public fun cleaned(): Advisory { Advisory::Cleaned }
 
+// === View Functions ===
+
+public fun has_advisory<RecordingShare>(recording: &Recording<RecordingShare>): bool {
+    df::exists(recording.uid(), ExtensionKey())
+}
+
+public fun advisory<RecordingShare>(recording: &Recording<RecordingShare>): Advisory {
+    assert!(has_advisory(recording), ENoAdvisory);
+    *df::borrow(recording.uid(), ExtensionKey())
+}
+
+public fun is_explicit(self: &Advisory): bool {
+    match (self) { Advisory::Explicit => true, _ => false }
+}
+
+public fun is_not_explicit(self: &Advisory): bool {
+    match (self) { Advisory::NotExplicit => true, _ => false }
+}
+
+public fun is_cleaned(self: &Advisory): bool {
+    match (self) { Advisory::Cleaned => true, _ => false }
+}
+
+// === Admin Functions ===
+
 public fun set_advisory<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
     cap: &RecordingAdminCap<RecordingShare>,
@@ -71,29 +96,6 @@ public fun clear_advisory<RecordingShare>(
         let _: Advisory = df::remove(uid, ExtensionKey());
         emit(RecordingAdvisoryClearedEvent { recording_id });
     }
-}
-
-// === View Functions ===
-
-public fun has_advisory<RecordingShare>(recording: &Recording<RecordingShare>): bool {
-    df::exists(recording.uid(), ExtensionKey())
-}
-
-public fun advisory<RecordingShare>(recording: &Recording<RecordingShare>): Advisory {
-    assert!(has_advisory(recording), ENoAdvisory);
-    *df::borrow(recording.uid(), ExtensionKey())
-}
-
-public fun is_explicit(self: &Advisory): bool {
-    match (self) { Advisory::Explicit => true, _ => false }
-}
-
-public fun is_not_explicit(self: &Advisory): bool {
-    match (self) { Advisory::NotExplicit => true, _ => false }
-}
-
-public fun is_cleaned(self: &Advisory): bool {
-    match (self) { Advisory::Cleaned => true, _ => false }
 }
 
 // === Test Functions ===

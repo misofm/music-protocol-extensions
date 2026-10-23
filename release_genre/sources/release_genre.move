@@ -41,7 +41,18 @@ public struct ReleaseGenresClearedEvent has copy, drop {
     release_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_genres(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
+}
+
+public fun genres(release: &Release): &vector<ID> {
+    assert!(has_genres(release), ENoGenres);
+    df::borrow(release.uid(), ExtensionKey())
+}
+
+// === Admin Functions ===
 
 public fun add_genre(release: &mut Release, cap: &ReleaseAdminCap, genre: &Genre) {
     let release_id = object::id(release);
@@ -79,17 +90,6 @@ public fun clear_genres(release: &mut Release, cap: &ReleaseAdminCap) {
         let _: vector<ID> = df::remove(uid, ExtensionKey());
         emit(ReleaseGenresClearedEvent { release_id });
     }
-}
-
-// === View Functions ===
-
-public fun has_genres(release: &Release): bool {
-    df::exists(release.uid(), ExtensionKey())
-}
-
-public fun genres(release: &Release): &vector<ID> {
-    assert!(has_genres(release), ENoGenres);
-    df::borrow(release.uid(), ExtensionKey())
 }
 
 // === Test Functions ===

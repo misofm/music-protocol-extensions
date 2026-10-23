@@ -1,6 +1,6 @@
 # Security Audit — `release_kind`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `release_kind`, against `miso_music` `1538d77` as pinned in `Move.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `release_kind`, against `miso_music` `1538d77` as pinned in `Move.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -18,11 +18,11 @@ None.
 
 ## Checked, no finding
 
-- **Authorization:** `set_kind` validates first. It rejects an empty kind (`release_kind.move:41`) and one over 32 bytes (`:42`), then calls `uid_mut` (`:45`). `clear_kind` authorizes before checking whether a kind exists (`:58-59`).
+- **Authorization:** `set_kind` validates first. It rejects an empty kind (`release_kind.move:52`) and one over 32 bytes (`:53`), then calls `uid_mut` (`:56`). `clear_kind` authorizes before checking whether a kind exists (`:69-70`).
 - **Value:** the kind is stored verbatim and nothing on-chain reads it.
 - **Events:**
-  - An equal set is silent (`:48`).
-  - A clear of an absent kind is silent (`:59`).
+  - An equal set is silent (`:59`).
+  - A clear of an absent kind is silent (`:70`).
   - The set event is at most 65 BCS bytes. The clear event is 32 bytes.
 - **Lifecycle and money:** no objects or coins are involved.
 

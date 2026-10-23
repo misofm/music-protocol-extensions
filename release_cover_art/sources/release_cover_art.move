@@ -49,7 +49,29 @@ public struct ReleaseTrackCoverArtClearedEvent has copy, drop {
     track_index: u64,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_cover_art(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
+}
+
+public fun cover(release: &Release): &Option<CoverArt> {
+    &borrow(release.uid()).cover
+}
+
+public fun track_cover(release: &Release, track_index: u64): Option<CoverArt> {
+    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+    let record = borrow(release.uid());
+    let override = record.track_covers.borrow(track_index);
+    if (override.is_some()) *override else record.cover
+}
+
+public fun track_cover_override(release: &Release, track_index: u64): &Option<CoverArt> {
+    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+    borrow(release.uid()).track_covers.borrow(track_index)
+}
+
+// === Admin Functions ===
 
 public fun set_cover(release: &mut Release, cap: &ReleaseAdminCap, art: CoverArt) {
     let release_id = object::id(release);
@@ -106,28 +128,6 @@ public fun clear_track_cover(release: &mut Release, cap: &ReleaseAdminCap, track
         let ReleaseCoverArt { .. } = df::remove(uid, ExtensionKey());
     };
     emit(ReleaseTrackCoverArtClearedEvent { release_id, track_index });
-}
-
-// === View Functions ===
-
-public fun has_cover_art(release: &Release): bool {
-    df::exists(release.uid(), ExtensionKey())
-}
-
-public fun cover(release: &Release): &Option<CoverArt> {
-    &borrow(release.uid()).cover
-}
-
-public fun track_cover(release: &Release, track_index: u64): Option<CoverArt> {
-    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
-    let record = borrow(release.uid());
-    let override = record.track_covers.borrow(track_index);
-    if (override.is_some()) *override else record.cover
-}
-
-public fun track_cover_override(release: &Release, track_index: u64): &Option<CoverArt> {
-    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
-    borrow(release.uid()).track_covers.borrow(track_index)
 }
 
 // === Private Functions ===

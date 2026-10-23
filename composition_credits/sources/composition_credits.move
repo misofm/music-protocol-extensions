@@ -47,7 +47,21 @@ public struct CompositionCreditRemovedEvent has copy, drop {
     party_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_credits<CompositionShare>(composition: &Composition<CompositionShare>): bool {
+    df::exists(composition.uid(), ExtensionKey())
+}
+
+public fun credits<CompositionShare>(
+    composition: &Composition<CompositionShare>,
+): &VecMap<ID, Credit<CompositionPartyRole>> {
+    assert!(df::exists(composition.uid(), ExtensionKey()), ENoCredits);
+    let record: &CompositionCredits = df::borrow(composition.uid(), ExtensionKey());
+    &record.credits
+}
+
+// === Admin Functions ===
 
 public fun add_credit<CompositionShare>(
     composition: &mut Composition<CompositionShare>,
@@ -88,20 +102,6 @@ public fun remove_credit<CompositionShare>(
     };
 
     emit(CompositionCreditRemovedEvent { composition_id, party_id });
-}
-
-// === View Functions ===
-
-public fun has_credits<CompositionShare>(composition: &Composition<CompositionShare>): bool {
-    df::exists(composition.uid(), ExtensionKey())
-}
-
-public fun credits<CompositionShare>(
-    composition: &Composition<CompositionShare>,
-): &VecMap<ID, Credit<CompositionPartyRole>> {
-    assert!(df::exists(composition.uid(), ExtensionKey()), ENoCredits);
-    let record: &CompositionCredits = df::borrow(composition.uid(), ExtensionKey());
-    &record.credits
 }
 
 // === Test Functions ===

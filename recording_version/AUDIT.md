@@ -1,6 +1,6 @@
 # Security Audit — `recording_version`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_version`, against `miso_music` `1538d77` as pinned in `Move.toml`. The package is unpublished and has no `Published.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_version`, against `miso_music` `1538d77` as pinned in `Move.toml`. The package is unpublished and has no `Published.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -18,11 +18,11 @@ None.
 
 ## Checked, no finding
 
-- **Authorization:** `set_version` validates first. It rejects an empty name (`recording_version.move:45`) and a name over 300 bytes (`:46`), then calls `uid_mut` (`:48`). `clear_version` authorizes before checking whether a name exists (`:64-65`).
+- **Authorization:** `set_version` validates first. It rejects an empty name (`recording_version.move:56`) and a name over 300 bytes (`:57`), then calls `uid_mut` (`:59`). `clear_version` authorizes before checking whether a name exists (`:75-76`).
 - **Bound:** the limit counts bytes, not characters. The tests cover a value of exactly 300 bytes in three-byte UTF-8 and a rejected value of 303 bytes.
 - **Events:**
-  - An equal set is silent (`:51`).
-  - A clear of an absent name is silent (`:65`).
+  - An equal set is silent (`:62`).
+  - A clear of an absent name is silent (`:76`).
   - The set event is 34 to 334 BCS bytes. The clear event is 32 bytes.
 - **Lifecycle and money:** the field exists exactly when a name is attached. No objects or coins are involved.
 

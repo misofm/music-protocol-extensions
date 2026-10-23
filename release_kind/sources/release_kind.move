@@ -35,7 +35,18 @@ public struct ReleaseKindClearedEvent has copy, drop {
     release_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_kind(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
+}
+
+public fun kind(release: &Release): &String {
+    assert!(has_kind(release), ENoKind);
+    df::borrow(release.uid(), ExtensionKey())
+}
+
+// === Admin Functions ===
 
 public fun set_kind(release: &mut Release, cap: &ReleaseAdminCap, kind: String) {
     assert!(!kind.is_empty(), EEmptyKind);
@@ -60,17 +71,6 @@ public fun clear_kind(release: &mut Release, cap: &ReleaseAdminCap) {
         let _: String = df::remove(uid, ExtensionKey());
         emit(ReleaseKindClearedEvent { release_id });
     }
-}
-
-// === View Functions ===
-
-public fun has_kind(release: &Release): bool {
-    df::exists(release.uid(), ExtensionKey())
-}
-
-public fun kind(release: &Release): &String {
-    assert!(has_kind(release), ENoKind);
-    df::borrow(release.uid(), ExtensionKey())
 }
 
 // === Test Functions ===

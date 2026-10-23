@@ -1,6 +1,6 @@
 # Security Audit — `release_title`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `release_title`, against `miso_music` `1538d77` as pinned in `Move.toml`. The package is unpublished and has no `Published.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `release_title`, against `miso_music` `1538d77` as pinned in `Move.toml`. The package is unpublished and has no `Published.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -18,11 +18,11 @@ None.
 
 ## Checked, no finding
 
-- **Authorization:** `set_title` validates first. It rejects an empty title (`release_title.move:41`) and one over 300 bytes (`:42`), then calls `uid_mut` (`:45`). `clear_title` authorizes before checking whether a title exists (`:58-59`).
+- **Authorization:** `set_title` validates first. It rejects an empty title (`release_title.move:52`) and one over 300 bytes (`:53`), then calls `uid_mut` (`:56`). `clear_title` authorizes before checking whether a title exists (`:69-70`).
 - **Bound and value:** the limit counts bytes, not characters. The title is stored verbatim.
 - **Events:**
-  - An equal set is silent (`:48`).
-  - A clear of an absent title is silent (`:59`).
+  - An equal set is silent (`:59`).
+  - A clear of an absent title is silent (`:70`).
   - The set event is at most 334 BCS bytes. The clear event is 32 bytes.
 - **Lifecycle and money:** no objects or coins are involved.
 

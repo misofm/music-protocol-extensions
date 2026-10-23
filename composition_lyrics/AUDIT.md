@@ -1,6 +1,6 @@
 # Security Audit — `composition_lyrics`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `composition_lyrics`, against `miso_music` `1538d77` and `language_code` `6154235` as pinned in `Move.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `composition_lyrics`, against `miso_music` `1538d77` and `language_code` `6154235` as pinned in `Move.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -16,7 +16,7 @@ It stores compressed lyrics on a `Composition`, one `vector<u8>` per ISO 639-1 l
 ## Findings
 
 **CL-1 · Low · Open. Payloads over about 16 KiB cannot be passed as a single PTB argument.**
-- `set_lyrics` accepts up to `MAX_LYRICS_LENGTH` = 32,768 bytes (`composition_lyrics.move:22,50`).
+- `set_lyrics` accepts up to `MAX_LYRICS_LENGTH` = 32,768 bytes (`composition_lyrics.move:22,69`).
 - Sui caps each pure argument at 16 KiB, BCS-encoded (`max_pure_argument_size`, `sui-protocol-config/src/lib.rs:2823`). That leaves at most 16,381 payload bytes.
 - A larger payload can only be built in the PTB: split it into two pure arguments and join them with `0x1::vector::append`, or build it with `MakeMoveVec`.
 - Neither README mentions this, so a client that passes the bytes directly will have its transaction rejected for any lyrics between 16,382 and 32,768 bytes.
@@ -24,7 +24,7 @@ It stores compressed lyrics on a `Composition`, one `vector<u8>` per ISO 639-1 l
 - **Suggested fix:** document the split-and-append pattern, or lower the bound to 16,381.
 
 **CL-2 · Info · Accepted. The payload is opaque.**
-- `set_lyrics` checks only that the payload is non-empty and within the size bound (`:49-50`).
+- `set_lyrics` checks only that the payload is non-empty and within the size bound (`:68-69`).
 - It does not check the zstd frame or the UTF-8 encoding, and it does not limit the decompressed size.
 - A 32 KiB frame can decompress to an arbitrarily large output. The README says so and assigns decoder limits to clients.
 
@@ -35,11 +35,11 @@ It stores compressed lyrics on a `Composition`, one `vector<u8>` per ISO 639-1 l
 
 ## Checked, no finding
 
-- **Authorization:** both writes call `uid_mut` (`:53`, `:71`). Validation runs before authorization (`:49-50`), so an invalid value reports its own code whatever cap is supplied. A clear of an absent entry still requires the cap.
+- **Authorization:** both writes call `uid_mut` (`:72`, `:90`). Validation runs before authorization (`:68-69`), so an invalid value reports its own code whatever cap is supplied. A clear of an absent entry still requires the cap.
 - **Isolation:** each language's key is independent, so setting or clearing one leaves the others unchanged, as the tests show. Lyrics on one composition never affect another.
 - **Event behavior:**
-  - An equal set returns before writing or emitting (`:57`).
-  - A clear of an absent entry is silent (`:73`).
+  - An equal set returns before writing or emitting (`:76`).
+  - A clear of an absent entry is silent (`:92`).
   - `CompositionLyricsSetEvent` carries the subject, the two-letter code and the stored bytes. It is 37 to 32,806 BCS bytes, below the 250 KiB per-event limit.
   - `CompositionLyricsClearedEvent` carries the subject and the code (35 bytes).
 - **Limits:** each entry is its own dynamic-field object of at most about 32.8 KB, so the object size limit is never approached. The 5 MB per-transaction written-object cap is unreachable given the transaction-size cap.

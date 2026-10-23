@@ -35,7 +35,18 @@ public struct RecordingVersionClearedEvent has copy, drop {
     recording_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_version<RecordingShare>(recording: &Recording<RecordingShare>): bool {
+    df::exists(recording.uid(), ExtensionKey())
+}
+
+public fun version<RecordingShare>(recording: &Recording<RecordingShare>): &String {
+    assert!(has_version(recording), ENoVersion);
+    df::borrow(recording.uid(), ExtensionKey())
+}
+
+// === Admin Functions ===
 
 public fun set_version<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
@@ -66,17 +77,6 @@ public fun clear_version<RecordingShare>(
         let _: String = df::remove(uid, ExtensionKey());
         emit(RecordingVersionClearedEvent { recording_id });
     }
-}
-
-// === View Functions ===
-
-public fun has_version<RecordingShare>(recording: &Recording<RecordingShare>): bool {
-    df::exists(recording.uid(), ExtensionKey())
-}
-
-public fun version<RecordingShare>(recording: &Recording<RecordingShare>): &String {
-    assert!(has_version(recording), ENoVersion);
-    df::borrow(recording.uid(), ExtensionKey())
 }
 
 // === Test Functions ===

@@ -1,6 +1,6 @@
 # Security Audit — `composition_title`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `composition_title`, against `miso_music` `1538d77` as pinned in `Move.toml`. The package is unpublished and has no `Published.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `composition_title`, against `miso_music` `1538d77` as pinned in `Move.toml`. The package is unpublished and has no `Published.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -20,13 +20,13 @@ None.
 ## Checked, no finding
 
 - **Authorization:**
-  - `set_title` validates first: it rejects an empty title (`composition_title.move:46`) and a title over 300 bytes (`:47`), then calls `uid_mut` (`:50`).
-  - `clear_title` authorizes (`:66`) before it checks whether a title exists (`:67`).
+  - `set_title` validates first: it rejects an empty title (`composition_title.move:57`) and a title over 300 bytes (`:58`), then calls `uid_mut` (`:61`).
+  - `clear_title` authorizes (`:77`) before it checks whether a title exists (`:78`).
 - **Bound:** the limit counts bytes, not characters, so a title of three-byte UTF-8 characters fits 100 of them. The tests cover exactly 300 bytes and 301 bytes.
 - **Value:** the title is stored verbatim and nothing on-chain reads it.
 - **Events:**
-  - An equal set returns before writing or emitting (`:53`).
-  - A clear of an absent title is silent (`:67`).
+  - An equal set returns before writing or emitting (`:64`).
+  - A clear of an absent title is silent (`:78`).
   - `CompositionTitleSetEvent` carries the subject and the title, at most 334 BCS bytes.
   - `CompositionTitleClearedEvent` carries the subject (32 bytes).
 - **Lifecycle:** the field exists exactly when a title is attached. No objects are created and no money is involved.

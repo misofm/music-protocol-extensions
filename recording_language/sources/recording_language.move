@@ -37,7 +37,20 @@ public struct RecordingLanguagesClearedEvent has copy, drop {
     recording_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_languages<RecordingShare>(recording: &Recording<RecordingShare>): bool {
+    df::exists(recording.uid(), ExtensionKey())
+}
+
+public fun languages<RecordingShare>(
+    recording: &Recording<RecordingShare>,
+): &vector<LanguageCode> {
+    assert!(has_languages(recording), ENoLanguages);
+    df::borrow(recording.uid(), ExtensionKey())
+}
+
+// === Admin Functions ===
 
 public fun set_languages<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
@@ -75,19 +88,6 @@ public fun clear_languages<RecordingShare>(
         let _: vector<LanguageCode> = df::remove(uid, ExtensionKey());
         emit(RecordingLanguagesClearedEvent { recording_id });
     }
-}
-
-// === View Functions ===
-
-public fun has_languages<RecordingShare>(recording: &Recording<RecordingShare>): bool {
-    df::exists(recording.uid(), ExtensionKey())
-}
-
-public fun languages<RecordingShare>(
-    recording: &Recording<RecordingShare>,
-): &vector<LanguageCode> {
-    assert!(has_languages(recording), ENoLanguages);
-    df::borrow(recording.uid(), ExtensionKey())
 }
 
 // === Test Functions ===

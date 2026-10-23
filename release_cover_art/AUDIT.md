@@ -1,6 +1,6 @@
 # Security Audit — `release_cover_art`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `release_cover_art`, against `miso_music` `1538d77`, `cover_art` `2065cb4` and `release_track_data` `269a921` as pinned in `Move.toml`. `ori` `367ed5f` is pinned for tests only.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `release_cover_art`, against `miso_music` `1538d77`, `cover_art` `2065cb4` and `release_track_data` `269a921` as pinned in `Move.toml`. `ori` `367ed5f` is pinned for tests only. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -20,19 +20,19 @@ None.
 ## Checked, no finding
 
 - **Authorization:**
-  - All four writes reach `uid_mut`: `set_cover` and `set_track_cover` through `borrow_mut_or_init` (`release_cover_art.move:155`, `:158`), and the two clears directly (`:65`, `:99`). This happens before any stored-state check.
-  - Track indices are validated first (`:82`, `:97`).
+  - All four writes reach `uid_mut`: `set_cover` and `set_track_cover` through `borrow_mut_or_init` (`release_cover_art.move:155`, `:158`), and the two clears directly (`:87`, `:121`). This happens before any stored-state check.
+  - Track indices are validated first (`:104`, `:119`).
   - The tests cover a foreign cap on every write, both with and without a record attached.
 - **Track alignment:**
   - The overrides are created with `release_track_data::filled` (`:157`), sized from `recording_ids` when the record is first attached.
   - Core fixes `recording_ids` at `release::new` and has no mutator, so the overrides stay aligned.
-  - Views check the index against the tracklist (`:122`, `:129`) before borrowing.
+  - Views check the index against the tracklist (`:63`, `:70`) before borrowing.
 - **Values:** `cover_art::new` rejects encrypted blobs. A blob is therefore exactly its `blob_id` plus the `Unencrypted` tag, and the set events carry the complete value.
 - **Events:**
-  - An equal set is silent (`:57`, `:85`).
-  - A clear of an absent value is silent (`:66`, `:68`, `:100`, `:103`).
+  - An equal set is silent (`:79`, `:107`).
+  - A clear of an absent value is silent (`:88`, `:90`, `:122`, `:125`).
   - Events are 32 to 105 BCS bytes.
-  - Removing the record (`:70-72`, `:105-107`) emits no extra event. Presence can be derived from the replayed slots.
+  - Removing the record (`:92-94`, `:127-129`) emits no extra event. Presence can be derived from the replayed slots.
 - **Lifecycle:** the record exists exactly when the album cover or at least one override is set. `is_empty` (`:139-147`) scans at most 1,000 slots, and only on the clear paths.
 - **Limits:**
   - A probe set every override on a 1,000-track release, each with a still and an animated blob. The override vector serialized to 68,002 bytes, below the 256,000-byte object limit.

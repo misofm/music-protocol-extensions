@@ -1,6 +1,6 @@
 # Security Audit — `composition_credits`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: modules `composition_credits` and `composition_party_role`, against `miso_music` `1538d77`, `miso_party` `8e59a81` and `credit` `a5ad1f6` as pinned in `Move.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: modules `composition_credits` and `composition_party_role`, against `miso_music` `1538d77`, `miso_party` `8e59a81` and `credit` `a5ad1f6` as pinned in `Move.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -16,16 +16,16 @@ It stores songwriting and publishing credits on a `Composition`. Each credited `
 
 ## Findings
 
-**CC-1 · Info · Accepted. Credits are admin claims, not attestations.** `add_credit` (`composition_credits.move:52-72`) takes any shared `&Party`, whose consent is not needed. It also takes a free-text `display_name` that has no tie to `Party::name`. A credit records what the composition admin asserts. The README describes it that way: attribution is display-oriented and no economics read it.
+**CC-1 · Info · Accepted. Credits are admin claims, not attestations.** `add_credit` (`composition_credits.move:66-86`) takes any shared `&Party`, whose consent is not needed. It also takes a free-text `display_name` that has no tie to `Party::name`. A credit records what the composition admin asserts. The README describes it that way: attribution is display-oriented and no economics read it.
 
 ## Checked, no finding
 
-- **Authorization:** both writes call `uid_mut(cap)` (`:62`, `:80`) before any stored-state check. A Party ID is derived from the `&Party` passed in (`:59`), so only a real `miso_party::Party` can be credited.
+- **Authorization:** both writes call `uid_mut(cap)` (`:76`, `:94`) before any stored-state check. A Party ID is derived from the `&Party` passed in (`:73`), so only a real `miso_party::Party` can be credited.
 - **Bounds:**
-  - At most 50 credits (`:26`, `:67`), with capacity checked before duplicates (`:67-68`).
-  - One credit per party (`:68`).
+  - At most 50 credits (`:26`, `:81`), with capacity checked before duplicates (`:81-82`).
+  - One credit per party (`:82`).
   - `credit::new` requires 1 to 50 distinct roles and a display name of 1 to 200 bytes. With six unit variants, a credit holds at most six roles.
-- **Lifecycle:** the record is created on the first add (`:63-65`). It is destroyed with the last remove (`:85-88`), using `destroy_empty`. So `has_credits` is true exactly when at least one credit is held. Removing from an absent record aborts `ENoCredits` (`:81`). Removing an unknown party aborts `EPartyNotFound` (`:83`).
+- **Lifecycle:** the record is created on the first add (`:77-79`). It is destroyed with the last remove (`:99-102`), using `destroy_empty`. So `has_credits` is true exactly when at least one credit is held. Removing from an absent record aborts `ENoCredits` (`:95`). Removing an unknown party aborts `EPartyNotFound` (`:97`).
 - **Events:**
   - `CompositionCreditAddedEvent` carries the subject, the party, the display name and the roles as stored. It is 68 to 273 BCS bytes, as the tests confirm.
   - `CompositionCreditRemovedEvent` carries the subject and the party (64 bytes).

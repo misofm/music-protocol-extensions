@@ -35,7 +35,18 @@ public struct ReleaseDescriptionClearedEvent has copy, drop {
     release_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_description(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
+}
+
+public fun description(release: &Release): &String {
+    assert!(has_description(release), ENoDescription);
+    df::borrow(release.uid(), ExtensionKey())
+}
+
+// === Admin Functions ===
 
 public fun set_description(release: &mut Release, cap: &ReleaseAdminCap, description: String) {
     assert!(!description.is_empty(), EEmptyDescription);
@@ -60,17 +71,6 @@ public fun clear_description(release: &mut Release, cap: &ReleaseAdminCap) {
         let _: String = df::remove(uid, ExtensionKey());
         emit(ReleaseDescriptionClearedEvent { release_id });
     }
-}
-
-// === View Functions ===
-
-public fun has_description(release: &Release): bool {
-    df::exists(release.uid(), ExtensionKey())
-}
-
-public fun description(release: &Release): &String {
-    assert!(has_description(release), ENoDescription);
-    df::borrow(release.uid(), ExtensionKey())
 }
 
 // === Test Functions ===

@@ -1,6 +1,6 @@
 # Security Audit — `recording_genre`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_genre`, against `miso_music` `1538d77` and `genre` `4c47bd1` as pinned in `Move.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_genre`, against `miso_music` `1538d77` and `genre` `4c47bd1` as pinned in `Move.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -19,16 +19,16 @@ None.
 
 ## Checked, no finding
 
-- **Authorization:** all three writes call `uid_mut` (`recording_genre.move:53`, `:71`, `:88`) before reading stored state.
-- **Genre IDs:** `add_genre` takes a `&Genre` (`:49`), so only the ID of an existing frozen `Genre` from the pinned package can enter the list. `remove_genre` takes a bare `ID`, but it can only remove.
+- **Authorization:** all three writes call `uid_mut` (`recording_genre.move:64`, `:82`, `:99`) before reading stored state.
+- **Genre IDs:** `add_genre` takes a `&Genre` (`:60`), so only the ID of an existing frozen `Genre` from the pinned package can enter the list. `remove_genre` takes a bare `ID`, but it can only remove.
 - **List invariants:**
-  - No duplicates (`:56`).
-  - At most six entries (`:57`), with duplicates checked before capacity, as documented.
-  - Never empty: the last removal drops the field (`:77-79`). `genres` aborts with `ENoGenres` (`:102`) instead of returning an empty list.
+  - No duplicates (`:67`).
+  - At most six entries (`:68`), with duplicates checked before capacity, as documented.
+  - Never empty: the last removal drops the field (`:88-90`). `genres` aborts with `ENoGenres` (`:51`) instead of returning an empty list.
 - **Events:**
   - The add and remove events are 64 bytes each and carry the genre ID. The clear event is 32 bytes.
   - Replaying them in order reproduces the list, including which genre becomes primary when the first one is removed.
-  - A clear of an absent list is silent (`:89`).
+  - A clear of an absent list is silent (`:100`).
 - **Limits and money:** the record is at most 193 bytes. No objects or coins are involved.
 
 ## Operational requirements

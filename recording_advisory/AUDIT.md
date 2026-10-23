@@ -1,6 +1,6 @@
 # Security Audit — `recording_advisory`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_advisory`, against `miso_music` `1538d77` as pinned in `Move.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_advisory`, against `miso_music` `1538d77` as pinned in `Move.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -19,12 +19,12 @@ None.
 
 ## Checked, no finding
 
-- **Authorization:** both writes call `uid_mut` (`recording_advisory.move:53`, `:69`). That includes an equal set and a clear of an absent advisory.
+- **Authorization:** both writes call `uid_mut` (`recording_advisory.move:78`, `:94`). That includes an equal set and a clear of an absent advisory.
 - **Values:** `Advisory` is a closed enum (`:22-26`), so malformed values cannot be stored.
-- **Absence:** an absent advisory stays distinct from `NotExplicit`. The `advisory` view aborts with `ENoAdvisory` (`:83`) rather than returning a default.
+- **Absence:** an absent advisory stays distinct from `NotExplicit`. The `advisory` view aborts with `ENoAdvisory` (`:54`) rather than returning a default.
 - **Events:**
-  - An equal set is silent (`:56`).
-  - A clear of an absent advisory is silent (`:70`).
+  - An equal set is silent (`:81`).
+  - A clear of an absent advisory is silent (`:95`).
   - The set event is 33 BCS bytes, with the variant index as its last byte. The clear event is 32 bytes.
 - **Limits and money:** the stored value is a single byte. No objects, coins or external calls are involved.
 

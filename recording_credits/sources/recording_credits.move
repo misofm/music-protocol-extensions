@@ -80,7 +80,45 @@ public struct RecordingFeaturedArtistRemovedEvent has copy, drop {
     party_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_credits<RecordingShare>(recording: &Recording<RecordingShare>): bool {
+    df::exists(recording.uid(), ExtensionKey())
+}
+
+public fun credits<RecordingShare>(
+    recording: &Recording<RecordingShare>,
+): &VecMap<ID, Credit<RecordingPartyRole>> {
+    &borrow(recording.uid()).credits
+}
+
+public fun primary_artist_ids<RecordingShare>(
+    recording: &Recording<RecordingShare>,
+): &VecSet<ID> {
+    &borrow(recording.uid()).primary_artist_ids
+}
+
+public fun featured_artist_ids<RecordingShare>(
+    recording: &Recording<RecordingShare>,
+): &VecSet<ID> {
+    &borrow(recording.uid()).featured_artist_ids
+}
+
+public fun is_primary_artist<RecordingShare>(
+    recording: &Recording<RecordingShare>,
+    party_id: ID,
+): bool {
+    has_credits(recording) && borrow(recording.uid()).primary_artist_ids.contains(&party_id)
+}
+
+public fun is_featured_artist<RecordingShare>(
+    recording: &Recording<RecordingShare>,
+    party_id: ID,
+): bool {
+    has_credits(recording) && borrow(recording.uid()).featured_artist_ids.contains(&party_id)
+}
+
+// === Admin Functions ===
 
 public fun add_credit<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
@@ -203,44 +241,6 @@ public fun remove_featured_artist<RecordingShare>(
     record.featured_artist_ids.remove(&party_id);
 
     emit(RecordingFeaturedArtistRemovedEvent { recording_id, party_id });
-}
-
-// === View Functions ===
-
-public fun has_credits<RecordingShare>(recording: &Recording<RecordingShare>): bool {
-    df::exists(recording.uid(), ExtensionKey())
-}
-
-public fun credits<RecordingShare>(
-    recording: &Recording<RecordingShare>,
-): &VecMap<ID, Credit<RecordingPartyRole>> {
-    &borrow(recording.uid()).credits
-}
-
-public fun primary_artist_ids<RecordingShare>(
-    recording: &Recording<RecordingShare>,
-): &VecSet<ID> {
-    &borrow(recording.uid()).primary_artist_ids
-}
-
-public fun featured_artist_ids<RecordingShare>(
-    recording: &Recording<RecordingShare>,
-): &VecSet<ID> {
-    &borrow(recording.uid()).featured_artist_ids
-}
-
-public fun is_primary_artist<RecordingShare>(
-    recording: &Recording<RecordingShare>,
-    party_id: ID,
-): bool {
-    has_credits(recording) && borrow(recording.uid()).primary_artist_ids.contains(&party_id)
-}
-
-public fun is_featured_artist<RecordingShare>(
-    recording: &Recording<RecordingShare>,
-    party_id: ID,
-): bool {
-    has_credits(recording) && borrow(recording.uid()).featured_artist_ids.contains(&party_id)
 }
 
 // === Private Functions ===

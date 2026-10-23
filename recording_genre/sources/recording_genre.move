@@ -41,7 +41,18 @@ public struct RecordingGenresClearedEvent has copy, drop {
     recording_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_genres<RecordingShare>(recording: &Recording<RecordingShare>): bool {
+    df::exists(recording.uid(), ExtensionKey())
+}
+
+public fun genres<RecordingShare>(recording: &Recording<RecordingShare>): &vector<ID> {
+    assert!(has_genres(recording), ENoGenres);
+    df::borrow(recording.uid(), ExtensionKey())
+}
+
+// === Admin Functions ===
 
 public fun add_genre<RecordingShare>(
     recording: &mut Recording<RecordingShare>,
@@ -90,17 +101,6 @@ public fun clear_genres<RecordingShare>(
         let _: vector<ID> = df::remove(uid, ExtensionKey());
         emit(RecordingGenresClearedEvent { recording_id });
     }
-}
-
-// === View Functions ===
-
-public fun has_genres<RecordingShare>(recording: &Recording<RecordingShare>): bool {
-    df::exists(recording.uid(), ExtensionKey())
-}
-
-public fun genres<RecordingShare>(recording: &Recording<RecordingShare>): &vector<ID> {
-    assert!(has_genres(recording), ENoGenres);
-    df::borrow(recording.uid(), ExtensionKey())
 }
 
 // === Test Functions ===

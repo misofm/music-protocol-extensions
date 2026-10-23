@@ -35,7 +35,18 @@ public struct ReleaseTitleClearedEvent has copy, drop {
     release_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_title(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
+}
+
+public fun title(release: &Release): &String {
+    assert!(has_title(release), ENoTitle);
+    df::borrow(release.uid(), ExtensionKey())
+}
+
+// === Admin Functions ===
 
 public fun set_title(release: &mut Release, cap: &ReleaseAdminCap, title: String) {
     assert!(!title.is_empty(), EEmptyTitle);
@@ -60,17 +71,6 @@ public fun clear_title(release: &mut Release, cap: &ReleaseAdminCap) {
         let _: String = df::remove(uid, ExtensionKey());
         emit(ReleaseTitleClearedEvent { release_id });
     }
-}
-
-// === View Functions ===
-
-public fun has_title(release: &Release): bool {
-    df::exists(release.uid(), ExtensionKey())
-}
-
-public fun title(release: &Release): &String {
-    assert!(has_title(release), ENoTitle);
-    df::borrow(release.uid(), ExtensionKey())
 }
 
 // === Test Functions ===

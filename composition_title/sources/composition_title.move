@@ -35,7 +35,18 @@ public struct CompositionTitleClearedEvent has copy, drop {
     composition_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_title<CompositionShare>(composition: &Composition<CompositionShare>): bool {
+    df::exists(composition.uid(), ExtensionKey())
+}
+
+public fun title<CompositionShare>(composition: &Composition<CompositionShare>): &String {
+    assert!(has_title(composition), ENoTitle);
+    df::borrow(composition.uid(), ExtensionKey())
+}
+
+// === Admin Functions ===
 
 public fun set_title<CompositionShare>(
     composition: &mut Composition<CompositionShare>,
@@ -67,17 +78,6 @@ public fun clear_title<CompositionShare>(
     if (!df::exists(uid, ExtensionKey())) return;
     let _: String = df::remove(uid, ExtensionKey());
     emit(CompositionTitleClearedEvent { composition_id });
-}
-
-// === View Functions ===
-
-public fun has_title<CompositionShare>(composition: &Composition<CompositionShare>): bool {
-    df::exists(composition.uid(), ExtensionKey())
-}
-
-public fun title<CompositionShare>(composition: &Composition<CompositionShare>): &String {
-    assert!(has_title(composition), ENoTitle);
-    df::borrow(composition.uid(), ExtensionKey())
 }
 
 // === Test Functions ===

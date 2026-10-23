@@ -1,6 +1,6 @@
 # Security Audit — `release_credits`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: modules `release_credits` and `release_party_role`, against `miso_music` `1538d77`, `miso_party` `8e59a81` and `credit` `a5ad1f6` as pinned in `Move.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: modules `release_credits` and `release_party_role`, against `miso_music` `1538d77`, `miso_party` `8e59a81` and `credit` `a5ad1f6` as pinned in `Move.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -14,19 +14,19 @@ It stores top-line billing on a `Release`: each credited `Party` ID maps to a `C
 
 ## Findings
 
-**RLC-1 · Info · Accepted. Credits are admin claims.** `add_credit` (`release_credits.move:54-76`) accepts any shared `&Party` without that party's consent. It also accepts a free-text display name that is unrelated to `Party::name`. Billing here drives no economics.
+**RLC-1 · Info · Accepted. Credits are admin claims.** `add_credit` (`release_credits.move:66-88`) accepts any shared `&Party` without that party's consent. It also accepts a free-text display name that is unrelated to `Party::name`. Billing here drives no economics.
 
 ## Checked, no finding
 
 - **Authorization:**
-  - `add_credit` checks the role count first (`:60`, exactly one role), then calls `uid_mut` (`:66`).
-  - `remove_credit` authorizes first (`:80`).
+  - `add_credit` checks the role count first (`:72`, exactly one role), then calls `uid_mut` (`:78`).
+  - `remove_credit` authorizes first (`:92`).
   - The tests cover a foreign cap on both writes.
 - **Invariants:**
-  - At most one credit per party (`:72`).
-  - At most 50 credits (`:28`, `:71`), with capacity checked before duplicates.
-  - The record is destroyed with its last credit (`:85-88`).
-  - Indexing `roles()[0]` (`:65`) is safe because of the role-count check.
+  - At most one credit per party (`:84`).
+  - At most 50 credits (`:28`, `:83`), with capacity checked before duplicates.
+  - The record is destroyed with its last credit (`:97-100`).
+  - Indexing `roles()[0]` (`:77`) is safe because of the role-count check.
 - **Events:** the added event carries the subject, the party, the display name and the single role, 67 to 267 BCS bytes. The removed event is 64 bytes. Every successful write emits exactly one event.
 - **Limits and money:** the largest record is about 12 KB. No objects or coins are involved.
 

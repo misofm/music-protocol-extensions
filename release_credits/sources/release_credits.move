@@ -49,7 +49,19 @@ public struct ReleaseCreditRemovedEvent has copy, drop {
     party_id: ID,
 }
 
-// === Public Functions ===
+// === View Functions ===
+
+public fun has_credits(release: &Release): bool {
+    df::exists(release.uid(), ExtensionKey())
+}
+
+public fun credits(release: &Release): &VecMap<ID, Credit<ReleasePartyRole>> {
+    assert!(has_credits(release), ENoCredits);
+    let record: &ReleaseCredits = df::borrow(release.uid(), ExtensionKey());
+    &record.credits
+}
+
+// === Admin Functions ===
 
 public fun add_credit(
     release: &mut Release,
@@ -88,18 +100,6 @@ public fun remove_credit(release: &mut Release, cap: &ReleaseAdminCap, party_id:
     };
 
     emit(ReleaseCreditRemovedEvent { release_id, party_id });
-}
-
-// === View Functions ===
-
-public fun has_credits(release: &Release): bool {
-    df::exists(release.uid(), ExtensionKey())
-}
-
-public fun credits(release: &Release): &VecMap<ID, Credit<ReleasePartyRole>> {
-    assert!(has_credits(release), ENoCredits);
-    let record: &ReleaseCredits = df::borrow(release.uid(), ExtensionKey());
-    &record.credits
 }
 
 // === Test Functions ===
