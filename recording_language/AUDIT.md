@@ -1,6 +1,6 @@
 # Security Audit — `recording_language`
 
-Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_language`, against `miso_music` `1538d77` and `language_code` `6154235` as pinned in `Move.toml`.
+Audited at `61de12cb5a422fde0159f3f80bdee5423e4bb1d3` (2026-10-21). Scope: module `recording_language`, against `miso_music` `1538d77` and `language_code` `6154235` as pinned in `Move.toml`. Later commits only apply naming and ordering standards; line references are to the current code.
 
 ## What it does
 
@@ -24,12 +24,12 @@ It stores an ordered `vector<LanguageCode>` on a `Recording` under `ExtensionKey
 
 ## Checked, no finding
 
-- **Authorization:** both writes call `uid_mut` (`:49`, `:68`). Validation runs first (`:47`, `:90-97`): at most ten codes, then no repeats. So an invalid replacement leaves the stored value untouched.
-- **Absence and instrumental:** an absent list and an empty list stay distinct. `languages` aborts on absence (`:84`) rather than returning empty.
+- **Authorization:** both writes call `uid_mut` (`:54`, `:73`). Validation runs first (`:47-52`): at most ten codes, then no repeats. So an invalid replacement leaves the stored value untouched.
+- **Absence and instrumental:** an absent list and an empty list stay distinct. `languages` aborts on absence (`:89`) rather than returning empty.
 - **Order:** order is significant. A reordered list counts as a change and emits an event, as the tests show.
 - **Events:**
-  - An equal set is silent (`:52`).
-  - A clear of an absent list is silent (`:69`).
+  - An equal set is silent (`:57`).
+  - A clear of an absent list is silent (`:74`).
   - The set event carries the codes as strings, 33 to 63 BCS bytes. The clear event is 32 bytes.
 - **Limits and money:** at most ten 2-byte codes are stored. The duplicate check is O(n²) over n ≤ 10. No objects or coins are involved.
 

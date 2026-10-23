@@ -44,7 +44,12 @@ public fun set_languages<RecordingShare>(
     cap: &RecordingAdminCap<RecordingShare>,
     languages: vector<LanguageCode>,
 ) {
-    validate(&languages);
+    assert!(languages.length() <= MAX_LANGUAGES, EMaxLanguagesExceeded);
+    let mut seen = vec_set::empty<LanguageCode>();
+    languages.do_ref!(|language| {
+        assert!(!seen.contains(language), EDuplicateLanguage);
+        seen.insert(*language);
+    });
     let recording_id = object::id(recording);
     let uid = recording.uid_mut(cap);
     if (df::exists(uid, ExtensionKey())) {
@@ -83,17 +88,6 @@ public fun languages<RecordingShare>(
 ): &vector<LanguageCode> {
     assert!(has_languages(recording), ENoLanguages);
     df::borrow(recording.uid(), ExtensionKey())
-}
-
-// === Private Functions ===
-
-fun validate(languages: &vector<LanguageCode>) {
-    assert!(languages.length() <= MAX_LANGUAGES, EMaxLanguagesExceeded);
-    let mut seen = vec_set::empty<LanguageCode>();
-    languages.do_ref!(|language| {
-        assert!(!seen.contains(language), EDuplicateLanguage);
-        seen.insert(*language);
-    });
 }
 
 // === Test Functions ===
