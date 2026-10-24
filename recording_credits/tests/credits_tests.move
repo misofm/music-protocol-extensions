@@ -44,7 +44,7 @@ fun instrumentalist(name: String, level: rpr::RecordingPartyRoleLevel): Recordin
 }
 
 fun mk_party(name: vector<u8>, ctx: &mut TxContext): (Party, PartyAdminCap) {
-    party::new(party::new_individual_kind(), name.to_string(), ctx)
+    party::new(name.to_string(), ctx)
 }
 
 fun long_string(len: u64): String {

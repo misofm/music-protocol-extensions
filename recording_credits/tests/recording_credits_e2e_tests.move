@@ -30,7 +30,7 @@ fun producer(name: vector<u8>): Credit<RecordingPartyRole> {
 }
 
 fun mk_party(name: vector<u8>, ctx: &mut TxContext): (Party, PartyAdminCap) {
-    party::new(party::new_individual_kind(), name.to_string(), ctx)
+    party::new(name.to_string(), ctx)
 }
 
 fun publish_shared_recording(ts: &mut Scenario): RecordingAdminCap<TestShare> {

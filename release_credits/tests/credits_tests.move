@@ -31,7 +31,7 @@ fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
 }
 
 fun mk_party(name: vector<u8>, ctx: &mut TxContext): (Party, PartyAdminCap) {
-    party::new(party::new_individual_kind(), name.to_string(), ctx)
+    party::new(name.to_string(), ctx)
 }
 
 fun name_of_length(length: u64): vector<u8> {

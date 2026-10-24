@@ -45,13 +45,13 @@ fun credits_lifecycle_against_a_published_shared_release() {
 
     ts.next_tx(ARTIST);
     let (artist_party, artist_cap) =
-        party::new(party::new_individual_kind(), b"Alice".to_string(), ts.ctx());
+        party::new(b"Alice".to_string(), ts.ctx());
     let artist_id = object::id(&artist_party);
     artist_party.share(&artist_cap);
 
     ts.next_tx(FEATURED_ARTIST);
     let (feat_party, feat_cap) =
-        party::new(party::new_individual_kind(), b"Bob".to_string(), ts.ctx());
+        party::new(b"Bob".to_string(), ts.ctx());
     let feat_id = object::id(&feat_party);
     feat_party.share(&feat_cap);
 
@@ -126,7 +126,7 @@ fun add_credit_aborts_for_a_cap_from_a_different_release() {
     ts.next_tx(STRANGER);
     let (_stranger_rel, stranger_cap) = new_release(ts.ctx());
     let (party, _party_cap) =
-        party::new(party::new_individual_kind(), b"Eve".to_string(), ts.ctx());
+        party::new(b"Eve".to_string(), ts.ctx());
 
     let mut rel = ts.take_shared<Release>();
     credits::add_credit(
@@ -145,7 +145,7 @@ fun remove_credit_aborts_for_a_cap_from_a_different_release() {
     let (rel, rel_cap) = new_release(ts.ctx());
     rel.publish(&rel_cap);
     let (party, _party_cap) =
-        party::new(party::new_individual_kind(), b"Alice".to_string(), ts.ctx());
+        party::new(b"Alice".to_string(), ts.ctx());
     let party_id = object::id(&party);
 
     ts.next_tx(LABEL);

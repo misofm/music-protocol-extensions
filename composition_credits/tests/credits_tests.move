@@ -30,7 +30,7 @@ fun mk_composition(
 }
 
 fun mk_party(name: vector<u8>, ctx: &mut TxContext): (Party, PartyAdminCap) {
-    party::new(party::new_individual_kind(), name.to_string(), ctx)
+    party::new(name.to_string(), ctx)
 }
 
 fun composer(name: vector<u8>): Credit<CompositionPartyRole> {

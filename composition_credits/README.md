@@ -73,12 +73,12 @@ replayed credit count is non-zero).
 ## Dependencies
 
 - [`miso_music`](https://github.com/misofm/music-protocol) at
-  `1538d77035c4fb6b45b74f7d85168b7c3a80564b` — `Composition`
+  `aca186f3eb23ad2867f7496a9dc141fbdf9e7a3b` — `Composition`
   and `CompositionAdminCap`.
 - [`miso_party`](https://github.com/misofm/party-protocol) at
-  `8e59a815dc1129166b66a76d568edb8822859255` — `Party`, the credited identity.
+  `c62febbd9bbf6d9630d4716d7bf8e07847072b7f` — `Party`, the credited identity.
 - [`credit`](https://github.com/misofm/credit) at
-  `a5ad1f65e0ef905d204857b519aaa7964abd5d0f` — the generic `Credit<Role>`.
+  `27ea5d4b90fb491408c3010cb171d175ed11de07` — the generic `Credit<Role>`.
 
 ## Publishing
 
