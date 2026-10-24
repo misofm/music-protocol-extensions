@@ -16,8 +16,7 @@ use release_description::release_description as rd;
 
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let rec_id = test_helpers::fake_id(ctx);
-    let target_id = test_helpers::fake_id(ctx);
-    release::new_for_testing(vector[release::consent_for_testing(rec_id, target_id)], ctx)
+    release::new_for_testing(vector[rec_id], ctx)
 }
 
 fun repeated(byte: u8, n: u64): String {

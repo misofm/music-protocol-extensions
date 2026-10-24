@@ -30,9 +30,7 @@ fun featured(name: vector<u8>): Credit<ReleasePartyRole> {
 
 fun new_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let recording_id = object::id_from_address(@0xB0B);
-    let placeholder_id = object::id_from_address(@0xC0C);
-    let consent = release::consent_for_testing(recording_id, placeholder_id);
-    release::new_for_testing(vector[consent], ctx)
+    release::new_for_testing(vector[recording_id], ctx)
 }
 
 #[test]
@@ -57,7 +55,6 @@ fun credits_lifecycle_against_a_published_shared_release() {
 
     ts.next_tx(LABEL);
     let mut rel = ts.take_shared<Release>();
-    assert!(rel.is_published_state());
     assert!(!credits::has_credits(&rel));
 
     let artist_party = ts.take_shared_by_id<Party>(artist_id);

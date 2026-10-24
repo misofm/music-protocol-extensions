@@ -21,11 +21,10 @@ use release_cover_art::release_cover_art::{
 };
 
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
-    let rel_id = object::id_from_address(@0xB0B);
     let tracks = vector[
-        release::consent_for_testing(object::id_from_address(@0xA0), rel_id),
-        release::consent_for_testing(object::id_from_address(@0xA1), rel_id),
-        release::consent_for_testing(object::id_from_address(@0xA2), rel_id),
+        object::id_from_address(@0xA0),
+        object::id_from_address(@0xA1),
+        object::id_from_address(@0xA2),
     ];
     release::new_for_testing(tracks, ctx)
 }
@@ -46,7 +45,7 @@ fun assert_set_event(
 fun assert_track_set_event(
     event: &ReleaseTrackCoverArtSetEvent,
     release_id: ID,
-    track_index: u64,
+    track_index: u8,
     still_blob_id: u256,
     animated_blob_id: Option<u256>,
 ) {
@@ -61,7 +60,7 @@ fun assert_track_set_event(
 fun assert_track_cleared_event(
     event: &ReleaseTrackCoverArtClearedEvent,
     release_id: ID,
-    track_index: u64,
+    track_index: u8,
 ) {
     let (event_release_id, event_index) =
         release_cover_art::release_track_cover_art_cleared_fields(event);
@@ -142,7 +141,7 @@ fun set_track_cover_at_last_index() {
 fun set_track_cover_rejects_max_index() {
     let ctx = &mut tx_context::dummy();
     let (mut rel, cap) = mk_release(ctx);
-    let index = 0xFFFF_FFFF_FFFF_FFFF;
+    let index = 0xFF;
     release_cover_art::set_track_cover(&mut rel, &cap, index, fixtures::plain(1));
     abort
 }
@@ -248,7 +247,7 @@ fun set_track_cover_emits_release_index_and_blob_ids() {
     let events = events_by_type<ReleaseTrackCoverArtSetEvent>();
     assert_eq!(events.length(), 1);
     assert_track_set_event(&events[0], rel_id, 1, 200, option::some(201));
-    assert_eq!(to_bytes(&events[0]).length(), 105);
+    assert_eq!(to_bytes(&events[0]).length(), 98);
 
     destroy(rel);
     destroy(cap);
@@ -266,7 +265,7 @@ fun clear_track_cover_emits_release_and_index() {
     let events = events_by_type<ReleaseTrackCoverArtClearedEvent>();
     assert_eq!(events.length(), 1);
     assert_track_cleared_event(&events[0], rel_id, 1);
-    assert_eq!(to_bytes(&events[0]).length(), 40);
+    assert_eq!(to_bytes(&events[0]).length(), 33);
 
     destroy(rel);
     destroy(cap);

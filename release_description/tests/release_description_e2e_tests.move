@@ -19,9 +19,7 @@ const STRANGER: address = @0x51;
 fun publish_and_share(scenario: &mut Scenario): (ReleaseAdminCap, ID) {
     let ctx = scenario.ctx();
     let rec_id = test_helpers::fake_id(ctx);
-    let target_id = test_helpers::fake_id(ctx);
-    let tracks = vector[release::consent_for_testing(rec_id, target_id)];
-    let (rel, cap) = release::new_for_testing(tracks, ctx);
+    let (rel, cap) = release::new_for_testing(vector[rec_id], ctx);
     let rel_id = object::id(&rel);
     rel.publish(&cap);
     (cap, rel_id)
@@ -35,7 +33,6 @@ fun description_lifecycle_on_a_published_and_shared_release() {
 
     ts.next_tx(STRANGER);
     let rel = ts.take_shared<Release>();
-    assert!(rel.is_published_state());
     assert!(!rd::has_description(&rel));
     test_scenario::return_shared(rel);
 

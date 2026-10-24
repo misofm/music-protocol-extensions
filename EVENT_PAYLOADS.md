@@ -38,5 +38,5 @@ they are not gas or throughput measurements.
 
 Indexers use the event types of the package generation they follow and read
 the subject ID from each event. Old event types remain associated with their
-previous deployments. Core publication and `ReleaseConsent` changes do not make
+previous deployments. Core publication and release tracks do not make
 metadata events evidence of economic ownership or licensing.

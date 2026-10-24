@@ -39,14 +39,14 @@ public struct ReleaseCoverArtClearedEvent has copy, drop {
 
 public struct ReleaseTrackCoverArtSetEvent has copy, drop {
     release_id: ID,
-    track_index: u64,
+    track_index: u8,
     still_blob_id: u256,
     animated_blob_id: Option<u256>,
 }
 
 public struct ReleaseTrackCoverArtClearedEvent has copy, drop {
     release_id: ID,
-    track_index: u64,
+    track_index: u8,
 }
 
 // === View Functions ===
@@ -59,15 +59,15 @@ public fun cover(release: &Release): &Option<CoverArt> {
     &borrow(release.uid()).cover
 }
 
-public fun track_cover(release: &Release, track_index: u64): Option<CoverArt> {
-    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+public fun track_cover(release: &Release, track_index: u8): Option<CoverArt> {
+    assert!((track_index as u64) < release.tracks().length(), ETrackIndexOutOfBounds);
     let record = borrow(release.uid());
     let override = record.track_covers.borrow(track_index);
     if (override.is_some()) *override else record.cover
 }
 
-public fun track_cover_override(release: &Release, track_index: u64): &Option<CoverArt> {
-    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+public fun track_cover_override(release: &Release, track_index: u8): &Option<CoverArt> {
+    assert!((track_index as u64) < release.tracks().length(), ETrackIndexOutOfBounds);
     borrow(release.uid()).track_covers.borrow(track_index)
 }
 
@@ -98,10 +98,10 @@ public fun clear_cover(release: &mut Release, cap: &ReleaseAdminCap) {
 public fun set_track_cover(
     release: &mut Release,
     cap: &ReleaseAdminCap,
-    track_index: u64,
+    track_index: u8,
     art: CoverArt,
 ) {
-    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+    assert!((track_index as u64) < release.tracks().length(), ETrackIndexOutOfBounds);
     let release_id = object::id(release);
     let slot = borrow_mut_or_init(release, cap).track_covers.borrow_mut(track_index);
     if (slot.contains(&art)) return;
@@ -115,8 +115,8 @@ public fun set_track_cover(
     });
 }
 
-public fun clear_track_cover(release: &mut Release, cap: &ReleaseAdminCap, track_index: u64) {
-    assert!(track_index < release.recording_ids().length(), ETrackIndexOutOfBounds);
+public fun clear_track_cover(release: &mut Release, cap: &ReleaseAdminCap, track_index: u8) {
+    assert!((track_index as u64) < release.tracks().length(), ETrackIndexOutOfBounds);
     let release_id = object::id(release);
     let uid = release.uid_mut(cap);
     if (!df::exists(uid, ExtensionKey())) return;
@@ -175,13 +175,13 @@ public fun release_cover_art_cleared_fields(event: &ReleaseCoverArtClearedEvent)
 #[test_only]
 public fun release_track_cover_art_set_fields(
     event: &ReleaseTrackCoverArtSetEvent,
-): (ID, u64, u256, Option<u256>) {
+): (ID, u8, u256, Option<u256>) {
     (event.release_id, event.track_index, event.still_blob_id, event.animated_blob_id)
 }
 
 #[test_only]
 public fun release_track_cover_art_cleared_fields(
     event: &ReleaseTrackCoverArtClearedEvent,
-): (ID, u64) {
+): (ID, u8) {
     (event.release_id, event.track_index)
 }

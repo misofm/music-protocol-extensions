@@ -15,8 +15,7 @@ use release_kind::release_kind as rk;
 
 fun mk_release(ctx: &mut TxContext): (Release, ReleaseAdminCap) {
     let rec_id = test_helpers::fake_id(ctx);
-    let target_id = test_helpers::fake_id(ctx);
-    release::new_for_testing(vector[release::consent_for_testing(rec_id, target_id)], ctx)
+    release::new_for_testing(vector[rec_id], ctx)
 }
 
 fun assert_set_event(event: &rk::ReleaseKindSetEvent, release_id: ID, kind: vector<u8>) {

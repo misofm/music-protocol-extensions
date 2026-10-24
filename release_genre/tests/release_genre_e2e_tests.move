@@ -30,11 +30,7 @@ fun create_genre(scenario: &Scenario, name: vector<u8>): ID {
 
 fun publish_and_share_release(scenario: &mut Scenario): (ReleaseAdminCap, ID) {
     let ctx = scenario.ctx();
-    let target_id = test_helpers::fake_id(ctx);
-    let tracks = vector[
-        release::consent_for_testing(test_helpers::fake_id(ctx), target_id),
-        release::consent_for_testing(test_helpers::fake_id(ctx), target_id),
-    ];
+    let tracks = vector[test_helpers::fake_id(ctx), test_helpers::fake_id(ctx)];
     let (rel, cap) = release::new_for_testing(tracks, ctx);
     let release_id = object::id(&rel);
     rel.publish(&cap);
@@ -59,7 +55,6 @@ fun genre_lifecycle_on_published_shared_release() {
     scenario.next_tx(LABEL);
     let mut rel = scenario.take_shared<Release>();
     assert_eq!(object::id(&rel), release_id);
-    assert!(rel.is_published_state());
     let hiphop = scenario.take_immutable_by_id<Genre>(hiphop_id);
     let electronic = scenario.take_immutable_by_id<Genre>(electronic_id);
 

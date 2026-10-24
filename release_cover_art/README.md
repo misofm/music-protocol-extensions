@@ -48,8 +48,8 @@ blob IDs of the new value on a set.
 |---|---|---|
 | `ReleaseCoverArtSetEvent` | `release_id: ID`, `still_blob_id: u256`, `animated_blob_id: Option<u256>` | 65 (no animation) or 97 |
 | `ReleaseCoverArtClearedEvent` | `release_id: ID` | 32 |
-| `ReleaseTrackCoverArtSetEvent` | `release_id: ID`, `track_index: u64`, `still_blob_id: u256`, `animated_blob_id: Option<u256>` | 73 (no animation) or 105 |
-| `ReleaseTrackCoverArtClearedEvent` | `release_id: ID`, `track_index: u64` | 40 |
+| `ReleaseTrackCoverArtSetEvent` | `release_id: ID`, `track_index: u8`, `still_blob_id: u256`, `animated_blob_id: Option<u256>` | 66 (no animation) or 98 |
+| `ReleaseTrackCoverArtClearedEvent` | `release_id: ID`, `track_index: u8` | 33 |
 
 Cover art is always unencrypted: `cover_art::new` rejects encrypted blobs.
 An equal set and an absent clear emit nothing, so every event is a real
@@ -65,13 +65,13 @@ state transition.
 ## Dependencies
 
 - [`miso_music`](https://github.com/misofm/music-protocol) at
-  `aca186f3eb23ad2867f7496a9dc141fbdf9e7a3b` — `Release`, `ReleaseAdminCap`,
+  `f404d771be28db15e79bedb5bd09a5d1f63ee727` — `Release`, `ReleaseAdminCap`,
   and `uid_mut`.
 - [`cover_art`](https://github.com/misofm/cover-art) at
   `079bac686dca59e996a93565c80d8b8ef130226c` — the `CoverArt` value type,
   which rejects encrypted blobs.
 - [`release_track_data`](https://github.com/misofm/release-track-data) at
-  `b58344fc383fc4341c7d36989e5aa7e4631376d9` — the `ReleaseTrackData<Data>`
+  `62c9133d1d84631baee3d9fbede035c8615cbe82` — the `ReleaseTrackData<Data>`
   array behind the overrides, pinned to the same `miso_music`.
 - [`ori`](https://github.com/unconfirmedlabs/ori) at
   `367ed5fe92a8b62da02c1116537cf08d111e0789`, test mode only — blob fixtures.

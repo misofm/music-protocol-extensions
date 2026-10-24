@@ -19,9 +19,7 @@ const STRANGER: address = @0x51;
 fun publish_and_share(ts: &mut Scenario): (ReleaseAdminCap, ID) {
     let ctx = ts.ctx();
     let rec_id = test_helpers::fake_id(ctx);
-    let target_id = test_helpers::fake_id(ctx);
-    let tracks = vector[release::consent_for_testing(rec_id, target_id)];
-    let (rel, cap) = release::new_for_testing(tracks, ctx);
+    let (rel, cap) = release::new_for_testing(vector[rec_id], ctx);
     let rel_id = object::id(&rel);
     rel.publish(&cap);
     (cap, rel_id)
@@ -35,7 +33,6 @@ fun kind_lifecycle_against_a_published_shared_release() {
 
     ts.next_tx(ADMIN);
     let mut rel = ts.take_shared<Release>();
-    assert!(rel.is_published_state());
     rk::set_kind(&mut rel, &cap, b"Album".to_string());
     assert!(rk::has_kind(&rel));
     assert_eq!(*rk::kind(&rel), b"Album".to_string());

@@ -11,7 +11,7 @@ use sui::bcs::to_bytes;
 use sui::event::events_by_type;
 use sui::test_scenario::{Self as ts, Scenario};
 use cover_art::cover_art as cover;
-use miso_music::release::{Self, Release, ReleaseAdminCap, ReleaseConsent};
+use miso_music::release::{Self, Release, ReleaseAdminCap};
 use release_cover_art::cover_art_fixtures as fixtures;
 use release_cover_art::release_cover_art::{
     Self,
@@ -25,12 +25,11 @@ const ADMIN: address = @0xAD;
 const READER: address = @0xFA;
 const STRANGER: address = @0x51;
 
-fun mk_tracks(): vector<ReleaseConsent> {
-    let placeholder = object::id_from_address(@0xB0B);
+fun mk_tracks(): vector<ID> {
     vector[
-        release::consent_for_testing(object::id_from_address(@0xA0), placeholder),
-        release::consent_for_testing(object::id_from_address(@0xA1), placeholder),
-        release::consent_for_testing(object::id_from_address(@0xA2), placeholder),
+        object::id_from_address(@0xA0),
+        object::id_from_address(@0xA1),
+        object::id_from_address(@0xA2),
     ]
 }
 
@@ -56,7 +55,7 @@ fun assert_set_event(
 fun assert_track_set_event(
     event: &ReleaseTrackCoverArtSetEvent,
     release_id: ID,
-    track_index: u64,
+    track_index: u8,
     still_blob_id: u256,
     animated_blob_id: Option<u256>,
 ) {
@@ -71,7 +70,7 @@ fun assert_track_set_event(
 fun assert_track_cleared_event(
     event: &ReleaseTrackCoverArtClearedEvent,
     release_id: ID,
-    track_index: u64,
+    track_index: u8,
 ) {
     let (event_release_id, event_index) =
         release_cover_art::release_track_cover_art_cleared_fields(event);
@@ -105,7 +104,7 @@ fun cover_art_lifecycle_against_published_shared_release() {
     let track_set_events = events_by_type<ReleaseTrackCoverArtSetEvent>();
     assert_eq!(track_set_events.length(), 1);
     assert_track_set_event(&track_set_events[0], rel_id, 1, 200, option::none());
-    assert_eq!(to_bytes(&track_set_events[0]).length(), 73);
+    assert_eq!(to_bytes(&track_set_events[0]).length(), 66);
     ts::return_shared(rel);
 
     ts.next_tx(READER);
@@ -128,7 +127,7 @@ fun cover_art_lifecycle_against_published_shared_release() {
     let track_cleared = events_by_type<ReleaseTrackCoverArtClearedEvent>();
     assert_eq!(track_cleared.length(), 1);
     assert_track_cleared_event(&track_cleared[0], rel_id, 1);
-    assert_eq!(to_bytes(&track_cleared[0]).length(), 40);
+    assert_eq!(to_bytes(&track_cleared[0]).length(), 33);
 
     release_cover_art::clear_cover(&mut rel, &rel_cap);
     assert!(!release_cover_art::has_cover_art(&rel));
